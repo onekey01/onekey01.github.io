@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>통돌 Note — 통합돌봄 서비스 제공기관 업무 프로그램</title>
+<meta name="description" content="통합돌봄 서비스 제공기관을 위한 업무 프로그램. 의뢰 접수부터 배정·실적·정산·편람 서식 기록지까지 기관이 일하는 순서대로 이어집니다.">
+<style>
+:root{--bg:#f4f6f2;--card:#fff;--ink:#1b1d1a;--sub:#5f665c;--line:#e2e5df;--main:#3f6b4a;--deep:#2f5239;--soft:#e8f0e9;--warn:#fff4c2;--warnline:#e0c35a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"맑은 고딕","Malgun Gothic","Apple SD Gothic Neo",sans-serif;line-height:1.75;font-size:17px;word-break:keep-all}
+a{color:var(--deep)}
+.wrap{max-width:920px;margin:0 auto;padding:0 20px}
+header.top{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.logo{font-weight:800;font-size:20px;color:var(--main);text-decoration:none}
+nav a{margin-left:18px;text-decoration:none;color:var(--sub);font-size:15px}
+nav a:hover{color:var(--main)}
+.hero{background:var(--main);color:#fff;padding:60px 0 48px;text-align:center}
+.hero h1{font-size:34px;line-height:1.35;margin:0 0 16px;letter-spacing:-.03em}
+.hero p{color:#d5e4d8;font-size:19px;margin:0 auto 28px;max-width:660px}
+.btn{display:inline-block;background:#fff;color:var(--deep);padding:14px 26px;border-radius:10px;text-decoration:none;font-weight:700;margin:6px}
+.btn.ghost{background:transparent;color:#fff;border:2px solid #fff}
+section{padding:44px 0;border-top:1px solid var(--line)}
+section h2{font-size:26px;margin:0 0 18px;letter-spacing:-.02em}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px}
+.card h3{margin:0 0 8px;font-size:18px;color:var(--main)}
+.card p{margin:0;color:var(--sub);font-size:16px}
+.shot{background:var(--soft);border:2px dashed #a9c4b0;border-radius:12px;height:260px;display:flex;align-items:center;justify-content:center;color:var(--sub);margin:20px 0;text-align:center;padding:0 16px}
+.pin{background:var(--deep);color:#fff;border-radius:12px;padding:22px;font-size:19px;font-weight:700;text-align:center}
+.tbl{width:100%;border-collapse:collapse;background:var(--card);margin-top:14px}
+.tbl th,.tbl td{border:1px solid var(--line);padding:10px 12px;text-align:left;font-size:16px;vertical-align:top}
+.tbl th{background:#eef1ec;width:28%}
+ol.steps{padding-left:22px}
+ol.steps li{margin-bottom:10px}
+.boss{background:var(--warn);border:1px dashed var(--warnline);padding:1px 6px;border-radius:4px;font-size:15px;color:#1b1d1a}
+.note{color:var(--sub);font-size:15px}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px}
+summary{font-weight:700;cursor:pointer}
+footer{padding:36px 0 60px;color:var(--sub);font-size:14px;border-top:1px solid var(--line)}
+@media (max-width:640px){.hero h1{font-size:26px}.hero p{font-size:17px}nav{display:none}.tbl th{width:36%}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="logo" href="#">통돌 Note</a>
+  <nav><a href="../index.html">← Voy.87 첫 쪽</a><a href="#what">무엇을 하나</a><a href="#safe">자료 보호</a><a href="#install">설치</a><a href="#get">내려받기</a><a href="#faq">자주 묻는 것</a></nav>
+</div></header>
+
+<div class="hero"><div class="wrap">
+  <h1>통합돌봄 제공기관의 한 달 업무를<br>일하는 순서 그대로 잇습니다</h1>
+  <p>통돌 Note 는 통합돌봄 서비스 제공기관을 위한 업무 프로그램입니다. 대상자를 받고, 배정하고, 실적을 쌓고, 서류를 뽑는 일이 한 프로그램 안에서 이어집니다.</p>
+  <a class="btn" href="#get">내려받기 안내</a>
+  <a class="btn ghost" href="#install">설치 방법 보기</a>
+</div></div>
+
+<section><div class="wrap">
+  <h2>이런 기관께 맞습니다</h2>
+  <div class="grid">
+    <div class="card"><h3>통합돌봄 서비스 제공기관</h3><p>지자체에서 의뢰를 받아 방문·동행·식사 같은 서비스를 제공하고, 실적과 청구 서류를 내는 기관.</p></div>
+    <div class="card"><h3>엑셀과 한글로 맞춰 오신 곳</h3><p>의뢰 엑셀, 배정표, 실적표, 기록지를 따로따로 만들어 서로 맞추고 계신 곳.</p></div>
+    <div class="card"><h3>방문 인력이 있는 곳</h3><p>제공인력이 현장에서 휴대폰으로 남긴 방문 기록을 사무실 실적으로 이어 쓰고 싶은 곳.</p></div>
+  </div>
+  <p class="note">계산 값(단가·한도·본인부담 구간)은 2026년 한 지자체의 편람 기준으로 채워져 있고, 다른 지자체는 처음 설정 화면에서 고쳐 씁니다.</p>
+</div></section>
+
+<section id="what"><div class="wrap">
+  <h2>무엇을 하나요</h2>
+  <div class="grid">
+    <div class="card"><h3>대상자 · 의뢰 접수</h3><p>지자체가 준 의뢰 엑셀을 그대로 올립니다. 지난 차수와 견주어 다시 의뢰된 분을 표시합니다. 한 번 넣은 이름·주소·연락처는 끝까지 따라옵니다.</p></div>
+    <div class="card"><h3>제공인력 · 배정</h3><p>자격과 근무시간을 한 자리에 두고, 요일과 시간으로 배정합니다. 월 2회·월 1회처럼 주 단위가 아닌 서비스도 배정됩니다.</p></div>
+    <div class="card"><h3>한도를 넘는 계획 막기</h3><p>한도를 넘는 계획은 저장되지 않습니다. 무엇이 얼마나 넘는지 함께 알려 줍니다. 생애한도가 얼마 남았는지도 보입니다.</p></div>
+    <div class="card"><h3>실적 달력</h3><p>한 달치 실적이 한 화면에 있고, 달력의 칸을 눌러 적습니다. 못 간 날은 까닭을 눌러서 고릅니다.</p></div>
+    <div class="card"><h3>현장앱</h3><p>제공인력이 휴대폰으로 방문 시각·일지·사진을 남기면 사무실의 실적으로 이어집니다.</p></div>
+    <div class="card"><h3>정산</h3><p>본인부담금을 프로그램이 셉니다. 단가와 본인부담 구간은 [설정] → [계산 규칙]의 값을 따릅니다.</p></div>
+    <div class="card"><h3>편람 서식 기록지</h3><p>제공기록지를 편람 서식 그대로 한글 파일로 뽑습니다.</p></div>
+    <div class="card"><h3>청구서 · 영수증 · 계약서</h3><p>청구서와 영수증, 계약서도 같이 나옵니다. 기관 정보는 한 번만 넣습니다.</p></div>
+  </div>
+</div></section>
+
+<section id="safe"><div class="wrap">
+  <h2>자료는 이 PC 안에만 있습니다</h2>
+  <div class="grid">
+    <div class="card"><h3>인터넷 없이도 돕니다</h3><p>자료는 설치한 컴퓨터의 자료함 한 곳(<code>C:\통돌Note\data</code>)에만 저장됩니다.</p></div>
+    <div class="card"><h3>백업</h3><p>자료함 폴더를 통째로 복사하면 그것이 백업입니다. 프로그램도 여섯 시간마다 알아서 한 부씩 떠 둡니다.</p></div>
+    <div class="card"><h3>USB 로 집에서</h3><p>USB 에 담아 가 집에서 마저 일하고, 다음 날 아침 사무실 자료와 도로 합칩니다.</p></div>
+  </div>
+  <p class="note">관리자 비밀번호는 되돌릴 수 없는 형태로 저장됩니다. 잊으면 만든 쪽도 알 수 없으니 적어 두세요.</p>
+</div></section>
+
+<section id="install"><div class="wrap">
+  <h2>설치 — 받아서 켜기까지 10분</h2>
+  <p class="note">준비물: 윈도 PC 한 대. 기록지를 PDF 로 받으시려면 「한글」(2014 이상)이 깔려 있어야 합니다.</p>
+  <ol class="steps">
+    <li><b>압축 풀기(1분)</b> — 받으신 zip 을 오른쪽 눌러 압축 풀기. 건너뛰지 마세요. 풀지 않고 켜면 설치 파일이 「압축을 아직 안 푸셨습니다」라고 멈춰 세웁니다.</li>
+    <li><b>설치(2분)</b> — 풀린 폴더의 설치 파일을 두 번 누릅니다. 묻는 두 가지에 그냥 엔터를 누르면 <code>C:\통돌Note</code> 에 놓이고 바탕화면에 바로가기가 생깁니다.<br>
+      <span class="note">Windows 가 'PC 보호' 파란 창을 띄우면 <b>추가 정보 → 실행</b>을 누릅니다. 처음 한 번만 뜹니다.</span></li>
+    <li><b>기관 정보 넣기(3분)</b> — 브라우저가 저절로 열립니다. 기관명·대표 전화·주소와 관리자 이름·아이디·비밀번호를 넣습니다.</li>
+    <li><b>값이 맞는지 확인(1분)</b> — 지자체 이름, 서비스 단가, 지원한도, 본인부담 구간이 이미 채워져 있습니다. 우리 지자체와 다르면 그 자리에서 고칩니다.</li>
+    <li><b>공휴일 넣기</b> — 며칠 안에 [설정] → [공휴일]에서 그해 공휴일을 넣습니다. 넣으실 때까지 홈 화면이 알려 드립니다.</li>
+  </ol>
+  <p class="note">새 버전은 프로그램이 하루 한 번 스스로 확인하고, 화면 위 띠의 [지금 바꾸기]를 누르면 갈아 끼웁니다. 자료함은 건드리지 않습니다. 더 자세한 것은 설치 파일에 든 설치 안내와 사용설명서에 있습니다.</p>
+</div></section>
+
+<section id="get"><div class="wrap">
+  <h2>내려받기</h2>
+  <table class="tbl">
+    <tr><th>지금 판</th><td>v1.26.40 (2026년 10월 3일) · 설치 파일 zip 한 개 · 약 48MB</td></tr>
+    <tr><th>받는 곳</th><td>문의 메일로 알려 주시면 받는 곳을 안내해 드립니다 — <a href="mailto:onekey00a@gmail.com">onekey00a@gmail.com</a></td></tr>
+  </table>
+</div></section>
+
+<section id="faq"><div class="wrap">
+  <h2>자주 묻는 것</h2>
+  <details><summary>인터넷이 없어도 되나요?</summary><p>됩니다. 자료는 설치한 컴퓨터의 자료함에만 저장됩니다. 새 버전이 나왔는지 확인할 때는 인터넷을 씁니다.</p></details>
+  <details><summary>우리 지자체도 쓸 수 있나요?</summary><p>단가·한도·본인부담 구간은 처음 설정 화면과 [설정] → [계산 규칙]에서 우리 지자체 값으로 고칠 수 있습니다.</p></details>
+  <details><summary>파란 경고창이 뜨는데 괜찮은가요?</summary><p>아직 만든 사람 서명을 붙이지 않아 처음 한 번 뜹니다. 바이러스라서 뜨는 것이 아닙니다. <b>추가 정보 → 실행</b>을 누르시면 되고, 설치가 끝난 뒤로는 뜨지 않습니다.</p></details>
+  <details><summary>새 버전으로 바꾸면 자료가 지워지나요?</summary><p>아니요. 프로그램만 갈아 끼우고 자료함은 손대지 않습니다.</p></details>
+  <details><summary>자료 백업은 어떻게 하나요?</summary><p><code>C:\통돌Note\data</code> 폴더를 통째로 복사하면 됩니다. 프로그램도 여섯 시간마다 한 부씩 떠 둡니다.</p></details>
+  <details><summary>화면의 이름은 실제 어르신인가요?</summary><p>아니요. 이 홈페이지와 안내의 화면에 나오는 이름은 모두 시범자료(가공 인물)입니다.</p></details>
+</div></section>
+
+<footer><div class="wrap">
+  문의: <a href="mailto:onekey00a@gmail.com">onekey00a@gmail.com</a> — 어르신 이름 등 개인정보는 보내지 마세요.<br>
+  화면의 이름은 모두 시범자료입니다. · 통돌 Note — 통합돌봄 서비스 제공기관 업무 프로그램 · Voy.87
+</div></footer>
+</body>
+</html>

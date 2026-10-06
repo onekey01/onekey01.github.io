@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>챙김 Note — 사례관리 기록과 평가 준비를 한 번에</title>
+<meta name="description" content="복지관·자활센터 사례관리자를 위한 기록 프로그램. 평소처럼 기록하면 평가지표 기준으로 채워야 할 곳을 모아 보여 줍니다.">
+<style>
+:root{--bg:#fbfaf7;--card:#fff;--ink:#1f2a2e;--sub:#5b6770;--line:#e4e1da;--main:#2f7a6b;--main2:#e6f2ef;--warn:#fff4c2;--warnline:#e0c35a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"맑은 고딕","Malgun Gothic","Apple SD Gothic Neo",sans-serif;line-height:1.7;font-size:17px}
+a{color:var(--main)}
+.wrap{max-width:920px;margin:0 auto;padding:0 20px}
+header.top{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.logo{font-weight:800;font-size:20px;color:var(--main);text-decoration:none}
+nav a{margin-left:18px;text-decoration:none;color:var(--sub);font-size:15px}
+nav a:hover{color:var(--main)}
+.hero{padding:64px 0 48px;text-align:center}
+.hero h1{font-size:34px;line-height:1.35;margin:0 0 16px}
+.hero p{color:var(--sub);font-size:19px;margin:0 auto 28px;max-width:640px}
+.btn{display:inline-block;background:var(--main);color:#fff;padding:14px 26px;border-radius:10px;text-decoration:none;font-weight:700;margin:6px}
+.btn.ghost{background:transparent;color:var(--main);border:2px solid var(--main)}
+.btn.off{background:#c9cfd2;color:#fff;cursor:not-allowed}
+section{padding:44px 0;border-top:1px solid var(--line)}
+section h2{font-size:26px;margin:0 0 18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px}
+.card h3{margin:0 0 8px;font-size:18px;color:var(--main)}
+.card p{margin:0;color:var(--sub);font-size:16px}
+.shot{background:var(--main2);border:2px dashed #9cc7bd;border-radius:12px;height:260px;display:flex;align-items:center;justify-content:center;color:var(--sub);margin:20px 0}
+.free{background:var(--main2);border-radius:12px;padding:22px;font-size:19px;font-weight:700;text-align:center}
+.tbl{width:100%;border-collapse:collapse;background:var(--card);margin-top:14px}
+.tbl th,.tbl td{border:1px solid var(--line);padding:10px 12px;text-align:left;font-size:16px}
+.tbl th{background:#f3f1ec;width:28%}
+ol.steps{padding-left:22px}
+ol.steps li{margin-bottom:10px}
+.boss{background:var(--warn);border:1px dashed var(--warnline);padding:1px 6px;border-radius:4px;font-size:15px}
+.note{color:var(--sub);font-size:15px}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px}
+summary{font-weight:700;cursor:pointer}
+footer{padding:36px 0 60px;color:var(--sub);font-size:14px;border-top:1px solid var(--line)}
+@media (max-width:640px){.hero h1{font-size:26px}.hero p{font-size:17px}nav{display:none}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="logo" href="#">챙김 Note</a>
+  <nav><a href="../index.html">← Voy.87 첫 쪽</a><a href="#what">무엇을 하나</a><a href="#safe">자료 보호</a><a href="#price">무료와 구독</a><a href="#pilot">무료 시범</a><a href="#install">설치</a><a href="#faq">자주 묻는 것</a></nav>
+</div></header>
+
+<div class="hero"><div class="wrap">
+  <h1>사례관리 기록을 쓰다 보면<br>평가 준비가 같이 됩니다</h1>
+  <p>복지관·자활센터 사례관리자를 위한 기록 프로그램입니다. 평소처럼 기록하면, 평가지표 기준으로 <b>채워야 할 곳</b>을 프로그램이 모아 보여 줍니다.</p>
+  <a class="btn" href="#pilot">90일 무료로 써 보기</a>
+  <a class="btn ghost" href="#install">설치 방법 보기</a>
+</div></div>
+
+<section><div class="wrap">
+  <h2>이런 분께 맞습니다</h2>
+  <div class="grid">
+    <div class="card"><h3>노인복지관 · 사회복지관</h3><p>사례관리 8단계, 연도별 평가지표 충족 여부를 한 화면에서 봅니다.</p></div>
+    <div class="card"><h3>장애인복지관</h3><p>개인별 서비스 기록과 평가지침 기준 점검을 함께 합니다.</p></div>
+    <div class="card"><h3>지역자활센터</h3><p>Gateway 과정과 자활 월별 보고를 기록에서 바로 만듭니다.</p></div>
+  </div>
+  <p class="note">평가 기준: 2027년 노인·사회복지관 평가지표, 2026년 장애인복지관 평가지침, 2026년 자활사업 안내.</p>
+</div></section>
+
+<section id="what"><div class="wrap">
+  <h2>무엇을 하나요</h2>
+  <div class="grid">
+    <div class="card"><h3>이용자 · 동의서</h3><p>동의서 받음·철회 상태를 관리하고, 안 받은 사람만 골라 서식을 인쇄합니다.</p></div>
+    <div class="card"><h3>상담기록</h3><p>짧은 메모를 적으면 <b>자동 작성 도우미</b>가 상담 내용·의견·향후 계획의 기록 초안을 만듭니다. 확정은 사람이 합니다.</p></div>
+    <div class="card"><h3>사례관리 단계</h3><p>접수부터 종결·사후관리까지 단계 막대로 보이고, 빠진 단계는 표시됩니다.</p></div>
+    <div class="card"><h3>평가 구멍 모아 보기</h3><p>지난 기한, 빠진 기록, 안 받은 동의서를 한곳에 모으고, 누르면 그 자리로 갑니다.</p></div>
+    <div class="card"><h3>연도별 충족표</h3><p>최근 3년, 지표 번호별로 채운 것과 모자란 것을 숫자로 보여 줍니다.</p></div>
+    <div class="card"><h3>연계 · 고충 · 척도</h3><p>연계 자원, 고충 처리 기한(15일/30일), 권익옹호, 척도 사전·사후 측정을 기록합니다.</p></div>
+    <div class="card"><h3>실적 보고 · 증빙</h3><p>월·분기·연 실적표를 엑셀로 저장하거나 한글에 붙여 넣고, 지표별 증빙을 한 장씩 모읍니다.</p></div>
+    <div class="card"><h3>기관 양식 채우기</h3><p>기관에서 쓰는 한글·워드 양식을 붙여 넣어 등록하면, 기록으로 채워 인쇄합니다.</p></div>
+  </div>
+  <div class="shot">화면 그림 자리 — 시범자료 화면만 넣습니다</div>
+  <p class="note">준비 중: 녹취를 상담일지로 옮기기, 원자료 엑셀 내보내기, 한글 원본(hwpx) 양식 채우기, 희망이음 내보내기.</p>
+</div></section>
+
+<section id="safe"><div class="wrap">
+  <h2>자료는 기관 PC 안에만 있습니다</h2>
+  <div class="grid">
+    <div class="card"><h3>서버에 올리지 않음</h3><p>설치한 PC 안에서만 열립니다. 같은 망의 다른 PC에서도 열리지 않습니다.</p></div>
+    <div class="card"><h3>암호화</h3><p>자료·동의서 스캔·백업이 관리자 비밀번호로 암호화됩니다.</p></div>
+    <div class="card"><h3>복구 열쇠 · 백업</h3><p>처음 설정 때 복구 열쇠를 인쇄합니다. 하루 한 번 자동 백업, PC를 바꿀 때 되살리기가 들어 있습니다.</p></div>
+  </div>
+  <p class="note">비밀번호와 복구 열쇠를 모두 잃으면 만든 쪽도 자료를 열 수 없습니다. 복구 열쇠는 PC와 떨어진 곳에 보관해 주세요.</p>
+</div></section>
+
+<section id="price"><div class="wrap">
+  <h2>무료와 구독</h2>
+  <div class="free">기록은 무료, 자동 작성은 월 20회까지 무료,<br>그 이상·평가·보고는 구독</div>
+  <table class="tbl">
+    <tr><th>무료로 계속</th><td>이용자·동의서·상담기록 쓰기와 보기·인쇄·백업</td></tr>
+    <tr><th>월 20회까지 무료</th><td>자동 작성 도우미(메모 → 기록 초안)<br><span class="note">세는 법: 자동 작성으로 만든 초안을 <b>확정해 저장한 기록 1건을 1회</b>로 셉니다. 같은 기록을 다시 눌러 고치는 것은 세지 않습니다.</span></td></tr>
+    <tr><th>구독</th><td>자동 작성 20회 넘게, 평가 점검·충족표, 실적 보고 · 이용료는 시범 뒤 안내</td></tr>
+  </table>
+  <p class="note">설치해 처음 설정한 날부터 90일 동안은 구독 기능까지 모두 무료로 쓰실 수 있습니다. 남은 날은 프로그램 화면에 보입니다.</p>
+  <p class="note">구독하지 않으셔도 넣으신 자료는 보기·인쇄·백업이 그대로 됩니다. 자료를 붙잡아 두지 않습니다.</p>
+</div></section>
+
+<section id="pilot"><div class="wrap">
+  <h2>무료 시범 — 설치한 날부터 90일 무료</h2>
+  <table class="tbl">
+    <tr><th>대상</th><td>노인복지관 · 사회복지관 · 장애인복지관 · 지역자활센터 사례관리 담당자</td></tr>
+    <tr><th>신청</th><td>신청 없이 바로 받아서 설치해 쓰시면 됩니다. 기한이 없고, 기관 수와 쓰시는 분 수에 제한이 없습니다 <span class="note">— 신청하거나 뽑는 절차가 없습니다.</span></td></tr>
+    <tr><th>기간</th><td>설치한 날부터 90일, 이 기간 무료 <span class="note">— 기관 수·인원과 상관없이 같습니다. 끝나는 날은 설치한 날에 따라 기관마다 다릅니다.</span><br><span class="note">프로그램을 처음 설정한 날부터 셉니다. 남은 무료 기간은 프로그램 화면에 보입니다. 90일이 지나면 구독 기능만 잠기고, 기록 쓰기·보기·인쇄·백업과 자동 작성 한 달 20회는 그대로 됩니다.</span></td></tr>
+    <tr><th>드리는 것</th><td>사용 안내 · 연습용 시범자료(가공 인물 30명) · 설치 도움 <span class="note">— 설치가 막히면 문의 메일로 알려 주세요. 도와드립니다. 설치본은 아래 '설치'에서 누구나 받으실 수 있습니다.</span></td></tr>
+    <tr><th>부탁드리는 것</th><td>2주에 한 번 짧은 의견(5문항)</td></tr>
+  </table>
+  <p class="note">챙김 Note는 시험판입니다. 처음부터 실제 자료를 넣어 쓰셔도 됩니다. 다만 시험판이므로 <b>백업과 복구 열쇠 보관은 기관에서 꼭</b> 해 주세요. 들어 있는 시범자료(가공 인물 30명)로 먼저 연습해 보실 수도 있습니다. 쓰시기 전에 <a href="terms.html">이용약관(시험판)</a>을 읽어 주세요.</p>
+</div></section>
+
+<section id="install"><div class="wrap">
+  <h2>설치본 받기 · 설치하기</h2>
+  <p><b>설치본 받는 곳:</b> 이 홈페이지에서 누구나 받으실 수 있습니다. 신청 없이 받아서 바로 설치해 쓰시면 됩니다.</p>
+  <p><span class="btn off" aria-disabled="true">설치본 받기 — 준비 중</span><br>
+  <span class="note">설치본은 지금 만들고 있습니다. 준비되면 이 단추로 바로 받으실 수 있습니다. 받기 전에 <a href="terms.html">이용약관(시험판)</a>을 읽어 주세요 — 시험판이라는 점, 책임 범위, 자료와 백업은 기관 PC에서 기관이 관리한다는 내용입니다.</span></p>
+  <p class="note">준비물: Windows 10/11 PC, 처음 설치할 때 인터넷 연결 한 번, 관리자 비밀번호로 쓸 문장(8자 이상), 복구 열쇠를 인쇄할 프린터.</p>
+  <ol class="steps">
+    <li><b>받기</b> — 챙김Note 설치본(zip 한 개)을 내려받습니다.</li>
+    <li><b>풀기</b> — 오른쪽 클릭 → 압축 풀기 → <code>C:\챙김Note</code>처럼 짧은 곳에 풉니다. 바탕화면·USB는 피해 주세요.</li>
+    <li><b>켜기</b> — 푼 폴더의 시작 파일을 두 번 누릅니다. 처음 한 번은 준비물을 받느라 몇 분 걸릴 수 있습니다.<br>
+      <span class="note">Windows가 'PC를 보호했습니다' 파란 창을 띄우면 <b>추가 정보 → 실행</b>을 누릅니다. 걱정되시면 문의 메일로 알려 주세요.</span></li>
+    <li><b>처음 설정(약 5분)</b> — 기관 유형 → 기관 이름 → 관리자 비밀번호 → 화면 잠금·평가모드 → 사업 분류 → <b>복구 열쇠 인쇄</b>.</li>
+    <li><b>연습(약 20분)</b> — [설정] → [시범자료 넣기]로 가공 인물 30명을 넣고 상담기록 하나, 사례 단계 한 칸, 평가 구멍 모아 보기를 해 봅니다. 끝나면 [시범자료 지우기].</li>
+  </ol>
+</div></section>
+
+<section id="faq"><div class="wrap">
+  <h2>자주 묻는 것</h2>
+  <details><summary>인터넷에 자료가 올라가나요?</summary><p>아니요. 설치한 PC 안에만 있고 암호화됩니다. 처음 설치할 때 준비물을 받는 데만 인터넷을 씁니다.</p></details>
+  <details><summary>AI가 기록을 대신 쓰나요?</summary><p>메모를 기록 문체로 옮기는 것은 규칙으로 도는 자동 작성 도우미입니다. 만든 것은 초안이고, 확정은 담당자가 합니다. 시범 기간에는 AI 문장 다듬기 제안을 켜지 않습니다.</p></details>
+  <details><summary>시범이 끝나면 자료는 어떻게 되나요?</summary><p>설치한 날부터 90일이 지나면 구독 기능만 잠깁니다. 구독하지 않으셔도 기록 쓰기·보기·인쇄·백업은 그대로 됩니다. 남은 날은 프로그램 화면에서 보실 수 있습니다.</p></details>
+  <details><summary>여러 PC에서 같이 쓸 수 있나요?</summary><p>지금은 PC 한 대에 한 기관 자료입니다. PC를 바꿀 때는 백업에서 되살리기를 씁니다.</p></details>
+  <details><summary>화면의 이름은 실제 이용자인가요?</summary><p>아니요. 이 홈페이지와 안내의 화면에 나오는 이름은 모두 시범자료(가공 인물)입니다.</p></details>
+</div></section>
+
+<footer><div class="wrap">
+  문의: <a href="mailto:onekey00a@gmail.com">onekey00a@gmail.com</a> · 평일 2일 안에 답변드립니다 — 이용자 이름 등 개인정보는 보내지 마세요.<br>
+  <a href="terms.html">이용약관(시험판)</a><br>
+  화면의 이름은 모두 시범자료입니다. · 챙김 Note 시험판 · Voy.87
+</div></footer>
+</body>
+</html>
