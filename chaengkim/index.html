@@ -28,7 +28,11 @@ section h2{font-size:26px;margin:0 0 18px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px}
 .card h3{margin:0 0 8px;font-size:18px;color:var(--main)}
 .card p{margin:0;color:var(--sub);font-size:16px}
-.shot{background:var(--main2);border:2px dashed #9cc7bd;border-radius:12px;height:260px;display:flex;align-items:center;justify-content:center;color:var(--sub);margin:20px 0}
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin:20px 0 10px}
+.shots figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.shots img{display:block;width:100%;height:auto}
+.shots figcaption{padding:10px 14px;font-size:15px;color:var(--sub);border-top:1px solid var(--line)}
+.shots figcaption b{color:var(--ink)}
 .free{background:var(--main2);border-radius:12px;padding:22px;font-size:19px;font-weight:700;text-align:center}
 .tbl{width:100%;border-collapse:collapse;background:var(--card);margin-top:14px}
 .tbl th,.tbl td{border:1px solid var(--line);padding:10px 12px;text-align:left;font-size:16px}
@@ -78,7 +82,13 @@ footer{padding:36px 0 60px;color:var(--sub);font-size:14px;border-top:1px solid 
     <div class="card"><h3>실적 보고 · 증빙</h3><p>월·분기·연 실적표를 엑셀로 저장하거나 한글에 붙여 넣고, 지표별 증빙을 한 장씩 모읍니다.</p></div>
     <div class="card"><h3>기관 양식 채우기</h3><p>기관에서 쓰는 한글·워드 양식을 붙여 넣어 등록하면, 기록으로 채워 인쇄합니다.</p></div>
   </div>
-  <div class="shot">화면 그림 자리 — 시범자료 화면만 넣습니다</div>
+  <div class="shots">
+    <figure><a href="img/home.jpg"><img src="img/home.jpg" alt="챙김 Note 홈 화면 (시범자료)" width="1200" height="760" loading="lazy"></a><figcaption><b>홈</b> — 평가 구멍, 기한 있는 포스트잇, 동의서 미회수가 한 화면에 보입니다.</figcaption></figure>
+    <figure><a href="img/counsel.jpg"><img src="img/counsel.jpg" alt="상담기록 화면 — 메모와 정리된 기록 초안 (시범자료)" width="1200" height="940" loading="lazy"></a><figcaption><b>상담기록</b> — 짧은 메모를 적고 「정리하기」를 누르면 자동 작성 도우미가 기록 초안을 만듭니다. 확정은 사람이 합니다.</figcaption></figure>
+    <figure><a href="img/case.jpg"><img src="img/case.jpg" alt="사례관리 화면 — 단계 막대 (시범자료)" width="1200" height="760" loading="lazy"></a><figcaption><b>사례관리 단계</b> — 접수부터 종결·사후관리까지 단계 막대로 보입니다.</figcaption></figure>
+    <figure><a href="img/eval.jpg"><img src="img/eval.jpg" alt="평가 점검 화면 — 평가 구멍 모아 보기 (시범자료)" width="1200" height="760" loading="lazy"></a><figcaption><b>평가 구멍 모아 보기</b> — 빠진 기록과 안 받은 동의서를 한곳에 모아 보여 줍니다.</figcaption></figure>
+  </div>
+  <p class="note">※ 화면의 이름은 모두 시범자료(가공 인물)입니다. 그림을 누르면 크게 보입니다.</p>
   <p class="note">준비 중: 녹취를 상담일지로 옮기기, 원자료 엑셀 내보내기, 한글 원본(hwpx) 양식 채우기, 희망이음 내보내기.</p>
 </div></section>
 
