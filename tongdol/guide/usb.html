@@ -1,0 +1,483 @@
+﻿<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>통돌 Note — USB 로 집에서 일하기</title>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   통돌 Note — 문서 공통 바탕
+
+   ── 글꼴을 인터넷에서 안 받아옵니다 ★ ─────────────────────
+   이 프로그램은 **인터넷이 없어도 되는 것**이 전제입니다. 웹 글꼴을
+   쓰면 인터넷이 없는 기관 PC 에서 글자가 무너집니다. 윈도에 늘 있는
+   맑은 고딕으로 짜고, **크기·굵기·자간**으로 모양을 냅니다.
+
+   ── 색은 프로그램에서 그대로 가져옵니다 ───────────────────
+   현장앱과 화면이 이미 쓰는 값입니다. 문서만 다른 초록을 쓰면
+   같은 제품으로 안 보입니다.
+
+   ── 밝은 쪽으로 못박습니다 ────────────────────────────────
+   종이로 뽑아 PC 옆에 두는 문서라 어두운 모드를 따라가지 않습니다.
+   대신 **모든 색을 빠짐없이 칠합니다** — 어느 브라우저에서 열어도
+   같은 모양이어야 합니다.
+   ═══════════════════════════════════════════════════════════ */
+:root{
+  --ink:#1b1d1a; --ink2:#43483f; --muted:#6f766c; --faint:#9aa196;
+  --line:#e2e5df; --line2:#eef1ec;
+  --paper:#ffffff; --ground:#f4f6f2; --sunk:#f8faf7;
+  --green:#3f6b4a; --green-deep:#2f5239; --green-soft:#e8f0e9;
+  --warn:#8a5a1c; --warn-soft:#fdf3e3; --warn-line:#e8d3ad;
+  --bad:#8f3630;  --bad-soft:#fbeceb;  --bad-line:#eccbc8;
+  --글꼴:"맑은 고딕","Malgun Gothic","Apple SD Gothic Neo",
+        "Noto Sans KR",system-ui,-apple-system,sans-serif;
+  --숫자:"Segoe UI","맑은 고딕",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:var(--글꼴); font-size:16.5px; line-height:1.85;
+  word-break:keep-all; overflow-wrap:anywhere;
+}
+
+/* ── 종이 ────────────────────────────────────────────────── */
+.종이{max-width:52rem; margin:0 auto; background:var(--paper);
+  box-shadow:0 1px 2px rgba(27,29,26,.05), 0 8px 40px rgba(27,29,26,.07);}
+.속{padding:0 clamp(1.4rem,5vw,4.2rem)}
+
+/* ── 머리 ────────────────────────────────────────────────── */
+.머리{background:var(--green); color:#fff; padding:3.2rem clamp(1.4rem,5vw,4.2rem) 2.6rem;}
+.머리 .표시{display:flex; align-items:center; gap:.85rem; margin-bottom:2.2rem}
+.머리 .표시 svg{width:34px; height:34px; display:block}
+.머리 .표시 b{font-size:1.02rem; font-weight:600; letter-spacing:-.01em}
+.머리 h1{margin:0; font-size:clamp(1.9rem,5.2vw,2.7rem); font-weight:700;
+  letter-spacing:-.035em; line-height:1.25; text-wrap:balance}
+.머리 .한줄{margin:.8rem 0 0; font-size:1.06rem; color:#d5e4d8; line-height:1.7}
+.머리 .꼬리{margin-top:2rem; padding-top:1.1rem; border-top:1px solid rgba(255,255,255,.22);
+  display:flex; flex-wrap:wrap; gap:.6rem 1.6rem; font-size:.87rem; color:#c3d8c8}
+.머리 .꼬리 b{color:#fff; font-weight:600; font-family:var(--숫자)}
+
+/* ── 글 ──────────────────────────────────────────────────── */
+h2{margin:3.4rem 0 1.1rem; font-size:1.42rem; font-weight:700; letter-spacing:-.028em;
+  line-height:1.4; text-wrap:balance; color:var(--ink)}
+h3{margin:2.2rem 0 .7rem; font-size:1.1rem; font-weight:700; letter-spacing:-.02em; color:var(--ink)}
+h4{margin:1.6rem 0 .5rem; font-size:.99rem; font-weight:700; color:var(--ink2)}
+p{margin:0 0 1.05rem}
+b,strong{font-weight:700}
+a{color:var(--green-deep)}
+.작게{font-size:.9rem; color:var(--muted); line-height:1.75}
+.가운데{text-align:center}
+
+/* 첫 h2 위 여백은 머리와 겹치므로 줄입니다 */
+.속>h2:first-child{margin-top:2.6rem}
+
+ul,ol{margin:0 0 1.05rem; padding-left:1.35rem}
+li{margin:.34rem 0}
+li::marker{color:var(--faint)}
+
+/* ── 눈에 띄는 이름표 ────────────────────────────────────── */
+.이름표{display:inline-block; font-size:.73rem; font-weight:700; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--green-deep); background:var(--green-soft);
+  padding:.2rem .55rem; border-radius:3px}
+
+/* ── 차례 ────────────────────────────────────────────────── */
+.차례{background:var(--sunk); border:1px solid var(--line); border-radius:6px;
+  padding:1.4rem 1.6rem; margin:0 0 1.4rem}
+.차례 ol{margin:0; padding-left:0; list-style:none; counter-reset:ch}
+.차례 li{counter-increment:ch; display:flex; gap:.85rem; align-items:baseline;
+  padding:.42rem 0; border-bottom:1px solid var(--line2)}
+.차례 li:last-child{border-bottom:0}
+.차례 li::before{content:counter(ch); font-family:var(--숫자); font-size:.82rem;
+  font-weight:700; color:var(--green); min-width:1.5rem; flex:none}
+.차례 li em{font-style:normal; color:var(--muted); font-size:.9rem; margin-left:auto;
+  padding-left:1rem; text-align:right; flex:none}
+
+/* ── 차례 단계 ★ 이 문서는 진짜 순서입니다 ──────────────── */
+.단계{display:grid; grid-template-columns:3.2rem 1fr; gap:0 1.3rem;
+  margin:2.8rem 0 0; padding-top:2rem; border-top:1px solid var(--line)}
+.단계:first-of-type{border-top:0; padding-top:0}
+.단계 .번호{font-family:var(--숫자); font-size:1.5rem; font-weight:700; color:var(--green);
+  line-height:1.5; letter-spacing:-.03em; font-variant-numeric:tabular-nums}
+.단계 .속살{min-width:0}
+.단계 h2{margin:0 0 .3rem; font-size:1.32rem}
+.단계 .걸림{font-size:.86rem; color:var(--muted); margin:0 0 1rem}
+
+/* ── 알림 상자 ───────────────────────────────────────────── */
+.짚기{border-left:3px solid var(--green); background:var(--green-soft);
+  padding:1rem 1.2rem; margin:1.3rem 0; border-radius:0 4px 4px 0}
+.짚기>:last-child{margin-bottom:0}
+.조심{border-left:3px solid var(--warn); background:var(--warn-soft);
+  border-top:1px solid var(--warn-line); border-right:1px solid var(--warn-line);
+  border-bottom:1px solid var(--warn-line);
+  padding:1rem 1.2rem; margin:1.3rem 0; border-radius:0 4px 4px 0}
+.조심>:last-child{margin-bottom:0}
+.조심 .머릿말{font-weight:700; color:var(--warn); margin:0 0 .35rem; font-size:.95rem}
+.큰일{border-left:3px solid var(--bad); background:var(--bad-soft);
+  border-top:1px solid var(--bad-line); border-right:1px solid var(--bad-line);
+  border-bottom:1px solid var(--bad-line);
+  padding:1rem 1.2rem; margin:1.3rem 0; border-radius:0 4px 4px 0}
+.큰일>:last-child{margin-bottom:0}
+.큰일 .머릿말{font-weight:700; color:var(--bad); margin:0 0 .35rem; font-size:.95rem}
+
+/* 한 줄로 못박는 것 */
+.못박기{margin:1.5rem 0; padding:1.15rem 1.3rem; background:var(--green-deep);
+  color:#fff; border-radius:5px; font-size:1.08rem; font-weight:700;
+  line-height:1.6; letter-spacing:-.015em}
+
+/* ── 표 ──────────────────────────────────────────────────── */
+.표감{overflow-x:auto; margin:1.2rem 0; -webkit-overflow-scrolling:touch}
+table{border-collapse:collapse; width:100%; font-size:.94rem; line-height:1.65}
+th,td{text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--line2);
+  vertical-align:top}
+thead th{font-size:.79rem; font-weight:700; letter-spacing:.05em; color:var(--muted);
+  text-transform:uppercase; border-bottom:1px solid var(--line); white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; white-space:nowrap}
+
+/* ── 눌러야 하는 것 · 화면에 뜨는 글 ─────────────────────── */
+.누름{display:inline-block; font-size:.9em; font-weight:600; background:var(--sunk);
+  border:1px solid var(--line); border-bottom-color:#d6dbd2; border-radius:4px;
+  padding:.06em .42em; white-space:nowrap; color:var(--ink)}
+.길{font-family:var(--숫자); font-size:.92em; color:var(--ink2); white-space:nowrap}
+/* 화면에 실제로 뜨는 글. 낫표를 붙여 문장 안에서 경계가 보이게 합니다. */
+.뜬말{font-style:normal; color:var(--green-deep); font-weight:600}
+.뜬말::before{content:"「"} .뜬말::after{content:"」"}
+
+/* ── 검은 창 ─────────────────────────────────────────────── */
+.검은창{background:#1a1f1b; color:#dfe6e0; border-radius:5px; padding:1.05rem 1.2rem;
+  margin:1.2rem 0; font-family:var(--숫자); font-size:.88rem; line-height:1.75;
+  overflow-x:auto; white-space:pre; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.검은창 .밝게{color:#fff; font-weight:600}
+.검은창 .흐리게{color:#8fa093}
+
+/* ── 윈도 경고창 흉내 ★ ─────────────────────────────────── */
+.윈도창{max-width:25rem; margin:1.4rem auto; border-radius:7px; overflow:hidden;
+  background:#f3f3f3; color:#1b1b1b; border:1px solid #d8d8d8;
+  box-shadow:0 10px 30px rgba(20,24,20,.16); font-size:.9rem; line-height:1.6}
+.윈도창 .창머리{background:#fff; padding:1.05rem 1.25rem .3rem;
+  font-size:1.02rem; font-weight:700; color:#1b1b1b}
+.윈도창 .창몸{background:#fff; padding:.2rem 1.25rem 1.25rem; color:#3a3a3a}
+.윈도창 .더보기{display:inline-block; color:#1a5fb4; text-decoration:underline;
+  margin-top:.6rem; cursor:default}
+.윈도창 .창발{display:flex; justify-content:flex-end; gap:.5rem;
+  padding:.85rem 1.25rem; border-top:1px solid #e6e6e6}
+.윈도창 .단추{border:1px solid #cfcfcf; background:#fdfdfd; border-radius:4px;
+  padding:.32rem 1.15rem; font-size:.87rem}
+.윈도창 .단추.짙게{background:var(--green); border-color:var(--green); color:#fff; font-weight:600}
+.창설명{max-width:25rem; margin:-.6rem auto 1.4rem; font-size:.86rem; color:var(--muted);
+  text-align:center; line-height:1.7}
+
+/* ── 흐름 그림 ───────────────────────────────────────────── */
+.흐름{list-style:none; margin:1.4rem 0; padding:0; counter-reset:fl}
+.흐름 li{counter-increment:fl; position:relative; padding:0 0 1.35rem 3rem; margin:0}
+.흐름 li::before{content:counter(fl); position:absolute; left:0; top:.1rem;
+  width:1.85rem; height:1.85rem; border-radius:50%; background:var(--green-soft);
+  color:var(--green-deep); font-family:var(--숫자); font-size:.85rem; font-weight:700;
+  display:flex; align-items:center; justify-content:center}
+.흐름 li::after{content:""; position:absolute; left:.9rem; top:2.05rem; bottom:.1rem;
+  width:1px; background:var(--line)}
+.흐름 li:last-child{padding-bottom:0}
+.흐름 li:last-child::after{display:none}
+.흐름 li b{display:block; font-size:1.02rem; margin-bottom:.12rem}
+.흐름 li span{display:block; font-size:.9rem; color:var(--muted); line-height:1.7}
+
+/* ── 발 ──────────────────────────────────────────────────── */
+.발{margin-top:4rem; padding:2rem clamp(1.4rem,5vw,4.2rem) 2.6rem;
+  border-top:1px solid var(--line); background:var(--sunk);
+  font-size:.88rem; color:var(--muted); line-height:1.8}
+.발 b{color:var(--ink2)}
+
+/* ── 인쇄 ★ A4 로 뽑아 PC 옆에 둡니다 ───────────────────── */
+
+/* ── 화면 그림 ★ ─────────────────────────────────────────────
+   진짜 프로그램을 띄워 찍은 것입니다(도구/화면찍기.ts). 손으로 그린
+   그림은 언젠가 실제와 달라지고, 달라진 줄 아무도 모릅니다.
+   파일 안에 심어 두므로(data URI) 한 장만 옮겨도 안 깨집니다. */
+.그림{margin:1.5rem 0; }
+.그림 img{display:block; width:100%; height:auto;
+  border:1px solid var(--line); border-radius:6px;
+  box-shadow:0 2px 12px rgba(27,29,26,.08)}
+.그림 figcaption{margin-top:.65rem; font-size:.88rem; color:var(--muted);
+  line-height:1.75}
+.그림 figcaption b{color:var(--ink2)}
+.그림 figcaption .짚음{color:var(--green-deep); font-weight:700}
+.그림.좁게{max-width:34rem}
+.그림.아주좁게{max-width:24rem}
+
+@media print{
+  .그림 img{box-shadow:none}
+  @page{size:A4; margin:15mm 14mm}
+  body{background:#fff; font-size:10.4pt; line-height:1.65}
+  .종이{box-shadow:none; max-width:none}
+  .속{padding:0}
+  .머리{padding:0 0 1.1rem; background:#fff; color:var(--ink);
+    border-bottom:2.5pt solid var(--green); margin-bottom:1.4rem}
+  .머리 .표시{margin-bottom:.8rem}
+  .머리 .표시 b{color:var(--green-deep)}
+  .머리 .한줄{color:var(--ink2)}
+  .머리 .꼬리{border-top-color:var(--line); color:var(--muted)}
+  .머리 .꼬리 b{color:var(--ink)}
+  .못박기{background:#fff; color:var(--ink); border:1.5pt solid var(--green)}
+  .검은창{background:#fff; color:var(--ink); border:.7pt solid var(--line); box-shadow:none}
+  .검은창 .밝게{color:var(--ink)} .검은창 .흐리게{color:var(--muted)}
+  .윈도창{box-shadow:none; border:.7pt solid #bbb}
+  .발{background:#fff}
+  h2,h3,h4{break-after:avoid-page}
+  .단계,.짚기,.조심,.큰일,.윈도창,table,.흐름 li{break-inside:avoid}
+  .안찍기{display:none !important}
+}
+
+</style>
+</head>
+<body><div style="position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #ddd;padding:8px 16px;font:15px/1.5 '맑은 고딕','Malgun Gothic',sans-serif"><a href="index.html" style="color:#2f5239;text-decoration:none;font-weight:700">← 통돌 Note 설명서 목록</a> <span style="color:#777">· 통돌 Note 1.27.40 설치본에 든 안내와 같은 글입니다</span></div>
+<div class="종이">
+<div class="머리">
+  <div class="표시">
+    <img src="img/usb_01.png" width="34" height="34" alt="">
+    <b>통돌 Note</b>
+  </div>
+  <h1>USB 로 집에서 일하기</h1>
+  <p class="한줄">사무실에서 떠 온 백업으로 집에서 마저 일하고, 다음 날 아침에 도로 하나로 맞추는 길.</p>
+  <div class="꼬리"><span>준비물 <b>USB 하나</b></span><span>처음 한 번 <b>7분</b></span><span>그 뒤로 하루 <b>1분</b></span></div>
+</div>
+<div class="속">
+
+<div class="큰일" style="margin-top:2.4rem">
+  <p class="머릿말">딱 하나만 기억하시면 됩니다</p>
+  <p><b>다음 날 아침, 사무실에서 아무것도 넣기 전에 먼저 가져오세요.</b></p>
+  <p style="margin-bottom:0">이 기능은 두 자료를 <b>섞지 않습니다.</b> 통째로 바꿔 넣습니다.
+     아침에 실적을 먼저 넣고 나서 가져오면 <b>그 실적이 사라집니다.</b>
+     (화면이 「이 컴퓨터에만 몇 건」인지 먼저 세어 보여 주긴 합니다 — 그래도 아침에 먼저 하는 편이 낫습니다.)</p>
+</div>
+
+<h2>왜 이런 일이 필요한가</h2>
+<p>이 프로그램의 자료는 <b>파일 하나</b>에 다 들어 있습니다. 그래서 집에서
+   일하려면 그 파일을 USB 에 떠서 가져가야 하고, 그 순간부터 <b>자료함이 둘</b>이
+   됩니다 — 집 것과 사무실 것. 다음 날 그 둘을 도로 하나로 맞추는 것이 이 종이의 내용입니다.</p>
+
+<div class="못박기">
+  준비물은 <b>USB 하나</b>와, 집 컴퓨터에 깐 <b>통돌 Note</b> 입니다<br>
+  <span style="font-weight:400; font-size:.94rem">둘 다 <b>같은 버전</b>이라야 합니다. 사무실이 더 새 버전이면 집에서 안 받습니다.</span>
+</div>
+
+<h2>전체 순서</h2>
+<div class="차례" style="margin-bottom:2rem">
+  <ol>
+    <li><b>딱 한 번</b> — 사무실에서 백업 자리를 USB 로 정하기<em>2분</em></li>
+    <li><b>딱 한 번</b> — 집 컴퓨터에 깔고 USB 에서 가져오기<em>5분</em></li>
+    <li>매일 — 퇴근 전에 「지금 백업」<em>10초</em></li>
+    <li>매일 — 집에 오면 <b>먼저</b> 가져오고, 일하고, 나올 때 「지금 백업」<em>1분</em></li>
+    <li>매일 — 다음 날 아침 <b>맨 먼저</b> 가져오기<em>1분</em></li>
+  </ol>
+</div>
+<p class="작게">1·2 는 <b>처음 한 번</b>입니다. 그 다음부터는 3 → 4 → 5 만 하시면 되고,
+   실제로 손이 가는 시간은 하루에 <b>1분이 안 됩니다.</b></p>
+
+<p class="작게">아래 그림에 보이는 <b>주소</b>(폴더 경로)는 시험용 컴퓨터에서 찍은 것이라
+   댁의 화면과 다릅니다. 실제로는 <span class="길">D:\</span> 나 <span class="길">E:\</span>
+   로 시작합니다. <b>누를 자리는 같습니다.</b></p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="단계">
+  <div class="번호">1</div>
+  <div class="속살">
+    <h2>사무실 — 백업을 USB 에 뜨게 해 둡니다</h2>
+    <p class="걸림">2분 · 처음 한 번</p>
+
+    <p><b>설정 → 백업정보</b> 로 갑니다. <span class="누름">폴더 고르기</span> 를 눌러
+       USB 드라이브를 고르고, 그 안에 <span class="길">통돌Note백업</span> 같은 칸을
+       하나 만들어 정하시면 됩니다.</p>
+
+    <figure class="그림"><img src="img/usb_02.png" alt=""><figcaption>설정 → 백업정보. 백업 자리를 USB 폴더로 정해 둡니다.</figcaption></figure>
+
+    <div class="짚기">
+      <p style="margin-bottom:0">여기서 정해 두면 <b>정한 때마다 저절로</b> USB 에도 한 부씩 떠 둡니다
+         (기본 여섯 시간마다). 자료함 옆에 뜨던 것은 그대로 두고 <b>거기에도 함께</b> 뜨는 것입니다.</p>
+    </div>
+
+    <div class="조심">
+      <p class="머릿말">USB 를 꽂아 둔 채로 두셔도 됩니다</p>
+      <p style="margin-bottom:0">백업이 뜰 때 USB 가 빠져 있으면 그 번만 건너뜁니다.
+         프로그램이 멈추거나 하지는 않습니다.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="단계">
+  <div class="번호">2</div>
+  <div class="속살">
+    <h2>집 — 깔고, USB 에서 가져옵니다</h2>
+    <p class="걸림">5분 · 처음 한 번</p>
+
+    <h3>2-가. 집 컴퓨터에 통돌 Note 를 깝니다</h3>
+    <p>사무실에 드린 것과 <b>같은 zip</b> 을 풀고 <span class="누름">통돌Note 설치.bat</span> 를
+       두 번 누르시면 됩니다. 설치 안내 종이에 적힌 그대로입니다.</p>
+
+    <h3>2-나. 첫 화면에서 「USB 에서 가져오기」</h3>
+    <p>갓 깔면 <b>기관 개설 화면</b>이 뜹니다. <b>여기서 기관 정보를 적지 마세요.</b>
+       맨 위 칸의 <span class="누름">USB 에서 가져오기</span> 를 누르시면 됩니다.</p>
+
+    <figure class="그림"><img src="img/usb_03.png" alt=""><figcaption>집 컴퓨터의 첫 화면 맨 위. 여기를 누르시면 됩니다.</figcaption></figure>
+
+    <div class="짚기">
+      <p style="margin-bottom:0"><b>집 컴퓨터는 기관이 아닙니다.</b> 여기서 기관을 새로 세우면
+         사무실과 아무 상관 없는 빈 기관이 하나 더 생깁니다. 가져오기를 쓰면
+         기관명·계정·대상자·실적이 <b>사무실 것 그대로</b> 들어옵니다.</p>
+    </div>
+
+    <h3>2-다. USB 안의 백업 폴더까지 들어갑니다</h3>
+    <figure class="그림"><img src="img/usb_04.png" alt=""><figcaption>USB 드라이브를 눌러 백업 폴더까지 들어갑니다.</figcaption></figure>
+    <p>맨 위 <span class="누름">↑</span> 는 위로 가기입니다. USB 드라이브(대개
+       <span class="길">D:</span> 나 <span class="길">E:</span>)를 눌러 들어가서,
+       1단계에서 만든 폴더까지 가시면 됩니다.</p>
+
+    <h3>2-라. 백업이 보이면 누릅니다</h3>
+    <figure class="그림"><img src="img/usb_05.png" alt=""><figcaption>대상자 몇 명·실적 몇 건인지 보고 고릅니다.</figcaption></figure>
+    <p><b>가장 위가 가장 최근</b>입니다. 대상자 몇 명, 실적 몇 건인지가 함께 보이니
+       <b>「이게 맞나」를 눈으로 보고</b> 고르시면 됩니다.</p>
+
+    <h3>2-마. 껐다 켜면 끝입니다</h3>
+    <figure class="그림"><img src="img/usb_06.png" alt=""><figcaption>껐다 켜면 사무실 자료로 시작합니다.</figcaption></figure>
+    <p>바로 안 바뀌는 것이 정상입니다. <b>쓰는 중에 자료를 통째로 갈면</b>
+       열려 있던 화면이 없는 자료를 가리키게 되기 때문입니다.
+       창을 닫고 <span class="누름">통돌Note 시작</span> 을 다시 누르시면 사무실 자료가 들어와 있습니다.</p>
+
+    <div class="조심">
+      <p class="머릿말">로그인은 사무실에서 쓰시던 그대로입니다</p>
+      <p style="margin-bottom:0">계정도 자료함 안에 들어 있어서 같이 따라옵니다.
+         집에서 따로 만들 것이 없습니다.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="단계">
+  <div class="번호">3</div>
+  <div class="속살">
+    <h2>매일 — 퇴근 전</h2>
+    <p class="걸림">10초</p>
+    <p><b>설정 → 백업정보 → <span class="누름">지금 백업</span></b> 을 누르고 USB 를 뽑습니다.</p>
+    <p>저절로 뜨는 백업을 믿고 그냥 뽑으셔도 되지만, <b>마지막에 한 번 눌러 두는 편</b>이
+       확실합니다. 여섯 시간마다 뜨니, 오후에 넣은 것이 아직 안 떠 있을 수 있습니다.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="단계">
+  <div class="번호">4</div>
+  <div class="속살">
+    <h2>집에서 — 먼저 가져오고, 일하고, 나올 때 한 번 더</h2>
+    <p class="걸림">10초</p>
+    <p><b>둘째 날부터는 집에 오면 먼저</b> USB 를 꽂고 프로그램을 켭니다. 홈 맨 위에 띠가 뜨면 <span class="누름">가져오기</span> 를 누르고 <b>껐다 켠 뒤</b> 일하세요 — 사무실에서 그날 하신 일이 들어옵니다. 가져오지 않고 집에서 일하면, 다음 날 아침 사무실에서 <b>「이 컴퓨터에만 N건」</b>이 뜹니다(양쪽에서 따로 적은 것 — 아래 「막힐 때」).</p>
+    <p>집에서는 평소처럼 쓰시면 됩니다. <b>다 하시고 나서</b>
+       <b>설정 → 백업정보 → <span class="누름">지금 백업</span></b> 을 눌러 USB 에 떠 두고 뽑습니다.</p>
+    <div class="조심">
+      <p class="머릿말">집에서도 백업 자리가 USB 라야 합니다</p>
+      <p style="margin-bottom:0">백업 자리는 <b>컴퓨터마다 따로</b> 기억합니다. 처음 가져온 집 컴퓨터에는 아직 정해져 있지 않습니다.
+         집에서도 <b>설정 → 백업정보</b> 에서
+         USB 폴더를 한 번 정해 주세요. 이것도 <b>처음 한 번</b>입니다 — 그 뒤로는 가져와도 바뀌지 않습니다.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="단계">
+  <div class="번호">5</div>
+  <div class="속살">
+    <h2>다음 날 아침 — 맨 먼저 가져오기</h2>
+    <p class="걸림">1분 · <b>이 순서가 제일 중요합니다</b></p>
+
+    <p>USB 를 꽂고 프로그램을 켜면 <b>홈 맨 위에 띠</b>가 뜹니다.</p>
+    <figure class="그림"><img src="img/usb_07.png" alt=""><figcaption>다음 날 아침, 홈 맨 위에 이 띠가 뜹니다.</figcaption></figure>
+
+    <p class="작게">띠가 떠 있는 동안에는 <b>저절로 뜨는 백업이 USB 에 뜨지 않습니다</b>(이 컴퓨터 안에는 뜹니다). 가져오면 다시 USB 에도 뜹니다. 띠를 둔 채 「지금 백업」을 누르면 <b>먼저 가져오시겠느냐고 한 번 묻습니다.</b> 「그래도 백업」을 누르면 USB 에 이 컴퓨터 것이 새로 떠서 <b>띠가 사라지니, 먼저 가져오세요.</b></p>
+
+    <p>띠를 누르거나 <b>설정 → USB 로 오간 자료</b> 로 가면 이렇게 보입니다.</p>
+    <figure class="그림"><img src="img/usb_08.png" alt=""><figcaption>무엇이 들어오고 무엇이 사라지는지 먼저 세어 보여 줍니다.</figcaption></figure>
+
+    <div class="표감"><table>
+      <thead><tr><th style="width:12rem">보이는 것</th><th>뜻</th></tr></thead>
+      <tbody>
+        <tr><td><b>USB 에만 N건</b></td>
+            <td>저쪽(집 또는 사무실)에서 하신 일입니다. 가져오면 들어옵니다</td></tr>
+        <tr><td><b>이 컴퓨터에만 0건</b></td>
+            <td>✅ <b>안심하고 누르셔도 됩니다.</b> 사라질 것이 없습니다</td></tr>
+        <tr><td><b>이 컴퓨터에만 N건</b></td>
+            <td>❌ <b>그 N건이 사라집니다.</b> 아침에 벌써 무언가 넣으셨다는 뜻입니다 —
+                아래 「막힐 때」를 보세요</td></tr>
+      </tbody>
+    </table></div>
+
+    <p><span class="누름">가져오기</span> 를 누르고 <b>껐다 켜면</b> 끝입니다.</p>
+
+    <div class="짚기">
+      <p style="margin-bottom:0">누르기 전에 <b>지금 것을 한 부 자동으로 떠 둡니다</b>
+         (<span class="길">보관\tongdol-되돌리기전-…</span>). 잘못 누르셨어도 돌아갈 자리가 있습니다.</p>
+    </div>
+  </div>
+</div>
+
+<h2>USB 를 잃어버리면</h2>
+<div class="큰일">
+  <p class="머릿말">그 USB 안에는 어르신들의 이름·주소·연락처가 통째로 들어 있습니다</p>
+  <p>백업 파일 하나가 곧 기관의 자료 전부입니다. 잃어버리면 <b>개인정보가 통째로 나간 것</b>입니다.
+     그래서 —</p>
+  <ul style="margin-bottom:.6rem">
+    <li><b>그 일에만 쓰는 USB 를 하나 정하세요.</b> 사진·문서를 같이 담지 마세요.</li>
+    <li>가능하면 <b>암호를 거세요.</b> 윈도 프로 버전이면 USB 에 오른쪽 눌러
+        <b>BitLocker 켜기</b> 가 있습니다.</li>
+    <li><b>기관 밖에 두고 다니지 마세요.</b> 차 안·가방에 며칠씩 두는 것이 제일 흔한 사고입니다.</li>
+    <li>잃어버리셨으면 <b>기관장에게 바로 알리세요.</b> 늦게 아는 것이 가장 나쁩니다.</li>
+  </ul>
+  <p style="margin-bottom:0">집 컴퓨터도 마찬가지입니다. 식구가 같이 쓰는 컴퓨터라면
+     <b>윈도 계정을 따로 두고 암호를 거는 편</b>이 낫습니다.</p>
+</div>
+
+<h2>막힐 때</h2>
+<div class="표감"><table>
+  <thead><tr><th style="width:17rem">이런 일이 생기면</th><th>이렇게 하세요</th></tr></thead>
+  <tbody>
+    <tr><td>아침에 벌써 실적을 넣었는데<br>「이 컴퓨터에만 3건」이 뜬다</td>
+        <td><b>가져오기를 누르지 마세요.</b> 그 3건을 <b>종이에 적어 두고</b> 가져온 뒤
+            다시 넣는 것이 가장 안전합니다. 3건보다 많으면 그날은 가져오지 마시고
+            집에서 한 것을 손으로 다시 넣으세요</td></tr>
+    <tr><td>띠가 안 뜬다</td>
+        <td>USB 가 꽂혀 있는지, <b>설정 → 백업정보</b> 의 백업 자리가 그 USB 폴더인지 보세요.
+            자료함 옆(이 컴퓨터 안)으로 되어 있으면 오갈 것이 없습니다</td></tr>
+    <tr><td>띠가 떴는데 「그래도 백업」을 눌렀다</td>
+        <td>USB 에 이 컴퓨터 것이 새로 떠서 띠가 사라집니다. <b>설정 → USB 로 오간 자료</b> 의 「어느 파일에서」에서
+            저쪽에서 뜬 파일(그 아래 줄)을 골라 숫자를 보고 가져오세요</td></tr>
+    <tr><td><span class="뜬말">USB 의 자료함이 더 새 버전입니다</span></td>
+        <td>사무실 통돌 Note 가 집보다 새 버전입니다. <b>집 것을 먼저 새 버전으로</b> 올리세요.
+            그냥 가져오면 새 버전에서 적은 것이 조용히 사라집니다</td></tr>
+    <tr><td><span class="뜬말">그 폴더에 통돌 Note 백업 파일이 없습니다</span></td>
+        <td>폴더를 잘못 고르셨거나, 퇴근 전 「지금 백업」을 안 누르셨습니다.
+            파일 이름은 <span class="길">tongdol-2026-09-11-1830.db</span> 모양입니다</td></tr>
+    <tr><td>잘못 가져왔다</td>
+        <td><b>설정 → 백업정보</b> 의 목록에서
+            <span class="길">tongdol-되돌리기전-…</span> 을 고르면 돌아갑니다</td></tr>
+    <tr><td>집에서 넣은 것이 안 보인다</td>
+        <td>집에서 <b>나올 때 「지금 백업」</b>을 안 누르셨을 수 있습니다.
+            집 컴퓨터가 그대로 있으면 거기서 다시 눌러 USB 에 떠 오시면 됩니다</td></tr>
+  </tbody>
+</table></div>
+
+<div class="못박기" style="margin-top:2.6rem">
+  자료함은 늘 <b>한 쪽만</b> 최신입니다<br>
+  <span style="font-weight:400; font-size:.94rem; line-height:1.8">
+    저녁에는 USB 가, 아침에 가져온 뒤에는 사무실 PC 가 최신입니다.<br>
+    <b>둘 다 쓰는 날</b>을 만들지 않는 것이 이 일의 전부입니다.
+  </span>
+</div>
+
+</div>
+<div class="발">
+<p>이 종이는 <b>USB 로 집에서 일하는 길</b>만 다룹니다.
+   깔고 켜는 것은 <b>설치 안내</b>, 날마다 쓰는 법은 <b>사용설명서</b> 를 보세요.</p>
+<p class="작게">통돌 Note · v1.27.40 · 2026-10-09</p>
+</div>
+</div>
+</body>
+</html>

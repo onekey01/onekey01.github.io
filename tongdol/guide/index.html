@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>통돌 Note 설명서 — 설치 안내 · 사용설명서 · 구독 · 지우기</title>
+<meta name="description" content="통돌 Note 1.27.40 의 설치 안내와 관리자 사용설명서, USB 로 집에서 일하기, 무료 3개월과 구독, 프로그램 지우기.">
+<style>
+:root{--bg:#f4f6f2;--card:#fff;--ink:#1b1d1a;--sub:#5f665c;--line:#e2e5df;--main:#3f6b4a;--deep:#2f5239;--soft:#e8f0e9}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"맑은 고딕","Malgun Gothic","Apple SD Gothic Neo",sans-serif;line-height:1.75;font-size:17px;word-break:keep-all}
+a{color:var(--deep)}
+.wrap{max-width:920px;margin:0 auto;padding:0 20px}
+header.top{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.logo{font-weight:800;font-size:20px;color:var(--main);text-decoration:none}
+nav a{margin-left:18px;text-decoration:none;color:var(--sub);font-size:15px}
+.hero{background:var(--main);color:#fff;padding:44px 0 36px}
+.hero h1{font-size:30px;line-height:1.35;margin:0 0 10px}
+.hero p{color:#d5e4d8;margin:0}
+section{padding:40px 0;border-top:1px solid var(--line)}
+section h2{font-size:24px;margin:0 0 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;text-decoration:none;color:var(--ink)}
+.card:hover{border-color:var(--main)}
+.card h3{margin:0 0 6px;font-size:18px;color:var(--main)}
+.card p{margin:0;color:var(--sub);font-size:16px}
+.tbl{width:100%;border-collapse:collapse;background:var(--card);margin-top:10px}
+.tbl th,.tbl td{border:1px solid var(--line);padding:10px 12px;text-align:left;font-size:16px;vertical-align:top}
+.tbl th{background:#eef1ec;width:28%}
+ol.steps{padding-left:22px} ol.steps li{margin-bottom:10px}
+.note{color:var(--sub);font-size:15px}
+.box{background:var(--soft);border-radius:12px;padding:16px 20px;margin:14px 0}
+footer{padding:36px 0 60px;color:var(--sub);font-size:14px;border-top:1px solid var(--line)}
+@media (max-width:640px){.hero h1{font-size:24px}nav a{display:none}nav a:first-child{display:inline;margin-left:0;white-space:nowrap}.tbl th{width:36%}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="logo" href="../index.html">통돌 Note</a>
+  <nav><a href="../index.html">← 통돌 Note 쪽</a><a href="#docs">설명서</a><a href="#new">새 판</a><a href="#plan">무료와 구독</a><a href="#remove">지우기</a></nav>
+</div></header>
+<div class="hero"><div class="wrap">
+  <h1>통돌 Note 설명서</h1>
+  <p>지금 판 1.27.40 (2026년 10월 12일) 기준입니다. 설치 파일(zip)에 든 안내와 같은 글을 여기서도 보실 수 있습니다.</p>
+</div></div>
+
+<section id="docs"><div class="wrap">
+  <h2>설명서</h2>
+  <div class="grid">
+    <a class="card" href="install.html"><h3>설치 안내</h3><p>압축 풀기 → 설치 → 기관 정보 → 값 확인 → 공휴일. 처음 까실 때 이것부터 보세요.</p></a>
+    <a class="card" href="manual.html"><h3>관리자 사용설명서</h3><p>설정 · 대상자 · 배정 · 현장앱 · 월말 순서 · 청구 · 기록지 · 백업 · 새 버전 · 안 될 때. 급하시면 1장과 6장만.</p></a>
+    <a class="card" href="usb.html"><h3>USB 로 집에서 일하기</h3><p>사무실에서 USB 에 뜨고, 집에서 가져와 일하고, 다음 날 아침 다시 가져오는 순서.</p></a>
+  </div>
+  <p class="note">세 안내는 1.27.40 설치 파일에 든 것과 같은 글입니다. 화면의 이름은 모두 시범자료(가공 인물)입니다.</p>
+</div></section>
+
+<section id="new"><div class="wrap">
+  <h2>1.27.40 에서 바뀐 것</h2>
+  <ul>
+    <li>설정의 백업정보와 「USB 로 오간 자료」에 「USB 로 집에서 일하기 — 그림으로 보기」 단추가 생겼습니다.</li>
+    <li>USB 를 꽂고 켜면 떠야 할 「USB 에 이 PC 에 없는 것이 있습니다」 띠가 안 뜨거나 곧 사라지던 것을 고쳤습니다.</li>
+    <li>띠가 떠 있는 동안에는 저절로 뜨는 백업이 USB 에 뜨지 않습니다(이 컴퓨터 안에는 뜹니다). 가져오면 다시 USB 에도 뜹니다.</li>
+    <li>USB 에서 가져온 뒤 백업을 「따로 둘 곳」이 저쪽 컴퓨터의 폴더로 바뀌던 것을 고쳤습니다. 이제 컴퓨터마다 정해 둔 곳이 그대로 남습니다.</li>
+  </ul>
+  <p class="note">이미 깔아 쓰시는 곳은 프로그램이 하루 한 번 새 판을 확인해 화면 위 띠로 알려 드립니다. [지금 바꾸기]를 누르면 갈아 끼우고, 자료함은 건드리지 않습니다.</p>
+</div></section>
+
+<section id="plan"><div class="wrap">
+  <h2>무료 3개월과 구독</h2>
+  <table class="tbl">
+    <tr><th>무료 기간</th><td>처음 설정한 날부터 3개월 동안 모든 기능을 무료로 쓰실 수 있습니다.</td></tr>
+    <tr><th>끝나기 전</th><td>끝나기 10일 전부터 화면 위에 남은 날을 알려 주는 띠가 나옵니다.</td></tr>
+    <tr><th>끝나면</th><td>새로 쓰는 일(대상자·배정·실적·의뢰·메모, 제공인력 휴대폰 연결)이 잠깁니다. 넣어 두신 자료의 보기·출력·설정·백업·USB·새 버전 받기는 그대로 됩니다. 자료는 사라지지 않습니다.</td></tr>
+  </table>
+  <h3>구독하는 법</h3>
+  <ol class="steps">
+    <li><b>신청</b> — 문의 메일(<a href="mailto:onekey00a@gmail.com">onekey00a@gmail.com</a>)로 「통돌 Note 구독 신청」과 기관 이름·담당자 연락처를 보내 주세요.</li>
+    <li><b>안내 받기</b> — 이용료와 내는 방법은 신청하시면 메일로 안내해 드립니다.</li>
+    <li><b>구독 열쇠 받기</b> — 안내대로 마치시면 기관 전용 구독 열쇠를 메일로 보내 드립니다.</li>
+    <li><b>넣기</b> — 관리자 계정으로 <b>[설정] → 이 프로그램 → 구독 열쇠 넣기</b>에 받은 열쇠를 붙여 넣습니다(관리자만 할 수 있습니다).</li>
+    <li><b>확인</b> — 넣는 즉시 잠겼던 기능이 다시 열립니다. 인터넷 연결은 필요 없습니다.</li>
+  </ol>
+</div></section>
+
+<section id="remove"><div class="wrap">
+  <h2>프로그램을 지우려면</h2>
+  <p>통돌 Note 는 <code>C:\통돌Note</code> 폴더 하나에 프로그램과 자료가 모두 있습니다. 윈도의 「앱 및 기능」 목록에는 나오지 않으니, 아래처럼 손으로 지웁니다.</p>
+  <ol class="steps">
+    <li><b>먼저 백업</b> — 다시 쓸 가능성이 조금이라도 있으면 <code>C:\통돌Note\data</code> 폴더를 USB 등에 통째로 복사해 두세요. 지우면 되살릴 수 없습니다(만든 쪽에도 자료가 없습니다).</li>
+    <li><b>프로그램 끄기</b> — 브라우저 창을 닫고, 작업 표시줄의 통돌 Note(검은 창)를 닫습니다.</li>
+    <li><b>폴더 지우기</b> — 파일 탐색기에서 <code>C:\통돌Note</code> 폴더를 지웁니다. 「다른 프로그램이 쓰고 있다」고 나오면 PC 를 다시 켠 뒤 지웁니다.</li>
+    <li><b>바로가기 지우기</b> — 바탕화면과 시작 메뉴의 「통돌 Note」를 지웁니다.</li>
+    <li><b>휴지통 비우기</b> — 개인정보가 든 자료이니 휴지통까지 비워 주세요. 백업해 둔 USB 의 자료도 더 쓰지 않으실 거면 지웁니다.</li>
+  </ol>
+  <div class="box">윈도 예약 작업·시작 프로그램·레지스트리는 따로 남기지 않습니다. 폴더와 바로가기만 지우시면 끝납니다.</div>
+</div></section>
+
+<footer><div class="wrap">
+  문의: <a href="mailto:onekey00a@gmail.com">onekey00a@gmail.com</a> — 어르신 이름 등 개인정보는 보내지 마세요.<br>
+  <a href="../index.html">← 통돌 Note 쪽</a> · <a href="../../index.html">Voy.87 첫 쪽</a> · 화면의 이름은 모두 시범자료입니다.
+</div></footer>
+</body>
+</html>

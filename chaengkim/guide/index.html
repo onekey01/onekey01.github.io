@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>챙김 Note 설명서 — 설치 · 사용 안내 · 기관 유형 · 구독 · 지우기</title>
+<meta name="description" content="챙김 Note 0.2.1 의 설치와 사용 안내, 기관 유형별로 달라지는 것, 무료 90일과 구독, 프로그램 지우기.">
+<style>
+:root{--bg:#fbfaf7;--card:#fff;--ink:#1f2a2e;--sub:#5b6770;--line:#e4e1da;--main:#2f7a6b;--main2:#e6f2ef}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"맑은 고딕","Malgun Gothic","Apple SD Gothic Neo",sans-serif;line-height:1.7;font-size:17px;word-break:keep-all}
+a{color:var(--main)}
+.wrap{max-width:920px;margin:0 auto;padding:0 20px}
+header.top{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.logo{font-weight:800;font-size:20px;color:var(--main);text-decoration:none}
+nav a{margin-left:18px;text-decoration:none;color:var(--sub);font-size:15px}
+.hero{padding:48px 0 32px}
+.hero h1{font-size:30px;line-height:1.35;margin:0 0 10px}
+.hero p{color:var(--sub);margin:0}
+section{padding:40px 0;border-top:1px solid var(--line)}
+section h2{font-size:24px;margin:0 0 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;text-decoration:none;color:var(--ink)}
+a.card:hover{border-color:var(--main)}
+.card h3{margin:0 0 6px;font-size:18px;color:var(--main)}
+.card p{margin:0;color:var(--sub);font-size:16px}
+.tbl{width:100%;border-collapse:collapse;background:var(--card);margin-top:10px}
+.tbl th,.tbl td{border:1px solid var(--line);padding:10px 12px;text-align:left;font-size:16px;vertical-align:top}
+.tbl th{background:#f3f1ec;width:28%}
+ol.steps{padding-left:22px} ol.steps li{margin-bottom:10px}
+.note{color:var(--sub);font-size:15px}
+.box{background:var(--main2);border-radius:12px;padding:16px 20px;margin:14px 0}
+footer{padding:36px 0 60px;color:var(--sub);font-size:14px;border-top:1px solid var(--line)}
+@media (max-width:640px){.hero h1{font-size:24px}nav a{display:none}nav a:first-child{display:inline;margin-left:0;white-space:nowrap}.tbl th{width:36%}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="logo" href="../index.html">챙김 Note</a>
+  <nav><a href="../index.html">← 챙김 Note 쪽</a><a href="#docs">설명서</a><a href="#types">기관 유형</a><a href="#plan">무료와 구독</a><a href="#remove">지우기</a></nav>
+</div></header>
+<div class="hero"><div class="wrap">
+  <h1>챙김 Note 설명서</h1>
+  <p>지금 판 0.2.1 (2026년 10월 8일) 기준입니다. 설치본(zip)에 든 「사용 안내」와 같은 글을 여기서도 보실 수 있습니다.</p>
+</div></div>
+
+<section id="docs"><div class="wrap">
+  <h2>설명서</h2>
+  <div class="grid">
+    <a class="card" href="../index.html#install"><h3>설치 — 받기 · 풀기 · 켜기</h3><p>설치본 받는 곳과 처음 30분 순서. 준비물은 Windows 10/11 PC · 처음 켤 때 인터넷 · 빈자리 3GB · 프린터.</p></a>
+    <a class="card" href="manual.html"><h3>사용 안내 (전체)</h3><p>설치마법사 · 비밀번호·복구 열쇠 · 무료 기간 · AI 문장 제안 · 백업·PC 바꾸기 · 상담기록 · 사례관리 · 평가 점검 · 실적 · 양식 인쇄 · 자료가 있는 곳.</p></a>
+  </div>
+  <p class="note">「사용 안내」는 0.2.1 설치본에 든 것과 같은 글입니다.</p>
+</div></section>
+
+<section id="new"><div class="wrap">
+  <h2>0.2.1 에서 바뀐 것</h2>
+  <ul>
+    <li>AI 제안이 켜지지 않는 PC 에서, 까닭(윈도 파일이 없음)과 받는 곳을 [설정] 화면에 알려 줍니다.</li>
+    <li>그런 PC 에서는 AI 모델(약 2.5GB)을 받기 전에 먼저 알려, 쓰지 못할 것을 받지 않게 했습니다.</li>
+  </ul>
+  <p class="note">이미 깔아 쓰시는 곳은 프로그램이 새 판을 알려 드립니다. [설정] → 「프로그램 판 · 새 판 받기」에서 [지금 갈아타기]를 누르면 자료·백업·AI 모델은 그대로 두고 프로그램만 바뀝니다.</p>
+</div></section>
+
+<section id="types"><div class="wrap">
+  <h2>기관 유형마다 달라지는 것</h2>
+  <p>설치마법사 첫 화면에서 기관 유형을 고르면 사례관리 단계와 평가 점검 기준이 그 유형에 맞게 바뀝니다. 나중에 [설정]에서 바꿀 수 있습니다.</p>
+  <table class="tbl">
+    <tr><th>노인복지관 · 사회복지관</th><td>사례관리 8단계 · 2027년 노인·사회복지관 평가지표 기준 점검과 연도별 충족표</td></tr>
+    <tr><th>장애인복지관</th><td>개인별 서비스 기록 · 2026년 장애인복지관 평가지침 기준 점검</td></tr>
+    <tr><th>지역자활센터</th><td>Gateway 과정 · 2026년 자활사업 안내 기준 · 「자활 월별 보고」 메뉴가 더 생깁니다</td></tr>
+    <tr><th>기타 기관</th><td><b>해당하는 기관 유형이 없으면 「기타 기관」을 고르세요.</b> 평가지표 없이 상담·사례 기록용으로 씁니다 — 희망이음 사례관리 표준 10단계 · 상담 종류는 초기상담·일반상담·사후관리 · 평가 점검은 공통 항목만.</td></tr>
+  </table>
+  <p class="note">사업 분류 예시 틀도 기관 유형에 맞춰 미리 보여 드립니다. 예시는 처음 틀일 뿐이니 기관 규칙대로 고쳐 쓰세요.</p>
+</div></section>
+
+<section id="plan"><div class="wrap">
+  <h2>무료 90일과 구독</h2>
+  <table class="tbl">
+    <tr><th>무료 기간</th><td>처음 설정한 날부터 90일 동안 구독 기능까지 모두 무료로 쓰실 수 있습니다. 남은 날은 화면 맨 위와 [설정]의 무료 기간 칸에 보입니다.</td></tr>
+    <tr><th>끝나기 전</th><td>남은 날이 14일 아래로 내려가면 화면 위 띠가 주황색으로 바뀝니다.</td></tr>
+    <tr><th>끝나면</th><td>구독 기능 다섯 가지(평가 구멍 모아 보기 · 연도별 충족표 · 지표별 증빙 · 실적 보고 · 기관 양식 채우기)와 한 달 20회를 넘는 자동 작성만 잠깁니다. 기록 쓰기·보기·인쇄·백업과 자동 작성 한 달 20회는 그대로 됩니다.</td></tr>
+  </table>
+  <h3>구독하는 법</h3>
+  <ol class="steps">
+    <li><b>기관 번호 확인</b> — [설정] → 무료 기간 칸에 있는 <b>기관 번호 8글자</b>를 적어 둡니다.</li>
+    <li><b>신청</b> — 문의 메일(<a href="mailto:onekey00a@gmail.com">onekey00a@gmail.com</a>)로 「챙김 Note 구독 신청」과 기관 이름·기관 번호 8글자·담당자 연락처를 보내 주세요.</li>
+    <li><b>안내 받기</b> — 이용료와 내는 방법은 신청하시면 메일로 안내해 드립니다.</li>
+    <li><b>여는 글자 받기</b> — 안내대로 마치시면 그 기관 전용 여는 글자(CK1- 로 시작)를 메일로 보내 드립니다.</li>
+    <li><b>넣기</b> — <b>[설정] → 무료 기간 칸 아래 「구독 기능 열기」</b>에 받은 여는 글자를 붙여 넣고 [여는 글자 넣기]를 누릅니다.</li>
+    <li><b>확인</b> — 넣는 즉시 구독 기능이 열립니다. 인터넷 연결은 필요 없습니다. 남은 구독 기간은 기관 번호에 붙어 있어, PC 를 바꿔 백업을 되살려도 이어집니다.</li>
+  </ol>
+</div></section>
+
+<section id="remove"><div class="wrap">
+  <h2>프로그램을 지우려면</h2>
+  <p>챙김 Note 는 설치하지 않고 압축을 푼 폴더(예: <code>C:\챙김Note</code>) 하나에 프로그램·자료·백업·AI 모델이 모두 있습니다. 윈도의 「앱 및 기능」 목록에는 나오지 않으니, 아래처럼 손으로 지웁니다.</p>
+  <ol class="steps">
+    <li><b>먼저 백업</b> — [설정]의 [지금 백업]으로 한 부 떠서 프로그램 폴더 안 <code>backups</code> 폴더를 USB 등에 복사하고, <b>복구 열쇠 종이</b>와 관리자 비밀번호를 함께 보관하세요. 둘 다 없으면 백업도 열 수 없습니다.</li>
+    <li><b>프로그램 끄기</b> — 검은 창을 닫습니다.</li>
+    <li><b>폴더 지우기</b> — 풀어 둔 폴더를 통째로 지웁니다. 자료·백업·AI 모델(약 2.5GB)이 함께 지워집니다.</li>
+    <li><b>바로가기·휴지통</b> — 바로가기를 따로 만들어 두셨으면 그것도 지우고, 휴지통을 비웁니다.</li>
+  </ol>
+  <div class="box">윈도 예약 작업·시작 프로그램·레지스트리는 따로 남기지 않습니다. 구독 중이었다면 남은 구독 기간은 기관 번호에 붙어 있어, 나중에 백업을 되살리면 이어집니다.</div>
+</div></section>
+
+<footer><div class="wrap">
+  문의: <a href="mailto:onekey00a@gmail.com">onekey00a@gmail.com</a> · 평일 2일 안에 답변드립니다 — 이용자 이름 등 개인정보는 보내지 마세요.<br>
+  <a href="../index.html">← 챙김 Note 쪽</a> · <a href="../../index.html">Voy.87 첫 쪽</a> · <a href="../terms.html">이용약관(시험판)</a> · 챙김 Note 시험판 · Voy.87
+</div></footer>
+</body>
+</html>
