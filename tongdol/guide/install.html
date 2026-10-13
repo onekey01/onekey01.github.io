@@ -228,6 +228,20 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
   .안찍기{display:none !important}
 }
 
+
+/* ── v12 기능별 조각 그림 (2026-10-13) ─────────────────────── */
+.조각묶음{display:flex;flex-direction:column;gap:14px;margin:.4rem 0 .2rem}
+.조각묶음.둘{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));align-items:start}
+.조각{margin:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--paper);
+  box-shadow:0 1px 2px rgba(27,29,26,.06),0 6px 18px rgba(27,29,26,.06)}
+.조각 .조각이름{display:flex;gap:.55rem;align-items:center;padding:.5rem .9rem;background:var(--green-soft);
+  color:var(--green-deep);font-weight:700;font-size:.92rem;border-bottom:1px solid var(--line)}
+.조각 .조각이름 b{display:inline-grid;place-items:center;min-width:1.55rem;height:1.55rem;border-radius:99px;
+  background:var(--green-deep);color:#fff;font-size:.8rem;font-family:var(--숫자)}
+.조각 .조각속{padding:.6rem;background:var(--sunk);text-align:center}
+.조각 img{display:inline-block;max-width:100%;height:auto;border-radius:6px;image-rendering:auto}
+.전체보기{display:inline-block;margin:.5rem 0 0;font-size:.88rem;color:var(--green);text-decoration:underline}
+@media print{.조각{break-inside:avoid;box-shadow:none}.전체보기{display:none}}
 </style>
 </head>
 <body><div style="position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #ddd;padding:8px 16px;font:15px/1.5 '맑은 고딕','Malgun Gothic',sans-serif"><a href="index.html" style="color:#2f5239;text-decoration:none;font-weight:700">← 통돌 Note 설명서 목록</a> <span style="color:#777">· 통돌 Note 1.27.40 설치본에 든 안내와 같은 글입니다</span></div>
@@ -367,13 +381,13 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
     <p class="걸림">3분 · 처음 한 번</p>
     <p>검은 창이 하나 뜨고, 곧 <b>브라우저가 저절로 열립니다.</b>
        이 화면이 나옵니다.</p>
-    <figure class="그림"><img src="img/install_02.png" alt=""><figcaption>처음 켜면 이 화면입니다. <b>왼쪽 위에 「통돌 Note」</b>가 보이면 제대로 켜진 것입니다.</figcaption></figure>
+    <figure class="그림"><div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>기관 개설 화면</div><div class="조각속"><img src="img/c/install_02_a.png" alt="기관 개설 화면" style="width:651px" loading="lazy"></div></div></div><a class="전체보기" href="img/install_02.png" target="_blank" rel="noopener">이 화면 전체를 크게 보기 ↗</a><figcaption>처음 켜면 이 화면입니다. <b>왼쪽 위에 「통돌 Note」</b>가 보이면 제대로 켜진 것입니다.</figcaption></figure>
     <p>넣으실 것은 두 가지뿐입니다.</p>
     <ul>
       <li>기관명 · 대표 전화 · 주소</li>
       <li>관리자 이름 · 아이디 · 비밀번호</li>
     </ul>
-    <figure class="그림"><img src="img/install_03.png" alt=""><figcaption>이렇게 채우시면 됩니다. <span class='짚음'>아이디와 비밀번호</span>는 이 프로그램에만 쓰는 것입니다 &mdash; 다른 데서 쓰시는 것을 넣지 마세요.</figcaption></figure>
+    <figure class="그림"><div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>기관 정보를 넣은 모습</div><div class="조각속"><img src="img/c/install_03_a.png" alt="기관 정보를 넣은 모습" style="width:651px" loading="lazy"></div></div></div><a class="전체보기" href="img/install_03.png" target="_blank" rel="noopener">이 화면 전체를 크게 보기 ↗</a><figcaption>이렇게 채우시면 됩니다. <span class='짚음'>아이디와 비밀번호</span>는 이 프로그램에만 쓰는 것입니다 &mdash; 다른 데서 쓰시는 것을 넣지 마세요.</figcaption></figure>
     <div class="큰일">
       <p class="머릿말">비밀번호를 적어 두세요</p>
       <p style="margin-bottom:0">되돌릴 수 없는 형태로 저장됩니다.
@@ -392,7 +406,7 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
        <span class="뜬말">이 값들이 맞는지만 봐 주세요</span> 화면이 뜹니다.
        <b>이 화면을 지나야 홈이 열립니다.</b></p>
 
-    <figure class="그림"><img src="img/install_04.png" alt=""><figcaption>기관 정보를 넣으면 곧바로 이 화면이 뜹니다. <b>값이 이미 다 채워져 있습니다.</b> 맨 아래 초록 단추 하나로 끝납니다.</figcaption></figure>
+    <figure class="그림"><div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>① 우리 지자체 이름</div><div class="조각속"><img src="img/c/manual_03_a.png" alt="① 우리 지자체 이름" style="width:624px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>② 서비스 단가</div><div class="조각속"><img src="img/c/manual_03_b.png" alt="② 서비스 단가" style="width:624px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>3</b>③ 지원한도</div><div class="조각속"><img src="img/c/manual_03_c.png" alt="③ 지원한도" style="width:624px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>4</b>④ 서비스별 월 한도</div><div class="조각속"><img src="img/c/manual_03_d.png" alt="④ 서비스별 월 한도" style="width:624px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>5</b>⑤ 식사지원 비대면 배달</div><div class="조각속"><img src="img/c/manual_03_e.png" alt="⑤ 식사지원 비대면 배달" style="width:624px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>6</b>⑥ 본인부담 구간</div><div class="조각속"><img src="img/c/manual_03_f.png" alt="⑥ 본인부담 구간" style="width:624px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>7</b>끝 — 이 값으로 시작</div><div class="조각속"><img src="img/c/manual_03_g.png" alt="끝 — 이 값으로 시작" style="width:624px" loading="lazy"></div></div></div><a class="전체보기" href="img/install_04.png" target="_blank" rel="noopener">이 화면 전체를 크게 보기 ↗</a><figcaption>기관 정보를 넣으면 곧바로 이 화면이 뜹니다. <b>값이 이미 다 채워져 있습니다.</b> 맨 아래 초록 단추 하나로 끝납니다.</figcaption></figure>
 
     <div class="못박기">새로 적는 화면이 아닙니다.
       2026년 한 지자체의 편람 기준으로 값이 이미 다 채워져 있습니다.</div>
@@ -436,7 +450,7 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
        설날·추석은 해마다 날짜가 옮겨 다녀 <b>프로그램이 알지 못합니다.</b></p>
     <p>달력이 있어야 넣을 수 있어 설치할 때는 안 묻습니다.
        대신 넣으실 때까지 <b>홈 화면이 알려 드립니다.</b></p>
-    <figure class="그림"><img src="img/install_06.png" alt=""><figcaption>홈 화면입니다. <span class='짚음'>공휴일이 없으면 위쪽에 한 줄</span>로 알려 드립니다. 넣고 나면 그 줄은 사라집니다.</figcaption></figure>
+    <figure class="그림"><div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>설정을 한 번 봐 주세요 — 노란 띠</div><div class="조각속"><img src="img/c/manual_04_a.png" alt="설정을 한 번 봐 주세요 — 노란 띠" style="width:1100px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>이용 중·대기·중단·종결 대상 숫자</div><div class="조각속"><img src="img/c/manual_04_b.png" alt="이용 중·대기·중단·종결 대상 숫자" style="width:1100px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>3</b>손댈 것 — 한도·청구·식사 경고</div><div class="조각속"><img src="img/c/manual_04_c.png" alt="손댈 것 — 한도·청구·식사 경고" style="width:1100px" loading="lazy"></div></div></div><a class="전체보기" href="img/install_06.png" target="_blank" rel="noopener">이 화면 전체를 크게 보기 ↗</a><figcaption>홈 화면입니다. <span class='짚음'>공휴일이 없으면 위쪽에 한 줄</span>로 알려 드립니다. 넣고 나면 그 줄은 사라집니다.</figcaption></figure>
   </div>
 </div>
 
@@ -459,7 +473,7 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
 </table></div>
 
 <h2>자료는 어디에 있나요</h2>
-<figure class="그림"><img src="img/install_07.png" alt=""><figcaption><span class='짚음'>설정 → 일반</span> 의 오른쪽 아래에 <b>백업정보</b>가 있습니다. 자료가 어디 있는지, 마지막으로 언제 떠 두었는지가 그대로 보입니다.</figcaption></figure>
+<figure class="그림"><div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>보기 — 밝기·글자 크기</div><div class="조각속"><img src="img/c/manual_14_a.png" alt="보기 — 밝기·글자 크기" style="width:627px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>근무시간 · 컴퓨터 종료 예약</div><div class="조각속"><img src="img/c/manual_14_b.png" alt="근무시간 · 컴퓨터 종료 예약" style="width:627px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>3</b>구독</div><div class="조각속"><img src="img/c/manual_14_c.png" alt="구독" style="width:625px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>4</b>업데이트 안내</div><div class="조각속"><img src="img/c/manual_14_d.png" alt="업데이트 안내" style="width:625px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>5</b>사무실 안에서 열기</div><div class="조각속"><img src="img/c/manual_14_e.png" alt="사무실 안에서 열기" style="width:625px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>6</b>백업정보 · 따로 둘 곳</div><div class="조각속"><img src="img/c/manual_14_f.png" alt="백업정보 · 따로 둘 곳" style="width:625px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>7</b>USB 로 오간 자료</div><div class="조각속"><img src="img/c/manual_14_g.png" alt="USB 로 오간 자료" style="width:625px" loading="lazy"></div></div></div><a class="전체보기" href="img/install_07.png" target="_blank" rel="noopener">이 화면 전체를 크게 보기 ↗</a><figcaption><span class='짚음'>설정 → 일반</span> 의 오른쪽 아래에 <b>백업정보</b>가 있습니다. 자료가 어디 있는지, 마지막으로 언제 떠 두었는지가 그대로 보입니다.</figcaption></figure>
 <div class="검은창"><span class="밝게">C:\통돌Note\data</span></div>
 <p>이 폴더 한 곳입니다. <b>통째로 복사하면 그것이 백업입니다.</b>
    프로그램도 여섯 시간마다 알아서 한 부씩 떠 둡니다

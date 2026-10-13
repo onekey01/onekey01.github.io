@@ -1,7 +1,44 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8"><title>챙김 Note 사용 안내</title>
-<style>body{font:15.5px/1.75 "Malgun Gothic",system-ui,sans-serif;max-width:860px;margin:30px auto;padding:0 16px;color:#1f2328}h1{font-size:23px}h2{font-size:18px;margin-top:30px;border-bottom:2px solid #d9dde3;padding-bottom:4px}h3{font-size:16px;margin:18px 0 4px}code{background:#eef0f2;padding:1px 5px;border-radius:4px}.w{background:#fff4e0;border-left:4px solid #9a5b00;padding:8px 12px;border-radius:6px;margin:10px 0}.b{background:#eaf3ff;border-left:4px solid #1f5fa8;padding:8px 12px;border-radius:6px;margin:10px 0}.toc{font-size:14px;color:#444;line-height:2}.toc a{margin-right:10px;white-space:nowrap}table{border-collapse:collapse;margin:8px 0}td,th{border:1px solid #cfd4da;padding:5px 9px;text-align:left;vertical-align:top}th{background:#f3f5f7}@media print{.toc{display:none}h2{break-after:avoid}}</style></head><body><div style="position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #ddd;padding:8px 16px;font:15px/1.5 '맑은 고딕','Malgun Gothic',sans-serif"><a href="index.html" style="color:#2f5239;text-decoration:none;font-weight:700">← 챙김 Note 설명서 목록</a> <span style="color:#777">· 챙김 Note 0.2.1 설치본에 든 안내와 같은 글입니다</span></div>
+<style>
+:root{--ink:#1b1d1a;--ink2:#43483f;--muted:#6f766c;--line:#e2e5df;--paper:#fff;--ground:#f2f5f1;--sunk:#f7f9f6;
+ --green:#3f6b4a;--green-deep:#2f5239;--green-soft:#e8f0e9;--warn:#8a5a1c;--warn-soft:#fdf3e3;--warn-line:#e8d3ad;
+ --blue:#1f5fa8;--blue-soft:#eaf3ff;--숫자:"Segoe UI","맑은 고딕",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font:16px/1.85 "맑은 고딕","Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;word-break:keep-all;overflow-wrap:anywhere}
+.종이{max-width:56rem;margin:0 auto 3rem;background:var(--paper);box-shadow:0 1px 2px rgba(27,29,26,.05),0 10px 40px rgba(27,29,26,.07);padding:0 2.4rem 2.5rem;border-radius:0 0 16px 16px}
+.종이>div:first-child{margin:0 -2.4rem 0 !important}
+h1{font-size:1.9rem;letter-spacing:-.02em;margin:2rem 0 .2rem;color:var(--green-deep)}
+.판{font-size:.85rem;color:var(--muted);margin:0 0 1rem}
+h2{font-size:1.32rem;letter-spacing:-.01em;margin:3rem 0 .9rem;padding:.55rem .9rem;background:var(--green-soft);border-left:5px solid var(--green-deep);border-radius:0 10px 10px 0;color:var(--green-deep)}
+h3{font-size:1.08rem;margin:1.6rem 0 .4rem;color:var(--ink2)}
+p,li{color:var(--ink)}
+ol,ul{padding-left:1.4rem}
+li{margin:.3rem 0}
+li::marker{color:var(--green);font-weight:700}
+b{color:#111}
+code{background:#eef1ec;border:1px solid var(--line);padding:0 .35rem;border-radius:5px;font-size:.92em}
+.toc{display:flex;flex-wrap:wrap;gap:.4rem;font-size:.9rem;color:var(--muted);line-height:1.6;background:var(--sunk);border:1px solid var(--line);border-radius:12px;padding:.8rem 1rem}
+.toc a{display:inline-block;padding:.2rem .7rem;border:1px solid var(--line);border-radius:99px;background:#fff;color:var(--green-deep);text-decoration:none;white-space:nowrap;margin:0}
+.toc a:hover{background:var(--green-soft)}
+.w{background:var(--warn-soft);border:1px solid var(--warn-line);border-left:5px solid var(--warn);padding:.7rem 1rem;border-radius:10px;margin:.9rem 0}
+.b{background:var(--blue-soft);border-left:5px solid var(--blue);padding:.7rem 1rem;border-radius:10px;margin:.9rem 0}
+table{border-collapse:separate;border-spacing:0;margin:.7rem 0;width:100%;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:.95rem}
+td,th{border-bottom:1px solid var(--line);padding:.5rem .8rem;text-align:left;vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{background:var(--green-soft);color:var(--green-deep)}
+a{color:var(--green)}
+.조각묶음{display:flex;flex-direction:column;gap:14px;margin:.6rem 0 1.2rem}
+.조각{margin:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--paper);box-shadow:0 1px 2px rgba(27,29,26,.06),0 6px 18px rgba(27,29,26,.06)}
+.조각 .조각이름{display:flex;gap:.55rem;align-items:center;padding:.5rem .9rem;background:var(--green-soft);color:var(--green-deep);font-weight:700;font-size:.92rem;border-bottom:1px solid var(--line)}
+.조각 .조각이름 b{display:inline-grid;place-items:center;min-width:1.55rem;height:1.55rem;border-radius:99px;background:var(--green-deep);color:#fff;font-size:.8rem;font-family:var(--숫자)}
+.조각 .조각속{padding:.7rem;background:var(--sunk);text-align:center}
+.조각 img{display:inline-block;max-width:100%;height:auto;border-radius:6px;border:1px solid var(--line)}
+.그림주{font-size:.8rem;color:var(--muted);margin:-.2rem 0 0;text-align:right}
+@media (max-width:700px){.종이{padding:0 1rem 2rem}.종이>div:first-child{margin:0 -1rem !important}h1{font-size:1.5rem}}
+@media print{body{background:#fff}.종이{box-shadow:none;max-width:none}.toc{display:none}h2{break-after:avoid}.조각{break-inside:avoid;box-shadow:none}}
+</style></head><body><div class="종이"><div style="position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #ddd;padding:8px 16px;font:15px/1.5 '맑은 고딕','Malgun Gothic',sans-serif"><a href="index.html" style="color:#2f5239;text-decoration:none;font-weight:700">← 챙김 Note 설명서 목록</a> <span style="color:#777">· 챙김 Note 0.2.1 설치본에 든 안내와 같은 글입니다</span></div>
 <h1>챙김 Note — 사용 안내</h1>
-<p style="font-size:13.5px;color:#555">v3 · 2026-10-07 · 설치본(챙김Note.exe)용</p>
+<p class="판">v3 · 그림 넣은 판 2026-10-13 · 2026-10-07 · 설치본(챙김Note.exe)용</p>
 <p class="toc">바로 가기: <a href="#first">처음 30분</a><a href="#run">켜기·끄기</a><a href="#look">화면 둘러보기</a><a href="#wizard">설치마법사</a><a href="#pw">비밀번호·복구 열쇠</a><a href="#trial">무료 기간·구독 기능</a><a href="#ai">AI 문장 제안</a><a href="#backup">백업·PC 바꾸기</a><a href="#counsel">상담기록</a><a href="#case">사례관리</a><a href="#eval">평가 점검</a><a href="#s5">연계·고충·권익·척도</a><a href="#s6">사업 분류·실적·증빙</a><a href="#print">동의서·양식 인쇄</a><a href="#files">자료가 있는 곳</a></p>
 
 <h2 id="first">처음 30분 — 이 순서대로 해 보세요</h2>
@@ -27,6 +64,7 @@
 </ul>
 
 <h2 id="look">화면 둘러보기</h2>
+<div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>왼쪽 메뉴 — 매일 · 기록 관리 · 평가·보고</div><div class="조각속"><img src="img/ck_menu.png" alt="왼쪽 메뉴 — 매일 · 기록 관리 · 평가·보고" style="width:180px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>맨 위 한 줄 — 무료 기간 남은 날</div><div class="조각속"><img src="img/ck_trialbar.png" alt="맨 위 한 줄 — 무료 기간 남은 날" style="width:820px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>3</b>홈 — 오늘의 숫자</div><div class="조각속"><img src="img/ck_home_kpi.png" alt="홈 — 오늘의 숫자" style="width:820px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>4</b>홈 — 기한 있는 포스트잇</div><div class="조각속"><img src="img/ck_home_01.png" alt="홈 — 기한 있는 포스트잇" style="width:524px" loading="lazy"></div></div><p class="그림주">그림은 시범자료(가공 인물)로 켠 챙김 Note 0.2.1 화면입니다.</p></div>
 <ul>
 <li><b>왼쪽 메뉴 세 묶음</b> — <b>매일</b>(홈 · 이용자 · 상담기록 · 사례관리 · 연계·자원) / <b>기록 관리</b>(고충·권익 · 척도·만족도 · 기관 양식) / <b>평가·보고</b>(평가 점검 · 지표별 증빙 · 모의 추출 · 실적 보고 · 지역자활센터는 자활 월별 보고) / 설정.</li>
 <li><b>창이 좁으면</b> 메뉴가 접힙니다. 윗줄의 <b>[☰ 메뉴]</b>를 눌러 여닫으세요.</li>
@@ -60,6 +98,7 @@
 </ul>
 
 <h2 id="pw">관리자 비밀번호 · 복구 열쇠</h2>
+<div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>[설정] → 관리자 비밀번호 · 복구 열쇠</div><div class="조각속"><img src="img/ck_settings_06.png" alt="[설정] → 관리자 비밀번호 · 복구 열쇠" style="width:524px" loading="lazy"></div></div><p class="그림주">그림은 시범자료(가공 인물)로 켠 챙김 Note 0.2.1 화면입니다.</p></div>
 <ul>
 <li>켤 때마다 관리자 비밀번호를 넣어야 자료가 열립니다. 자료·동의서 스캔본·첨부·백업은 모두 <b>암호화</b>되어 있습니다.</li>
 <li>비밀번호를 잊었을 때: 켜는 화면의 <b>[비밀번호를 잊었어요]</b> → 복구 열쇠 넣고 새 비밀번호 정하기.</li>
@@ -69,6 +108,7 @@
 </ul>
 
 <h2 id="trial">무료 기간 90일 · 구독 기능</h2>
+<div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>[설정] → 무료 기간 칸</div><div class="조각속"><img src="img/ck_settings_00.png" alt="[설정] → 무료 기간 칸" style="width:524px" loading="lazy"></div></div><p class="그림주">그림은 시범자료(가공 인물)로 켠 챙김 Note 0.2.1 화면입니다.</p></div>
 <ul>
 <li><b>처음 설정한 날부터 90일</b> 동안은 모든 기능을 쓰실 수 있습니다. 화면 맨 위에 <b>「무료 기간 N일 남음 · 끝나는 날」</b>이 보이고, 14일 아래로 남으면 주황색으로 바뀝니다. [설정] → <b>무료 기간</b> 칸에서 처음 설정한 날·며칠째·끝나는 날·이번 달 자동 작성 횟수를 볼 수 있습니다.</li>
 <li><b>91일째부터</b>도 <b>기록 쓰기·보기·인쇄·백업은 그대로</b> 됩니다. 아래 다섯 가지와 자동 작성 한 달 21회째부터만 잠깁니다(메뉴에 🔒 표시).
@@ -82,6 +122,7 @@
 </ul>
 
 <h2 id="ai">AI 문장 제안 · AI 모델 받기</h2>
+<div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>[설정] → AI 문장 제안 칸 (모델을 아직 받지 않은 PC 의 모습)</div><div class="조각속"><img src="img/ck_settings_08.png" alt="[설정] → AI 문장 제안 칸 (모델을 아직 받지 않은 PC 의 모습)" style="width:524px" loading="lazy"></div></div><p class="그림주">그림은 시범자료(가공 인물)로 켠 챙김 Note 0.2.1 화면입니다.</p></div>
 <ul>
 <li>「정리하기」를 누르면 <b>규칙판</b>(자동 작성 도우미)이 공식 기록을 바로 만들어 줍니다. 여기에 더해 <b>AI 문장 제안</b>(보라색)이 뒤에서 한 문장씩 도착합니다. AI 는 이 PC 안에서만 돌고, 기록을 밖으로 보내지 않습니다.</li>
 <li><b>AI 모델(약 2.5GB)은 설치본에 들어 있지 않습니다.</b> 처음 설정을 마치면 프로그램이 <b>스스로 받기 시작</b>합니다. 따로 누르실 것이 없습니다. 빠른 인터넷이면 몇 분, 느리면 30분 넘게 걸릴 수 있습니다.</li>
@@ -95,6 +136,7 @@
 </ul>
 
 <h2 id="backup">백업 · PC를 바꿀 때</h2>
+<div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>[설정] → 백업 · 복원</div><div class="조각속"><img src="img/ck_settings_05.png" alt="[설정] → 백업 · 복원" style="width:524px" loading="lazy"></div></div><p class="그림주">그림은 시범자료(가공 인물)로 켠 챙김 Note 0.2.1 화면입니다.</p></div>
 <ul>
 <li>켤 때마다 <b>하루 한 번 자동 백업</b>합니다. 자동 백업은 최근 10개만 남기고 옛 것부터 지웁니다. [설정]의 <b>[지금 백업]</b>으로 만든 수동 백업은 저절로 지워지지 않습니다.</li>
 <li>백업은 프로그램 폴더 안 <code>backups</code> 폴더에 <b>암호화</b>되어 쌓입니다. <b>USB나 외장 하드에 폴더째 복사</b>해 두세요. PC가 고장 나면 이 사본이 유일한 길입니다.</li>
@@ -105,9 +147,11 @@
 <li>백업을 고르고, 그 백업을 만들 때의 관리자 비밀번호(또는 복구 열쇠)를 넣습니다.</li></ol>
 
 <h2>시범자료 (연습용)</h2>
+<div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>[설정] → 시범자료</div><div class="조각속"><img src="img/ck_settings_14.png" alt="[설정] → 시범자료" style="width:524px" loading="lazy"></div></div><p class="그림주">그림은 시범자료(가공 인물)로 켠 챙김 Note 0.2.1 화면입니다.</p></div>
 <p>[설정] → 시범자료 — <b>[시범자료 넣기]</b>는 가공 인물 30명(늘품군)을 넣고, <b>[시범자료 지우기]</b>는 시범자료만 지웁니다(직접 등록한 이용자는 그대로). 실제 이용자를 넣기 전에 연습용으로 쓰세요.</p>
 
 <h2>이용자 · 동의서 · 포스트잇</h2>
+<div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>이용자 화면 맨 위 — 관심 표시·동의서 상태</div><div class="조각속"><img src="img/ck_client_00.png" alt="이용자 화면 맨 위 — 관심 표시·동의서 상태" style="width:820px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>기본정보 · 보호자</div><div class="조각속"><img src="img/ck_client_01.png" alt="기본정보 · 보호자" style="width:524px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>3</b>동의서 3종 — 받음 등록 · 서식 인쇄</div><div class="조각속"><img src="img/ck_client_02.png" alt="동의서 3종 — 받음 등록 · 서식 인쇄" style="width:524px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>4</b>포스트잇 붙이기</div><div class="조각속"><img src="img/ck_client_07.png" alt="포스트잇 붙이기" style="width:820px" loading="lazy"></div></div><p class="그림주">그림은 시범자료(가공 인물)로 켠 챙김 Note 0.2.1 화면입니다.</p></div>
 <ul>
 <li><b>이용자</b>: 등록·수정 (주민등록번호는 받지 않음, 생년월일·성별 필수), 보호자 최대 3명, 관심 표시, 기관 유형별 추가 칸</li>
 <li><b>동의서 3종</b> (개인정보 · 민감정보 · 서비스): 미회수 → 받음(동의일·동의자·보관 위치) → 철회. 스캔 저장을 켜면 <code>data\동의서\종류\연도\</code> 로 자동 분류해 <b>암호화</b> 저장 (챙김 Note 화면에서만 열림)</li>
@@ -117,6 +161,7 @@
 </ul>
 
 <h2 id="counsel">상담기록</h2>
+<div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>상담 종류 · 일시 · 방법 · 대상 · 상담자</div><div class="조각속"><img src="img/ck_cwrite_before_01.png" alt="상담 종류 · 일시 · 방법 · 대상 · 상담자" style="width:466px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>메모를 짧게 쓰고 [정리하기 →]</div><div class="조각속"><img src="img/ck_cwrite_after_02.png" alt="메모를 짧게 쓰고 [정리하기 →]" style="width:466px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>3</b>바로 나오는 공식 기록 — 문장마다 📌·× · [+ 문장]</div><div class="조각속"><img src="img/ck_cwrite_after_04.png" alt="바로 나오는 공식 기록 — 문장마다 📌·× · [+ 문장]" style="width:583px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>4</b>평가 점검 — 메모에서 찾은 단서를 '체크할까요?'로</div><div class="조각속"><img src="img/ck_cwrite_after_03.png" alt="평가 점검 — 메모에서 찾은 단서를 '체크할까요?'로" style="width:466px" loading="lazy"></div></div><p class="그림주">그림은 시범자료(가공 인물)로 켠 챙김 Note 0.2.1 화면입니다.</p></div>
 <ol>
 <li><b>[상담기록] → [+ 상담기록 쓰기]</b> → 이용자 고르기 (또는 이용자 화면의 [+ 상담기록 쓰기])</li>
 <li>상담 종류 · 일시 · 방법 · 대상 · 상담자를 고릅니다. 전문상담이면 분야·개별/집단, 정보제공상담이면 외부 전문가, 사후관리면 "어느 상담의 후속인지" 칸이 나옵니다. 화면 위 <b>'사업'</b> 칸에서 사업 분류를 붙일 수 있습니다.</li>
@@ -132,6 +177,7 @@
 <p>상담 종류는 [설정] → 상담 종류에서 더하거나 뺄 수 있습니다.</p>
 
 <h2 id="case">사례관리</h2>
+<div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>사례관리 목록 — 단계 막대가 한눈에</div><div class="조각속"><img src="img/ck_cases_00.png" alt="사례관리 목록 — 단계 막대가 한눈에" style="width:820px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>사례 화면의 단계 막대 — 눌러서 그 단계 문서를 씀</div><div class="조각속"><img src="img/ck_case_stepbar.png" alt="사례 화면의 단계 막대 — 눌러서 그 단계 문서를 씀" style="width:820px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>3</b>타임라인 — 단계 문서 · 과정기록 · 사례회의</div><div class="조각속"><img src="img/ck_case_01.png" alt="타임라인 — 단계 문서 · 과정기록 · 사례회의" style="width:629px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>4</b>이 사례의 평가 점검</div><div class="조각속"><img src="img/ck_case_02.png" alt="이 사례의 평가 점검" style="width:420px" loading="lazy"></div></div><p class="그림주">그림은 시범자료(가공 인물)로 켠 챙김 Note 0.2.1 화면입니다.</p></div>
 <ol>
 <li><b>[사례관리] → [+ 사례 열기]</b> (또는 이용자 화면의 [+ 사례 열기]) — 사례 종류, 주 사례관리자·공동사례관리자, 접수일(자활은 의뢰일)을 넣습니다.
   장애인복지관은 사례관리 / 개인별 서비스(사회·의료·직업재활), 자활센터는 자활사례관리(Gateway 거침 / 바로 사업단)입니다.</li>
@@ -152,6 +198,7 @@
 </ol>
 
 <h2 id="eval">평가 점검 <span style="font-size:13px;color:#777">(평가 구멍 모아 보기 · 연도별 충족표는 구독 기능)</span></h2>
+<div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>홈 → 평가 구멍 카드</div><div class="조각속"><img src="img/ck_home_00.png" alt="홈 → 평가 구멍 카드" style="width:820px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>평가 구멍 모아 보기 — 묶음마다 줄을 누르면 그 기록으로</div><div class="조각속"><img src="img/ck_eval_00.png" alt="평가 구멍 모아 보기 — 묶음마다 줄을 누르면 그 기록으로" style="width:820px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>3</b>연도별 충족표 — 채운 수/대상 수(%)</div><div class="조각속"><img src="img/ck_eval_year_00.png" alt="연도별 충족표 — 채운 수/대상 수(%)" style="width:820px" loading="lazy"></div></div><p class="그림주">그림은 시범자료(가공 인물)로 켠 챙김 Note 0.2.1 화면입니다.</p></div>
 <p>새 평가 기준을 만든 것이 아니라, 기록에 이미 있는 점검(사례 경고 · 상담 평가 점검 · 동의서 등)을 <b>기관 전체</b>와 <b>연도별</b>로 모아 보는 화면입니다.</p>
 <ol>
 <li><b>홈 → 평가 구멍</b> 카드: 지금 빠진 것이 몇 건인지 묶음별로 보여 줍니다. [모아 보기]를 누르면 평가 점검 화면으로 갑니다.</li>
@@ -165,6 +212,7 @@
 </ol>
 
 <h2 id="s5">연계·자원 · 고충·권익 · 척도·만족도</h2>
+<div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>연계·자원 — 연도·유형·결과로 거르기</div><div class="조각속"><img src="img/ck_links_00.png" alt="연계·자원 — 연도·유형·결과로 거르기" style="width:820px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>고충 대장 — 처리 기한이 함께 보임</div><div class="조각속"><img src="img/ck_grievances_00.png" alt="고충 대장 — 처리 기한이 함께 보임" style="width:820px" loading="lazy"></div></div><p class="그림주">그림은 시범자료(가공 인물)로 켠 챙김 Note 0.2.1 화면입니다.</p></div>
 <h3>연계·자원 (메뉴 '연계·자원')</h3>
 <ul>
 <li><b>연계·의뢰 건</b>: 이용자 · 방향 · 유형(7종) · 상대 기관 · 날짜 · 내용 · 전달 방법 · 결과. 연도·유형·결과로 거릅니다. 결과를 '연계됨'으로 두면 결과일이 들어갑니다. 상담기록의 [연계 만들까요?]로 시작하면 내용이 채워져 열립니다.</li>
@@ -188,6 +236,7 @@
 <p>연계·의뢰 건 / 외부 회의·네트워크 / 권익옹호 사례 / 해마다 회의·교육 — 네 곳에 파일을 붙일 수 있습니다(기록을 한 번 저장한 뒤). jpg·png·pdf·hwp·hwpx·docx, 한 파일 20MB, 한 건에 10개까지. <code>data\첨부</code> 에 <b>암호화</b>해 두며 백업에 함께 들어갑니다. 지우기는 없고 '사용 안 함'으로 숨깁니다.</p>
 
 <h2 id="s6">사업 분류 · 실적 보고 · 지표별 증빙 · 모의 추출</h2>
+<div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>실적 보고 — 기간·기록 종류 고르기</div><div class="조각속"><img src="img/ck_perf_00.png" alt="실적 보고 — 기간·기록 종류 고르기" style="width:820px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>사업 분류마다 실인원·연인원·건수</div><div class="조각속"><img src="img/ck_perf_01.png" alt="사업 분류마다 실인원·연인원·건수" style="width:820px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>3</b>지표별 증빙 — 지표 번호마다 한 장</div><div class="조각속"><img src="img/ck_indicators_01.png" alt="지표별 증빙 — 지표 번호마다 한 장" style="width:820px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>4</b>[설정] → 실적 세는 법</div><div class="조각속"><img src="img/ck_settings_09.png" alt="[설정] → 실적 세는 법" style="width:820px" loading="lazy"></div></div><p class="그림주">그림은 시범자료(가공 인물)로 켠 챙김 Note 0.2.1 화면입니다.</p></div>
 <ul>
 <li><b>기록에 사업 붙이기</b>: 상담기록·연계·사례·사례회의 화면 위 <b>'사업'</b> 칸에서 고릅니다(바꾸면 그 칸만 곧바로 저장). 옛 기록은 [설정] → 옛 기록에 사업 한꺼번에 붙이기.</li>
 <li><b>실적 보고</b>(메뉴 '실적 보고' · 구독 기능): 월별/분기별/한 해 · 기록 종류 · 몇 단계까지를 고르면, 사업 분류마다 <b>실인원 · 연인원 · 건수</b> 표가 나옵니다. 맨 아래 '사업 미지정'과 합계 줄. [엑셀로 저장] · [한글에 붙여넣기용 복사] · 인쇄. 위에 지금 세는 법이 글로 보이고 [설정에서 바꾸기]로 갑니다.
@@ -198,6 +247,7 @@
 </ul>
 
 <h2 id="print">동의서·양식 인쇄</h2>
+<div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>[설정] → 동의서·양식 기관 정보</div><div class="조각속"><img src="img/ck_settings_12.png" alt="[설정] → 동의서·양식 기관 정보" style="width:524px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>기관 양식 — 한 번 옮겨 두면 채워서 뽑음</div><div class="조각속"><img src="img/ck_orgforms_00.png" alt="기관 양식 — 한 번 옮겨 두면 채워서 뽑음" style="width:820px" loading="lazy"></div></div><p class="그림주">그림은 시범자료(가공 인물)로 켠 챙김 Note 0.2.1 화면입니다.</p></div>
 <div class="w">동의함·동의하지 않음 칸은 프로그램이 미리 체크하지 않습니다. 본인(또는 법정대리인)이 직접 표시하고 서명합니다. 연락처·주소는 인쇄물에 채우지 않습니다.</div>
 <ol>
 <li><b>한 사람 동의서</b>: 이용자 화면 → 동의서 칸 <b>[🖨 서식 인쇄]</b> — 아직 못 받은(미회수) 종류만 새 창에 뜹니다(모두 받았으면 3종 전부). 만 14세 미만이면 법정대리인 안내가 크게 찍힙니다. 자활센터는 개인정보·민감정보가 서식 11-2호 한 장입니다.</li>
@@ -232,4 +282,4 @@
 
 <h2>함께 쓰는 프로그램</h2>
 <p>Bun (MIT) · llama.cpp (MIT) · Qwen3-4B-Instruct-2507 (Apache 2.0) · React (MIT). 형태소 분석기 Kiwi (LGPL v3)는 <code>kiwi\</code> 폴더가 들어 있는 판에서만 씁니다.</p>
-</body></html>
+</div></body></html>

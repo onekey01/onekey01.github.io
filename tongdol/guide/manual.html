@@ -228,6 +228,20 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
   .안찍기{display:none !important}
 }
 
+
+/* ── v12 기능별 조각 그림 (2026-10-13) ─────────────────────── */
+.조각묶음{display:flex;flex-direction:column;gap:14px;margin:.4rem 0 .2rem}
+.조각묶음.둘{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));align-items:start}
+.조각{margin:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--paper);
+  box-shadow:0 1px 2px rgba(27,29,26,.06),0 6px 18px rgba(27,29,26,.06)}
+.조각 .조각이름{display:flex;gap:.55rem;align-items:center;padding:.5rem .9rem;background:var(--green-soft);
+  color:var(--green-deep);font-weight:700;font-size:.92rem;border-bottom:1px solid var(--line)}
+.조각 .조각이름 b{display:inline-grid;place-items:center;min-width:1.55rem;height:1.55rem;border-radius:99px;
+  background:var(--green-deep);color:#fff;font-size:.8rem;font-family:var(--숫자)}
+.조각 .조각속{padding:.6rem;background:var(--sunk);text-align:center}
+.조각 img{display:inline-block;max-width:100%;height:auto;border-radius:6px;image-rendering:auto}
+.전체보기{display:inline-block;margin:.5rem 0 0;font-size:.88rem;color:var(--green);text-decoration:underline}
+@media print{.조각{break-inside:avoid;box-shadow:none}.전체보기{display:none}}
 </style>
 </head>
 <body><div style="position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #ddd;padding:8px 16px;font:15px/1.5 '맑은 고딕','Malgun Gothic',sans-serif"><a href="index.html" style="color:#2f5239;text-decoration:none;font-weight:700">← 통돌 Note 설명서 목록</a> <span style="color:#777">· 통돌 Note 1.27.40 설치본에 든 안내와 같은 글입니다</span></div>
@@ -275,7 +289,7 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
     <p class="걸림">처음 받은 날 · 반드시 · 5분</p>
 
     <h3>왜 이것이 1장인가</h3>
-    <figure class="그림"><img src="img/manual_02.png" alt=""><figcaption><span class='짚음'>설정 → 계산 규칙</span> &mdash; 단가·한도·본인부담이 다 여기 있습니다. <b>이 숫자들이 청구서에 그대로 나갑니다.</b></figcaption></figure>
+    <figure class="그림"><div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>계산 규칙 — 청구 방식·자르는 단위</div><div class="조각속"><img src="img/c/manual_02_a.png" alt="계산 규칙 — 청구 방식·자르는 단위" style="width:627px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>공휴일 넣기</div><div class="조각속"><img src="img/c/manual_02_b.png" alt="공휴일 넣기" style="width:625px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>3</b>확인사항 항목(현장앱 체크 목록)</div><div class="조각속"><img src="img/c/manual_02_c.png" alt="확인사항 항목(현장앱 체크 목록)" style="width:625px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>4</b>서비스 단가</div><div class="조각속"><img src="img/c/manual_02_d.png" alt="서비스 단가" style="width:1100px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>5</b>본인부담 구간</div><div class="조각속"><img src="img/c/manual_02_e.png" alt="본인부담 구간" style="width:1100px" loading="lazy"></div></div></div><a class="전체보기" href="img/manual_02.png" target="_blank" rel="noopener">이 화면 전체를 크게 보기 ↗</a><figcaption><span class='짚음'>설정 → 계산 규칙</span> &mdash; 단가·한도·본인부담이 다 여기 있습니다. <b>이 숫자들이 청구서에 그대로 나갑니다.</b></figcaption></figure>
     <p>프로그램은 설정이 틀려도 <b>잘 돕니다.</b> 화면도 똑같이 생겼습니다.
        틀렸다는 것은 <b>청구서를 내고 나서</b> 압니다.</p>
     <ul>
@@ -292,7 +306,7 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
        <b>이미 다 채워져</b> 있습니다. 맞으면 맨 아래 단추 하나로 끝납니다.</p>
 
     <h3>일곱 가지를 봅니다</h3>
-    <figure class="그림"><img src="img/manual_03.png" alt=""><figcaption>처음 한 번 뜨는 화면입니다. 값이 <b>이미 다 채워져</b> 있고, 맞는지만 보시면 됩니다. <span class='짚음'>건너뛰기 단추가 없습니다</span> &mdash; 일부러 안 두었습니다.</figcaption></figure>
+    <figure class="그림"><div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>① 우리 지자체 이름</div><div class="조각속"><img src="img/c/manual_03_a.png" alt="① 우리 지자체 이름" style="width:624px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>② 서비스 단가</div><div class="조각속"><img src="img/c/manual_03_b.png" alt="② 서비스 단가" style="width:624px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>3</b>③ 지원한도</div><div class="조각속"><img src="img/c/manual_03_c.png" alt="③ 지원한도" style="width:624px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>4</b>④ 서비스별 월 한도</div><div class="조각속"><img src="img/c/manual_03_d.png" alt="④ 서비스별 월 한도" style="width:624px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>5</b>⑤ 식사지원 비대면 배달</div><div class="조각속"><img src="img/c/manual_03_e.png" alt="⑤ 식사지원 비대면 배달" style="width:624px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>6</b>⑥ 본인부담 구간</div><div class="조각속"><img src="img/c/manual_03_f.png" alt="⑥ 본인부담 구간" style="width:624px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>7</b>끝 — 이 값으로 시작</div><div class="조각속"><img src="img/c/manual_03_g.png" alt="끝 — 이 값으로 시작" style="width:624px" loading="lazy"></div></div></div><a class="전체보기" href="img/manual_03.png" target="_blank" rel="noopener">이 화면 전체를 크게 보기 ↗</a><figcaption>처음 한 번 뜨는 화면입니다. 값이 <b>이미 다 채워져</b> 있고, 맞는지만 보시면 됩니다. <span class='짚음'>건너뛰기 단추가 없습니다</span> &mdash; 일부러 안 두었습니다.</figcaption></figure>
     <div class="표감"><table>
       <thead><tr><th style="width:2rem"></th><th style="width:13rem">무엇</th><th>보실 것</th></tr></thead>
       <tbody>
@@ -323,7 +337,7 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
        대신 넣으실 때까지 <b>홈 화면이 알려 드립니다.</b></p>
 
     <h3>홈이 말을 걸면</h3>
-    <figure class="그림"><img src="img/manual_04.png" alt=""><figcaption>홈입니다. <span class='짚음'>위쪽 띠</span>가 오늘 챙길 것을 말해 줍니다 &mdash; 공휴일이 없다, 단가가 0원인 서비스가 있다, 휴대폰이 안 이어진 사람이 있다.</figcaption></figure>
+    <figure class="그림"><div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>설정을 한 번 봐 주세요 — 노란 띠</div><div class="조각속"><img src="img/c/manual_04_a.png" alt="설정을 한 번 봐 주세요 — 노란 띠" style="width:1100px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>이용 중·대기·중단·종결 대상 숫자</div><div class="조각속"><img src="img/c/manual_04_b.png" alt="이용 중·대기·중단·종결 대상 숫자" style="width:1100px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>3</b>손댈 것 — 한도·청구·식사 경고</div><div class="조각속"><img src="img/c/manual_04_c.png" alt="손댈 것 — 한도·청구·식사 경고" style="width:1100px" loading="lazy"></div></div></div><a class="전체보기" href="img/manual_04.png" target="_blank" rel="noopener">이 화면 전체를 크게 보기 ↗</a><figcaption>홈입니다. <span class='짚음'>위쪽 띠</span>가 오늘 챙길 것을 말해 줍니다 &mdash; 공휴일이 없다, 단가가 0원인 서비스가 있다, 휴대폰이 안 이어진 사람이 있다.</figcaption></figure>
     <p>홈 위쪽에 노란 칸으로 이런 것이 뜰 수 있습니다.</p>
     <div class="표감"><table>
       <tbody>
@@ -374,7 +388,7 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
     <h2>대상자를 받는다</h2>
 
     <h3>명단이 오면</h3>
-    <figure class="그림"><img src="img/manual_05.png" alt=""><figcaption><span class='짚음'>의뢰 접수</span> &mdash; 군이 보낸 엑셀을 여기에 올립니다. <b>시트를 고르지 않아도</b> 파일에 든 차수를 모두 한 번에 읽습니다. 암호가 걸린 파일도 그대로 올리시면 됩니다.</figcaption></figure>
+    <figure class="그림"><div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>엑셀 파일 올리기 · 미리보기</div><div class="조각속"><img src="img/c/manual_05_a.png" alt="엑셀 파일 올리기 · 미리보기" style="width:1100px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>반영한 차수</div><div class="조각속"><img src="img/c/manual_05_b.png" alt="반영한 차수" style="width:1100px" loading="lazy"></div></div></div><a class="전체보기" href="img/manual_05.png" target="_blank" rel="noopener">이 화면 전체를 크게 보기 ↗</a><figcaption><span class='짚음'>의뢰 접수</span> &mdash; 군이 보낸 엑셀을 여기에 올립니다. <b>시트를 고르지 않아도</b> 파일에 든 차수를 모두 한 번에 읽습니다. 암호가 걸린 파일도 그대로 올리시면 됩니다.</figcaption></figure>
     <p><span class="누름">의뢰 접수</span> 화면에서 군이 준 엑셀을 그대로 올립니다.
        암호가 걸린 파일이면 암호를 함께 넣습니다.</p>
     <p>올리면 <b>미리 보기</b>가 나옵니다. <b>여기서 한 번 눈으로 보고</b> 넣으세요 &mdash;
@@ -389,7 +403,7 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
     </div>
 
     <h3>상태 다섯 가지</h3>
-    <figure class="그림"><img src="img/manual_06.png" alt=""><figcaption><span class='짚음'>대상자</span> 목록입니다. 오른쪽 끝의 <b>상태</b>로 이용·중단·종결이 한눈에 갈립니다. 이름을 누르면 그 분의 모든 것이 한 장에 나옵니다.</figcaption></figure>
+    <figure class="그림"><div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>찾기 · 상태 · 읍면동</div><div class="조각속"><img src="img/c/manual_06_a.png" alt="찾기 · 상태 · 읍면동" style="width:1100px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>대상자 목록</div><div class="조각속"><img src="img/c/manual_06_b.png" alt="대상자 목록" style="width:1100px" loading="lazy"></div></div></div><a class="전체보기" href="img/manual_06.png" target="_blank" rel="noopener">이 화면 전체를 크게 보기 ↗</a><figcaption><span class='짚음'>대상자</span> 목록입니다. 오른쪽 끝의 <b>상태</b>로 이용·중단·종결이 한눈에 갈립니다. 이름을 누르면 그 분의 모든 것이 한 장에 나옵니다.</figcaption></figure>
     <div class="표감"><table>
       <tbody>
         <tr><td style="width:7rem"><b>이용</b></td><td>지금 서비스를 받고 계십니다</td></tr>
@@ -410,7 +424,7 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
     <h2>배정한다</h2>
 
     <h3>세 가지를 정합니다</h3>
-    <figure class="그림"><img src="img/manual_07.png" alt=""><figcaption><span class='짚음'>배정 · 주간계획</span> &mdash; 줄마다 「누가 · 무슨 요일에」가 붙어 있습니다. 빨간 띠는 <b>아직 사람이 안 정해진 건</b>이 몇 개인지 말해 줍니다.</figcaption></figure>
+    <figure class="그림"><div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>찾기 · 거르기</div><div class="조각속"><img src="img/c/manual_07_a.png" alt="찾기 · 거르기" style="width:1100px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>배정 목록 — 담당·가는 요일</div><div class="조각속"><img src="img/c/manual_07_b.png" alt="배정 목록 — 담당·가는 요일" style="width:1100px" loading="lazy"></div></div></div><a class="전체보기" href="img/manual_07.png" target="_blank" rel="noopener">이 화면 전체를 크게 보기 ↗</a><figcaption><span class='짚음'>배정 · 주간계획</span> &mdash; 줄마다 「누가 · 무슨 요일에」가 붙어 있습니다. 빨간 띠는 <b>아직 사람이 안 정해진 건</b>이 몇 개인지 말해 줍니다.</figcaption></figure>
     <div class="표감"><table>
       <tbody>
         <tr><td style="width:11rem"><b>누가</b></td><td>담당 제공인력</td></tr>
@@ -437,7 +451,7 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
        <b>사무실 달력과 제공인력 휴대폰이 같은 날을 봅니다.</b></p>
 
     <h3>한도를 넘으면 저장이 안 됩니다</h3>
-    <figure class="그림"><img src="img/manual_08.png" alt=""><figcaption>줄을 누르면 이 창이 열립니다. 요일을 고르는 순간 <span class='짚음'>「이 계획대로 가면」</span>을 바로 셈해 보여 줍니다. <b>한도를 넘으면 주황색으로 바뀌고 저장이 막힙니다</b> &mdash; 무엇이 얼마나 넘는지, 어떻게 줄이면 되는지가 그 자리에 적힙니다.</figcaption></figure>
+    <figure class="그림"><div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>담당 · 배정 기간 · 가는 요일 · 1회 시간</div><div class="조각속"><img src="img/c/manual_08_a.png" alt="담당 · 배정 기간 · 가는 요일 · 1회 시간" style="width:1100px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>한도 경고 — 넘으면 저장 안 됨</div><div class="조각속"><img src="img/c/manual_08_b.png" alt="한도 경고 — 넘으면 저장 안 됨" style="width:1100px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>3</b>그 분의 한 주</div><div class="조각속"><img src="img/c/manual_08_c.png" alt="그 분의 한 주" style="width:1100px" loading="lazy"></div></div></div><a class="전체보기" href="img/manual_08.png" target="_blank" rel="noopener">이 화면 전체를 크게 보기 ↗</a><figcaption>줄을 누르면 이 창이 열립니다. 요일을 고르는 순간 <span class='짚음'>「이 계획대로 가면」</span>을 바로 셈해 보여 줍니다. <b>한도를 넘으면 주황색으로 바뀌고 저장이 막힙니다</b> &mdash; 무엇이 얼마나 넘는지, 어떻게 줄이면 되는지가 그 자리에 적힙니다.</figcaption></figure>
     <p>넘는 계획은 <b>저장되지 않습니다.</b> 화면이 무엇이 얼마나 넘는지,
        넘긴 몫은 누가 떠안는지, 어떻게 고치면 되는지를 함께 알려 줍니다.</p>
     <div class="조심">
@@ -461,7 +475,7 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
     <h2>현장에서 찍는다</h2>
 
     <h3>제공인력 휴대폰</h3>
-    <figure class="그림"><img src="img/manual_09.png" alt=""><figcaption><span class='짚음'>종사자</span> 화면 &mdash; 아래쪽 <b>휴대폰 기기 등록</b>에서 QR 을 한 번 띄워 제공인력 폰을 이어 줍니다. 이어 두지 않으면 그 폰에는 <b>오늘 갈 곳이 안 갑니다.</b></figcaption></figure>
+    <figure class="그림"><div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>기본 정보</div><div class="조각속"><img src="img/c/manual_09_a.png" alt="기본 정보" style="width:1100px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>계정 · 역할</div><div class="조각속"><img src="img/c/manual_09_b.png" alt="계정 · 역할" style="width:1100px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>3</b>제공인력 정보 — 자격·교육</div><div class="조각속"><img src="img/c/manual_09_c.png" alt="제공인력 정보 — 자격·교육" style="width:1100px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>4</b>휴대폰 기기 등록</div><div class="조각속"><img src="img/c/manual_09_d.png" alt="휴대폰 기기 등록" style="width:1100px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>5</b>맡고 있는 대상자</div><div class="조각속"><img src="img/c/manual_09_e.png" alt="맡고 있는 대상자" style="width:627px" loading="lazy"></div></div></div><a class="전체보기" href="img/manual_09.png" target="_blank" rel="noopener">이 화면 전체를 크게 보기 ↗</a><figcaption><span class='짚음'>종사자</span> 화면 &mdash; 아래쪽 <b>휴대폰 기기 등록</b>에서 QR 을 한 번 띄워 제공인력 폰을 이어 줍니다. 이어 두지 않으면 그 폰에는 <b>오늘 갈 곳이 안 갑니다.</b></figcaption></figure>
     <p>제공인력은 휴대폰으로 <b>오늘 갈 곳</b>을 보고, 집 앞에서 <b>방문표(QR)</b> 를 찍고,
        일지를 쓰고, 서명을 받습니다. 그것이 사무실의 <b>제공실적 달력</b>에
        그대로 올라옵니다.</p>
@@ -472,7 +486,7 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
        그것이 서식의 칸으로 들어갑니다. 사무실에서 뽑기만 합니다.</p>
 
     <h3>계획한 시간을 못 채우고 끝내면</h3>
-    <figure class="그림"><img src="img/manual_10.png" alt=""><figcaption>칸을 누르면 이 창입니다. 상태를 고르는 것도, 현장에서 올라온 것을 보는 것도 여기서 합니다. <span class='짚음'>미제공</span>을 고르면 <b>못 간 까닭을 눌러서</b> 고릅니다 &mdash; 여기서 고른 말이 그대로 기록지에 실려 지자체로 나갑니다.</figcaption></figure>
+    <figure class="그림"><div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>하루 칸을 누르면 — 현장에서 온 것·서명</div><div class="조각속"><img src="img/c/manual_10_a.png" alt="하루 칸을 누르면 — 현장에서 온 것·서명" style="width:546px" loading="lazy"></div></div></div><a class="전체보기" href="img/manual_10.png" target="_blank" rel="noopener">이 화면 전체를 크게 보기 ↗</a><figcaption>칸을 누르면 이 창입니다. 상태를 고르는 것도, 현장에서 올라온 것을 보는 것도 여기서 합니다. <span class='짚음'>미제공</span>을 고르면 <b>못 간 까닭을 눌러서</b> 고릅니다 &mdash; 여기서 고른 말이 그대로 기록지에 실려 지자체로 나갑니다.</figcaption></figure>
     <p>확인 창이 뜹니다.</p>
     <div class="검은창">계획된 서비스 제공시간을 충족하지 못하였습니다(<span class="밝게">30분 남음</span>).
 
@@ -508,7 +522,7 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
     </ol>
 
     <h3>1번에서 눈여겨볼 것</h3>
-    <figure class="그림"><img src="img/manual_11.png" alt=""><figcaption><span class='짚음'>제공실적</span> &mdash; 배정한 요일이 달력에 미리 깔립니다. ○ 계획 · ● 제공 · ✕ 미제공. 위쪽 <b>「지난 계획 한꺼번에 제공 처리」</b> 하나로 한 달치를 채우고, 못 간 날만 눌러 고치시면 됩니다.</figcaption></figure>
+    <figure class="그림"><div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>기록지 통째로 받기 · 이달 숫자</div><div class="조각속"><img src="img/c/manual_11_a.png" alt="기록지 통째로 받기 · 이달 숫자" style="width:1100px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>대상자별 달력</div><div class="조각속"><img src="img/c/manual_11_b.png" alt="대상자별 달력" style="width:1100px" loading="lazy"></div></div></div><a class="전체보기" href="img/manual_11.png" target="_blank" rel="noopener">이 화면 전체를 크게 보기 ↗</a><figcaption><span class='짚음'>제공실적</span> &mdash; 배정한 요일이 달력에 미리 깔립니다. ○ 계획 · ● 제공 · ✕ 미제공. 위쪽 <b>「지난 계획 한꺼번에 제공 처리」</b> 하나로 한 달치를 채우고, 못 간 날만 눌러 고치시면 됩니다.</figcaption></figure>
     <div class="표감"><table>
       <tbody>
         <tr><td style="width:9rem"><b>빈 칸</b></td>
@@ -520,7 +534,7 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
     </table></div>
 
     <h3>2번에서 눈여겨볼 것</h3>
-    <figure class="그림"><img src="img/manual_12.png" alt=""><figcaption><span class='짚음'>정산</span> &mdash; 사람마다 군 몫과 본인부담이 갈려 나옵니다. <b>확정</b>을 눌러야 청구서가 만들어지고, 그 뒤 <b>수납 처리</b>로 받은 것을 적습니다.</figcaption></figure>
+    <figure class="그림"><div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>청구 기간 알림 · 합계</div><div class="조각속"><img src="img/c/manual_12_a.png" alt="청구 기간 알림 · 합계" style="width:1100px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>대상자별 청구 표</div><div class="조각속"><img src="img/c/manual_12_b.png" alt="대상자별 청구 표" style="width:1100px" loading="lazy"></div></div></div><a class="전체보기" href="img/manual_12.png" target="_blank" rel="noopener">이 화면 전체를 크게 보기 ↗</a><figcaption><span class='짚음'>정산</span> &mdash; 사람마다 군 몫과 본인부담이 갈려 나옵니다. <b>확정</b>을 눌러야 청구서가 만들어지고, 그 뒤 <b>수납 처리</b>로 받은 것을 적습니다.</figcaption></figure>
     <div class="표감"><table>
       <tbody>
         <tr><td style="width:9rem"><b>한도 넘음</b></td>
@@ -574,7 +588,7 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
     <h2>기록지 뽑기</h2>
 
     <h3>한 달치를 한 번에</h3>
-    <figure class="그림"><img src="img/manual_13.png" alt=""><figcaption><span class='짚음'>기록지</span> &mdash; 매달 지자체에 내는 것은 이것 하나입니다. 제공일과 회차는 실적에서 <b>저절로 채워지고</b>, 사람이 쓸 것은 상세내용과 비고 두 칸뿐입니다.</figcaption></figure>
+    <figure class="그림"><div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>기록지 목록 — 상세내용 적기</div><div class="조각속"><img src="img/c/manual_13_a.png" alt="기록지 목록 — 상세내용 적기" style="width:1100px" loading="lazy"></div></div></div><a class="전체보기" href="img/manual_13.png" target="_blank" rel="noopener">이 화면 전체를 크게 보기 ↗</a><figcaption><span class='짚음'>기록지</span> &mdash; 매달 지자체에 내는 것은 이것 하나입니다. 제공일과 회차는 실적에서 <b>저절로 채워지고</b>, 사람이 쓸 것은 상세내용과 비고 두 칸뿐입니다.</figcaption></figure>
     <p>기록지 화면에서 그 달을 고르고 <span class="누름">한 번에 뽑기</span> 를 누르면
        대상자별로 다 나옵니다.</p>
 
@@ -707,7 +721,7 @@ td.수, th.수{font-family:var(--숫자); font-variant-numeric:tabular-nums; whi
     <h2>백업과 되돌리기</h2>
 
     <h3>자료는 한 곳에 있습니다</h3>
-    <figure class="그림"><img src="img/manual_14.png" alt=""><figcaption><span class='짚음'>설정 → 일반</span> 오른쪽의 <b>백업정보</b> &mdash; 자료가 어디 있는지, 마지막으로 언제 떠 두었는지, 몇 개나 남겨 두는지가 다 보입니다.</figcaption></figure>
+    <figure class="그림"><div class="조각묶음"><div class="조각"><div class="조각이름"><b>1</b>보기 — 밝기·글자 크기</div><div class="조각속"><img src="img/c/manual_14_a.png" alt="보기 — 밝기·글자 크기" style="width:627px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>2</b>근무시간 · 컴퓨터 종료 예약</div><div class="조각속"><img src="img/c/manual_14_b.png" alt="근무시간 · 컴퓨터 종료 예약" style="width:627px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>3</b>구독</div><div class="조각속"><img src="img/c/manual_14_c.png" alt="구독" style="width:625px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>4</b>업데이트 안내</div><div class="조각속"><img src="img/c/manual_14_d.png" alt="업데이트 안내" style="width:625px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>5</b>사무실 안에서 열기</div><div class="조각속"><img src="img/c/manual_14_e.png" alt="사무실 안에서 열기" style="width:625px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>6</b>백업정보 · 따로 둘 곳</div><div class="조각속"><img src="img/c/manual_14_f.png" alt="백업정보 · 따로 둘 곳" style="width:625px" loading="lazy"></div></div><div class="조각"><div class="조각이름"><b>7</b>USB 로 오간 자료</div><div class="조각속"><img src="img/c/manual_14_g.png" alt="USB 로 오간 자료" style="width:625px" loading="lazy"></div></div></div><a class="전체보기" href="img/manual_14.png" target="_blank" rel="noopener">이 화면 전체를 크게 보기 ↗</a><figcaption><span class='짚음'>설정 → 일반</span> 오른쪽의 <b>백업정보</b> &mdash; 자료가 어디 있는지, 마지막으로 언제 떠 두었는지, 몇 개나 남겨 두는지가 다 보입니다.</figcaption></figure>
     <div class="검은창"><span class="밝게">C:\통돌Note\data\tongdol.db</span></div>
     <p>이 파일 하나가 기관의 전부입니다. <b>폴더째 복사하면 그것이 백업입니다.</b></p>
 
