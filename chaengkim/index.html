@@ -5,46 +5,55 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>챙김 Note — 사례관리 기록과 평가 준비를 한 번에</title>
 <meta name="description" content="복지관·자활센터 사례관리자를 위한 기록 프로그램. 평소처럼 기록하면 평가지표 기준으로 채워야 할 곳을 모아 보여 줍니다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
-:root{--bg:#fbfaf7;--card:#fff;--ink:#1f2a2e;--sub:#5b6770;--line:#e4e1da;--main:#2f7a6b;--main2:#e6f2ef;--warn:#fff4c2;--warnline:#e0c35a}
+:root{--main:#1f6f8b;--soft:#e3eff4;--ink:#212529;--sub:#6c757d;--line:#e3e6e8;--warn:#fff4c2;--warnline:#e0c35a}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:"맑은 고딕","Malgun Gothic","Apple SD Gothic Neo",sans-serif;line-height:1.7;font-size:17px}
+body{margin:0;background:#fff;color:var(--ink);font-family:"Pretendard",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;font-size:17px;word-break:keep-all}
 a{color:var(--main)}
-.wrap{max-width:920px;margin:0 auto;padding:0 20px}
-header.top{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
-header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
-.logo{font-weight:800;font-size:20px;color:var(--main);text-decoration:none}
-nav a{margin-left:18px;text-decoration:none;color:var(--sub);font-size:15px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+header.top{background:#f8f9fa;border-bottom:1px solid #e9ecef;position:sticky;top:0;z-index:5}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{font-weight:800;font-size:1.55rem;color:var(--main);text-decoration:none;letter-spacing:-.02em}
+nav a{margin-left:18px;text-decoration:none;color:var(--sub);font-size:15px;font-weight:500}
 nav a:hover{color:var(--main)}
-.hero{padding:64px 0 48px;text-align:center}
-.hero h1{font-size:34px;line-height:1.35;margin:0 0 16px}
-.hero p{color:var(--sub);font-size:19px;margin:0 auto 28px;max-width:640px}
-.btn{display:inline-block;background:var(--main);color:#fff;padding:14px 26px;border-radius:10px;text-decoration:none;font-weight:700;margin:6px}
-.btn.ghost{background:transparent;color:var(--main);border:2px solid var(--main)}
+.hero{background:linear-gradient(135deg,#132a33 0%,#1b4a5a 55%,#1f6f8b 100%);color:#fff;padding:96px 0 88px;text-align:center}
+.hero h1{font-size:2.5rem;font-weight:800;letter-spacing:-.02em;line-height:1.35;margin:0 0 20px;color:#fff}
+.hero p{color:rgba(255,255,255,.85);font-size:1.25rem;font-weight:300;margin:0 auto 36px;max-width:720px}
+.btn{display:inline-block;background:var(--main);color:#fff;padding:.8rem 1.6rem;border-radius:.5rem;text-decoration:none;font-weight:700;margin:6px;font-size:1.05rem;border:2px solid transparent;line-height:1.5}
+.btn:hover{filter:brightness(1.12)}
+.btn.ghost{background:transparent;color:var(--main);border-color:var(--main)}
+.hero .btn{background:#fff;color:var(--main)}
+.hero .btn.ghost{background:transparent;color:#fff;border-color:#fff}
+.btn.dl{margin:0 0 8px}
 .btn.off{background:#c9cfd2;color:#fff;cursor:not-allowed}
-section{padding:44px 0;border-top:1px solid var(--line)}
-section h2{font-size:26px;margin:0 0 18px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px}
-.card h3{margin:0 0 8px;font-size:18px;color:var(--main)}
+section{padding:72px 0;border-top:0}
+section:nth-of-type(even){background:#f8f9fa}
+section h2{font-size:2rem;font-weight:800;margin:0 0 28px;letter-spacing:-.02em;text-align:center}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px}
+.card{background:#fff;border:0;border-radius:.75rem;padding:26px 24px;box-shadow:0 12px 32px -20px rgba(0,0,0,.35)}
+.card h3{margin:0 0 8px;font-size:1.15rem;font-weight:700;color:var(--main)}
 .card p{margin:0;color:var(--sub);font-size:16px}
-.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin:20px 0 10px}
-.shots figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.shot{background:var(--soft);border:2px dashed #a9b9bf;border-radius:12px;height:260px;display:flex;align-items:center;justify-content:center;color:var(--sub);margin:20px 0;text-align:center;padding:0 16px}
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px;margin:28px 0 10px}
+.shots figure{margin:0;background:#fff;border:0;border-radius:.75rem;overflow:hidden;box-shadow:0 18px 40px -18px rgba(0,0,0,.35)}
 .shots img{display:block;width:100%;height:auto}
-.shots figcaption{padding:10px 14px;font-size:15px;color:var(--sub);border-top:1px solid var(--line)}
+.shots figcaption{padding:12px 16px;font-size:15px;color:var(--sub);border-top:1px solid var(--line)}
 .shots figcaption b{color:var(--ink)}
-.free{background:var(--main2);border-radius:12px;padding:22px;font-size:19px;font-weight:700;text-align:center}
-.tbl{width:100%;border-collapse:collapse;background:var(--card);margin-top:14px}
-.tbl th,.tbl td{border:1px solid var(--line);padding:10px 12px;text-align:left;font-size:16px}
-.tbl th{background:#f3f1ec;width:28%}
+.pin,.free{background:var(--soft);color:var(--ink);border-radius:.75rem;padding:24px;font-size:19px;font-weight:700;text-align:center}
+.tbl{width:100%;border-collapse:separate;border-spacing:0;background:#fff;margin-top:14px;border:1px solid var(--line);border-radius:.75rem;overflow:hidden}
+.tbl th,.tbl td{border-bottom:1px solid var(--line);padding:14px 16px;text-align:left;font-size:16px;vertical-align:top}
+.tbl tr:last-child th,.tbl tr:last-child td{border-bottom:0}
+.tbl th{background:var(--soft);width:28%;font-weight:700}
 ol.steps{padding-left:22px}
-ol.steps li{margin-bottom:10px}
-.boss{background:var(--warn);border:1px dashed var(--warnline);padding:1px 6px;border-radius:4px;font-size:15px}
-.note{color:var(--sub);font-size:15px}
-details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px}
+ol.steps li{margin-bottom:12px}
+.boss{background:var(--warn);border:1px dashed var(--warnline);padding:1px 6px;border-radius:4px;font-size:15px;color:#1b1d1a}
+.note{color:#5c636a;font-size:15px}
+code{background:var(--soft);padding:1px 6px;border-radius:4px;font-size:.92em}
+details{background:#fff;border:1px solid var(--line);border-radius:.6rem;padding:14px 18px;margin-bottom:12px}
 summary{font-weight:700;cursor:pointer}
-footer{padding:36px 0 60px;color:var(--sub);font-size:14px;border-top:1px solid var(--line)}
-@media (max-width:640px){.hero h1{font-size:26px}.hero p{font-size:17px}nav a{display:none}nav a:first-child{display:inline;margin-left:0;white-space:nowrap}}
+footer{background:#f8f9fa;padding:48px 0 64px;color:var(--sub);font-size:14px;border-top:1px solid #e9ecef}
+@media (max-width:640px){.hero{padding:64px 0 56px}.hero h1{font-size:1.6rem}.hero h1 br{display:none}.hero p{font-size:1.05rem}section{padding:52px 0}section h2{font-size:1.6rem}nav a{display:none}nav a:first-child{display:inline;margin-left:0;white-space:nowrap}.tbl th{width:36%}}
 </style>
 </head>
 <body>
@@ -160,6 +169,7 @@ footer{padding:36px 0 60px;color:var(--sub);font-size:14px;border-top:1px solid 
   문의: <a href="mailto:onekey00a@gmail.com">onekey00a@gmail.com</a> · 평일 2일 안에 답변드립니다 — 이용자 이름 등 개인정보는 보내지 마세요.<br>
   <a href="terms.html">이용약관(시험판)</a><br>
   화면의 이름은 모두 시범자료입니다. · 챙김 Note 시험판 · Voy.87
+<br><span style="opacity:.6">화면 뼈대: Start Bootstrap — Landing Page (MIT License)</span>
 </div></footer>
 </body>
 </html>

@@ -36,7 +36,34 @@ a{color:var(--green)}
 .그림주{font-size:.8rem;color:var(--muted);margin:-.2rem 0 0;text-align:right}
 @media (max-width:700px){.종이{padding:0 1rem 2rem}.종이>div:first-child{margin:0 -1rem !important}h1{font-size:1.5rem}}
 @media print{body{background:#fff}.종이{box-shadow:none;max-width:none}.toc{display:none}h2{break-after:avoid}.조각{break-inside:avoid;box-shadow:none}}
-</style></head><body><div class="종이"><div style="position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #ddd;padding:8px 16px;font:15px/1.5 '맑은 고딕','Malgun Gothic',sans-serif"><a href="index.html" style="color:#2f5239;text-decoration:none;font-weight:700">← 챙김 Note 설명서 목록</a> <span style="color:#777">· 챙김 Note 0.2.1 설치본에 든 안내와 같은 글입니다</span></div>
+</style><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>/* v13 B 옷 — 설명서 겉모양만 덮음(글 그대로) · 웹 글꼴이 없으면 맑은 고딕 */
+:root{--main:#1f6f8b;--deep:#1b4a5a;--soft:#e3eff4;--green:#1f6f8b;--green-deep:#1b4a5a;--green-soft:#e3eff4;--main2:#e3eff4}
+body{font-family:"Pretendard","맑은 고딕","Malgun Gothic","Apple SD Gothic Neo",sans-serif !important;background:#f8f9fa !important}
+header.top{background:#f8f9fa !important;border-bottom:1px solid #e9ecef !important}
+.logo{font-size:1.4rem !important;letter-spacing:-.02em;color:var(--main) !important}
+.hero{background:linear-gradient(135deg,#132a33 0%,#1b4a5a 55%,#1f6f8b 100%) !important;color:#fff !important;padding:72px 0 60px !important;text-align:center}
+.hero h1{color:#fff !important;font-weight:800;letter-spacing:-.02em}
+.hero p{color:rgba(255,255,255,.85) !important}
+section{border-top:0 !important}
+section:nth-of-type(even){background:#fff}
+section h2{font-weight:800;letter-spacing:-.02em}
+.card{border:0 !important;border-radius:.75rem !important;box-shadow:0 12px 32px -20px rgba(0,0,0,.35)}
+a.card:hover{box-shadow:0 16px 36px -16px rgba(0,0,0,.4)}
+.tbl{border-collapse:separate !important;border-spacing:0;border:1px solid #e3e6e8;border-radius:.75rem;overflow:hidden}
+.tbl th,.tbl td{border:0 !important;border-bottom:1px solid #e3e6e8 !important}
+.tbl tr:last-child th,.tbl tr:last-child td{border-bottom:0 !important}
+.tbl th{background:var(--soft) !important}
+.box{border-radius:.75rem}
+.머리{background:linear-gradient(135deg,#132a33 0%,#1b4a5a 55%,#1f6f8b 100%) !important}
+.종이{border-radius:0 0 .75rem .75rem;box-shadow:0 18px 40px -18px rgba(0,0,0,.25) !important}
+h2{color:var(--deep)}
+th{background:var(--soft)}
+div[style*="position:sticky"]{background:#f8f9fa !important;border-bottom:1px solid #e9ecef !important;font-family:"Pretendard","맑은 고딕","Malgun Gothic","Apple SD Gothic Neo",sans-serif !important}
+div[style*="position:sticky"] a{color:var(--main) !important}
+footer{background:#f8f9fa}
+</style>
+</head><body><div class="종이"><div style="position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #ddd;padding:8px 16px;font:15px/1.5 '맑은 고딕','Malgun Gothic',sans-serif"><a href="index.html" style="color:#2f5239;text-decoration:none;font-weight:700">← 챙김 Note 설명서 목록</a> <span style="color:#777">· 챙김 Note 0.2.1 설치본에 든 안내와 같은 글입니다</span></div>
 <h1>챙김 Note — 사용 안내</h1>
 <p class="판">v3 · 그림 넣은 판 2026-10-13 · 2026-10-07 · 설치본(챙김Note.exe)용</p>
 <p class="toc">바로 가기: <a href="#first">처음 30분</a><a href="#run">켜기·끄기</a><a href="#look">화면 둘러보기</a><a href="#wizard">설치마법사</a><a href="#pw">비밀번호·복구 열쇠</a><a href="#trial">무료 기간·구독 기능</a><a href="#ai">AI 문장 제안</a><a href="#backup">백업·PC 바꾸기</a><a href="#counsel">상담기록</a><a href="#case">사례관리</a><a href="#eval">평가 점검</a><a href="#s5">연계·고충·권익·척도</a><a href="#s6">사업 분류·실적·증빙</a><a href="#print">동의서·양식 인쇄</a><a href="#files">자료가 있는 곳</a></p>
