@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0f1720">
+<meta name="robots" content="noindex">
+<title>무무 라이딩</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#0f1720; --panel:rgba(12,18,26,.78); --line:rgba(255,255,255,.12);
+    --text:#f3f6f9; --sub:#9fb0c0; --accent:#ffb020; --ok:#3ccf7a; --warn:#ff6b5b; --blue:#4aa8ff;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:"Pretendard","Noto Sans KR",system-ui,-apple-system,sans-serif;overflow:hidden;user-select:none}
+  button{font:inherit;color:inherit;border:1px solid var(--line);background:rgba(255,255,255,.08);
+    border-radius:14px;padding:12px 18px;font-size:18px;cursor:pointer}
+  button:active{transform:scale(.97)}
+  button.primary{background:var(--accent);color:#1b1300;border-color:transparent;font-weight:700}
+  button.danger{background:rgba(255,107,91,.18);border-color:rgba(255,107,91,.5)}
+  #stage{position:fixed;inset:0}
+  #video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;display:none}
+  #noVideo{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:14px;background:radial-gradient(ellipse at 50% 30%,#1d3347 0%,#0f1720 70%);color:var(--sub);text-align:center;padding:0 24px}
+  #noVideo .big{font-size:26px;color:var(--text)}
+  #road{width:min(70vw,520px);height:10px;border-radius:6px;background:linear-gradient(90deg,#26394c 50%,transparent 50%);
+    background-size:60px 10px;opacity:.7}
+  #topbar{position:absolute;top:0;left:0;right:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+    padding:max(12px,env(safe-area-inset-top)) 16px 12px;background:linear-gradient(180deg,rgba(0,0,0,.65),transparent)}
+  #topbar .title{font-weight:800;font-size:20px;margin-right:auto;letter-spacing:-.3px}
+  #topbar button{font-size:16px;padding:10px 14px}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--sub);padding:6px 10px;border-radius:999px;background:rgba(0,0,0,.4)}
+  .dot{width:9px;height:9px;border-radius:50%;background:#556}
+  .dot.on{background:var(--ok)} .dot.wait{background:var(--accent)}
+  #chips{position:absolute;top:72px;left:16px;display:flex;gap:8px;flex-wrap:wrap}
+  #dash{position:absolute;left:0;right:0;bottom:0;padding:14px 16px max(14px,env(safe-area-inset-bottom));
+    background:linear-gradient(0deg,rgba(0,0,0,.75),rgba(0,0,0,.35) 70%,transparent)}
+  #tiles{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+  .tile{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px 12px;text-align:center;backdrop-filter:blur(6px)}
+  .tile .label{font-size:14px;color:var(--sub)}
+  .tile .val{font-size:clamp(28px,4.2vw,52px);font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+  .tile .unit{font-size:13px;color:var(--sub)}
+  .tile.key .val{color:var(--accent)}
+  #controls{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  #controls .grow{flex:1}
+  #resist{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:6px 10px}
+  #resist button{width:56px;height:56px;padding:0;font-size:30px;font-weight:700;border-radius:12px}
+  #resist .lv{min-width:84px;text-align:center}
+  #resist .lv b{display:block;font-size:34px;line-height:1}
+  #resist .lv span{font-size:13px;color:var(--sub)}
+  #mainBtn{min-width:150px;font-size:22px;padding:16px 22px}
+  #sim{display:none;align-items:center;gap:10px;background:var(--panel);border:1px dashed var(--accent);border-radius:16px;padding:8px 14px}
+  #sim input{width:220px;accent-color:var(--accent)}
+  #toast{position:absolute;left:50%;top:84px;transform:translateX(-50%);background:rgba(0,0,0,.85);border:1px solid var(--line);
+    padding:12px 18px;border-radius:12px;font-size:17px;display:none;max-width:90vw;text-align:center;z-index:30}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:20}
+  .modal.show{display:flex}
+  .sheet{background:#16212d;border:1px solid var(--line);border-radius:20px;width:min(760px,94vw);max-height:88vh;overflow:auto;padding:22px}
+  .sheet h2{margin:0 0 14px;font-size:24px}
+  .sheet .row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .sheet .row .desc{flex:1}
+  .sheet .row .desc small{display:block;color:var(--sub);font-size:14px;margin-top:3px;line-height:1.4}
+  .sheet input[type=number]{width:110px;font-size:20px;padding:8px;border-radius:10px;border:1px solid var(--line);background:#0f1720;color:var(--text);text-align:right}
+  .sheet .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+  .sum{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  .sum div{background:#0f1720;border:1px solid var(--line);border-radius:14px;padding:12px}
+  .sum b{display:block;font-size:22px} .sum span{color:var(--sub);font-size:14px}
+  table{width:100%;border-collapse:collapse;font-size:16px}
+  th,td{padding:10px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  th{color:var(--sub);font-weight:500;font-size:14px}
+  td button{padding:6px 10px;font-size:14px}
+  .switch{width:60px;height:34px;border-radius:999px;background:#334;position:relative;border:none;padding:0}
+  .switch::after{content:"";position:absolute;top:4px;left:4px;width:26px;height:26px;border-radius:50%;background:#fff;transition:.2s}
+  .switch.on{background:var(--ok)} .switch.on::after{left:30px}
+  @media (max-width:900px){ #tiles{grid-template-columns:repeat(4,1fr)} }
+  @media (orientation:portrait){ #tiles{grid-template-columns:repeat(4,1fr)} #chips{top:120px} }
+</style>
+</head>
+<body>
+<div id="stage">
+  <video id="video" playsinline muted loop></video>
+  <div id="noVideo">
+    <div class="big">페달을 밟으면 바로 시작돼요</div>
+    <div>위쪽 「풍경 영상」 버튼으로 태블릿에 저장된 라이딩 영상을 고르면,<br>페달 속도에 맞춰 영상이 빨라지거나 느려집니다.</div>
+    <div id="road"></div>
+  </div>
+
+  <div id="topbar">
+    <div class="title">🚴 무무 라이딩</div>
+    <button id="btnSensor">센서 연결</button>
+    <button id="btnHr">심박 연결</button>
+    <button id="btnVideo">풍경 영상</button>
+    <button id="btnHistory">기록</button>
+    <button id="btnSettings">설정</button>
+    <button id="btnFull">전체화면</button>
+  </div>
+  <div id="chips">
+    <span class="chip"><span class="dot" id="dotSensor"></span><span id="txtSensor">센서 없음</span></span>
+    <span class="chip"><span class="dot" id="dotHr"></span><span id="txtHr">심박 없음</span></span>
+    <span class="chip" id="chipState">대기 중</span>
+  </div>
+  <div id="toast"></div>
+
+  <div id="dash">
+    <div id="tiles">
+      <div class="tile"><div class="label">운동 시간</div><div class="val" id="vTime">0:00</div><div class="unit">분:초</div></div>
+      <div class="tile key"><div class="label">속도</div><div class="val" id="vSpeed">0.0</div><div class="unit">km/h (추정)</div></div>
+      <div class="tile key"><div class="label">회전수</div><div class="val" id="vCad">0</div><div class="unit">rpm</div></div>
+      <div class="tile"><div class="label">거리</div><div class="val" id="vDist">0.00</div><div class="unit">km</div></div>
+      <div class="tile"><div class="label">파워</div><div class="val" id="vPow">0</div><div class="unit">W (추정)</div></div>
+      <div class="tile"><div class="label">칼로리</div><div class="val" id="vCal">0</div><div class="unit">kcal (추정)</div></div>
+      <div class="tile"><div class="label">심박</div><div class="val" id="vHr">--</div><div class="unit">bpm</div></div>
+    </div>
+    <div id="controls">
+      <div id="resist">
+        <button id="rDown">−</button>
+        <div class="lv"><b id="rLv">5</b><span>저항 단계</span></div>
+        <button id="rUp">+</button>
+      </div>
+      <div id="sim"><span>시험 모드 회전수</span><input type="range" id="simRange" min="0" max="120" value="0"><b id="simVal">0</b></div>
+      <div class="grow"></div>
+      <button id="mainBtn" class="primary">시작</button>
+      <button id="stopBtn" class="danger">끝내고 저장</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileVideo" accept="video/*" hidden>
+
+<div class="modal" id="mSettings"><div class="sheet">
+  <h2>설정</h2>
+  <div class="row"><div class="desc">페달 한 바퀴당 거리 (m)<small>속도·거리 계산에 쓰는 가상 기어입니다. 숫자를 키우면 같은 회전수에서 더 빠르게 나옵니다. 기본 5.5 m → 90 rpm일 때 약 30 km/h.</small></div><input type="number" id="sMpr" step="0.1" min="1" max="12"></div>
+  <div class="row"><div class="desc">영상 기준 속도 (km/h)<small>고른 영상이 촬영된 속도입니다. 이 속도로 달리면 영상이 원래 속도로 재생됩니다. 자전거 주행 영상은 보통 20~25.</small></div><input type="number" id="sBase" step="1" min="5" max="60"></div>
+  <div class="row"><div class="desc">플라이휠 ÷ 페달 회전 비율<small>센서를 플라이휠 축(스피드 모드)에 달았을 때만 씁니다. 크랭크(케이던스 모드)에 달았다면 무시해도 됩니다. 모르면 아래 「비율 맞추기」를 누르세요.</small></div><input type="number" id="sRatio" step="0.01" min="1" max="10"></div>
+  <div class="row"><div class="desc">시험 모드<small>센서 없이 화면 아래 막대로 회전수를 흉내 냅니다. 센서가 오기 전 미리 써 보는 용도예요.</small></div><button class="switch" id="sSim"></button></div>
+  <div class="actions">
+    <button id="btnCalib">비율 맞추기 (플라이휠 센서용)</button>
+    <button class="primary" id="btnSaveSettings">저장</button>
+  </div>
+</div></div>
+
+<div class="modal" id="mCalib"><div class="sheet">
+  <h2>플라이휠 비율 맞추기</h2>
+  <p style="font-size:18px;line-height:1.6">1. 아래 「시작」을 누릅니다.<br>2. 페달을 <b>천천히 정확히 20바퀴</b> 돌립니다. (한쪽 발이 맨 아래에 올 때마다 하나씩 세기)<br>3. 멈춘 뒤 「완료」를 누르면 비율이 자동으로 들어갑니다.</p>
+  <p id="calibInfo" style="font-size:20px;color:var(--accent)">플라이휠 회전: 0</p>
+  <div class="actions"><button id="calibCancel">닫기</button><button id="calibStart">시작</button><button class="primary" id="calibDone">완료</button></div>
+</div></div>
+
+<div class="modal" id="mHistory"><div class="sheet">
+  <h2>운동 기록</h2>
+  <div class="sum" id="sumBox"></div>
+  <div style="overflow:auto"><table><thead><tr><th>날짜</th><th>시간</th><th>거리</th><th>평균 속도</th><th>평균 rpm</th><th>칼로리</th><th>평균 심박</th><th></th></tr></thead><tbody id="histBody"></tbody></table></div>
+  <div class="actions"><button id="btnCsv">엑셀용 파일로 내려받기</button><button class="primary" id="histClose">닫기</button></div>
+</div></div>
+
+<script>
+'use strict';
+/* ---------- 저장소 (실패해도 앱은 동작) ---------- */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } }
+};
+const DEFAULTS = { mpr:5.5, base:20, ratio:3.5, sim:false, level:5 };
+const cfg = Object.assign({}, DEFAULTS, store.get('bike.cfg', {}));
+const saveCfg = () => store.set('bike.cfg', cfg);
+
+const $ = id => document.getElementById(id);
+function toast(msg, ms=3000){ const t=$('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(toast._t); toast._t=setTimeout(()=>t.style.display='none', ms); }
+
+/* ---------- 센서 값 해석 (CSC: 0x2A5B, 심박: 0x2A37) ---------- */
+const CSC = {
+  prevWheel:null, prevCrank:null, lastWheelMove:0, lastCrankMove:0,
+  wheelRpm:0, crankRpm:0, hasCrank:false, hasWheel:false, wheelTotal:0
+};
+function parseCsc(dv, now){
+  const flags = dv.getUint8(0); let off = 1; const out = {};
+  if(flags & 1){ out.wRevs = dv.getUint32(off, true); out.wTime = dv.getUint16(off+4, true); off += 6; }
+  if(flags & 2){ out.cRevs = dv.getUint16(off, true); out.cTime = dv.getUint16(off+2, true); }
+  if(out.wRevs !== undefined){
+    CSC.hasWheel = true;
+    const p = CSC.prevWheel;
+    if(p){
+      const dr = (out.wRevs - p.revs + 4294967296) % 4294967296;
+      const dt = ((out.wTime - p.time + 65536) % 65536) / 1024;
+      if(dr > 0 && dt > 0 && dr < 500){ const rpm = dr / dt * 60; if(rpm < 2000){ CSC.wheelRpm = smooth(CSC.wheelRpm, rpm); CSC.lastWheelMove = now; } CSC.wheelTotal += dr; }
+    }
+    CSC.prevWheel = { revs:out.wRevs, time:out.wTime };
+  }
+  if(out.cRevs !== undefined){
+    CSC.hasCrank = true;
+    const p = CSC.prevCrank;
+    if(p){
+      const dr = (out.cRevs - p.revs + 65536) % 65536;
+      const dt = ((out.cTime - p.time + 65536) % 65536) / 1024;
+      if(dr > 0 && dt > 0 && dr < 50){ const rpm = dr / dt * 60; if(rpm < 250){ CSC.crankRpm = smooth(CSC.crankRpm, rpm); CSC.lastCrankMove = now; } }
+    }
+    CSC.prevCrank = { revs:out.cRevs, time:out.cTime };
+  }
+  return out;
+}
+function smooth(prev, v){ return prev > 0 ? prev*0.4 + v*0.6 : v; }
+function parseHr(dv){ const f = dv.getUint8(0); return (f & 1) ? dv.getUint16(1, true) : dv.getUint8(1); }
+
+/* 현재 페달 회전수: 크랭크 센서 우선, 없으면 플라이휠 ÷ 비율 */
+function sensorCadence(now){
+  if(CSC.hasCrank){ if(now - CSC.lastCrankMove > 2500) CSC.crankRpm = 0; return CSC.crankRpm; }
+  if(CSC.hasWheel){ if(now - CSC.lastWheelMove > 2500) CSC.wheelRpm = 0; return CSC.wheelRpm / (cfg.ratio || 1); }
+  return 0;
+}
+
+/* ---------- 블루투스 ---------- */
+let sensorDev = null, hrDev = null, hrValue = 0, hrAt = 0;
+function btOk(){
+  if(!navigator.bluetooth){ toast('이 브라우저는 블루투스를 지원하지 않아요. 안드로이드 태블릿의 「크롬」으로 열어 주세요.', 5000); return false; }
+  return true;
+}
+function setChip(dotId, txtId, state, text){ $(dotId).className = 'dot ' + (state||''); $(txtId).textContent = text; }
+
+async function connectSensor(){
+  if(!btOk()) return;
+  try{
+    const dev = await navigator.bluetooth.requestDevice({ filters:[{ services:['cycling_speed_and_cadence'] }] });
+    sensorDev = dev; dev.addEventListener('gattserverdisconnected', () => onDrop('sensor'));
+    await attachSensor(dev);
+  }catch(e){ if(e.name !== 'NotFoundError') toast('센서 연결 실패: ' + e.message, 5000); }
+}
+async function attachSensor(dev){
+  setChip('dotSensor','txtSensor','wait','연결 중…');
+  const srv = await dev.gatt.connect();
+  const svc = await srv.getPrimaryService('cycling_speed_and_cadence');
+  const ch = await svc.getCharacteristic('csc_measurement');
+  ch.addEventListener('characteristicvaluechanged', e => parseCsc(e.target.value, performance.now()));
+  await ch.startNotifications();
+  CSC.prevWheel = CSC.prevCrank = null;
+  setChip('dotSensor','txtSensor','on', (dev.name || '센서') + ' 연결됨');
+  toast('센서가 연결됐어요. 페달을 밟아 보세요.');
+}
+async function connectHr(){
+  if(!btOk()) return;
+  try{
+    const dev = await navigator.bluetooth.requestDevice({ filters:[{ services:['heart_rate'] }] });
+    hrDev = dev; dev.addEventListener('gattserverdisconnected', () => onDrop('hr'));
+    await attachHr(dev);
+  }catch(e){ if(e.name !== 'NotFoundError') toast('심박계 연결 실패: ' + e.message, 5000); }
+}
+async function attachHr(dev){
+  setChip('dotHr','txtHr','wait','연결 중…');
+  const srv = await dev.gatt.connect();
+  const ch = await (await srv.getPrimaryService('heart_rate')).getCharacteristic('heart_rate_measurement');
+  ch.addEventListener('characteristicvaluechanged', e => { hrValue = parseHr(e.target.value); hrAt = performance.now(); });
+  await ch.startNotifications();
+  setChip('dotHr','txtHr','on', (dev.name || '심박계') + ' 연결됨');
+}
+async function onDrop(kind){
+  const dev = kind === 'sensor' ? sensorDev : hrDev;
+  const ids = kind === 'sensor' ? ['dotSensor','txtSensor'] : ['dotHr','txtHr'];
+  setChip(ids[0], ids[1], 'wait', '끊김 — 다시 연결 중…');
+  for(let i = 0; i < 4; i++){
+    await new Promise(r => setTimeout(r, 1500 * (i+1)));
+    try{ if(kind === 'sensor') await attachSensor(dev); else await attachHr(dev); return; }catch(e){}
+  }
+  setChip(ids[0], ids[1], '', kind === 'sensor' ? '센서 끊김 (다시 연결 눌러 주세요)' : '심박 끊김');
+}
+
+/* ---------- 운동 상태 ---------- */
+const ride = { state:'idle', start:0, moving:0, dist:0, kj:0, cadSum:0, cadN:0, spdMax:0, hrSum:0, hrN:0, hrMax:0, lvSum:0 };
+let cadence = 0, speed = 0, power = 0, lastTick = performance.now(), idleSince = 0;
+
+function resetRide(){ idleSince = Date.now(); Object.assign(ride, { state:'idle', start:0, moving:0, dist:0, kj:0, cadSum:0, cadN:0, spdMax:0, hrSum:0, hrN:0, hrMax:0, lvSum:0 }); }
+function setState(s){
+  ride.state = s;
+  $('mainBtn').textContent = s === 'riding' ? '일시정지' : (s === 'paused' ? '이어 하기' : '시작');
+  $('chipState').textContent = { idle:'대기 중', riding:'운동 중', paused:'일시정지' }[s];
+  if(s === 'riding') keepAwake(true);
+}
+function powerFrom(cad, lv){ return cad <= 0 ? 0 : cad * (0.6 + 0.24 * lv); } /* 패드 저항이라 실측 불가: 회전수·저항 단계로 추정 */
+
+function tick(){
+  const now = performance.now(); const dt = Math.min((now - lastTick) / 1000, 1); lastTick = now;
+  cadence = cfg.sim ? Number($('simRange').value) : sensorCadence(now);
+  speed = cadence * cfg.mpr * 60 / 1000;
+  power = powerFrom(cadence, cfg.level);
+  if(ride.state === 'idle' && cadence > 5 && Date.now() - idleSince > 5000){ ride.start = Date.now(); setState('riding'); toast('운동을 시작했어요'); }
+  if(ride.state === 'riding' && cadence > 0){
+    ride.moving += dt; ride.dist += speed / 3.6 * dt; ride.kj += power * dt / 1000;
+    ride.cadSum += cadence * dt; ride.cadN += dt; ride.lvSum += cfg.level * dt;
+    ride.spdMax = Math.max(ride.spdMax, speed);
+    if(hrLive()){ ride.hrSum += hrValue * dt; ride.hrN += dt; ride.hrMax = Math.max(ride.hrMax, hrValue); }
+  }
+  render(); driveVideo(dt);
+  requestAnimationFrame(tick);
+}
+function hrLive(){ return hrValue > 0 && performance.now() - hrAt < 5000; }
+function fmtTime(s){ s = Math.floor(s); const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60; return (h ? h + ':' + String(m).padStart(2,'0') : m) + ':' + String(x).padStart(2,'0'); }
+let lastRender = 0;
+function render(){
+  const now = performance.now(); if(now - lastRender < 200) return; lastRender = now;
+  $('vTime').textContent = fmtTime(ride.moving);
+  $('vSpeed').textContent = speed.toFixed(1);
+  $('vCad').textContent = Math.round(cadence);
+  $('vDist').textContent = (ride.dist / 1000).toFixed(2);
+  $('vPow').textContent = Math.round(power);
+  $('vCal').textContent = Math.round(ride.kj); /* 사람 효율 약 24% → 기계일 1 kJ ≈ 1 kcal 소모 */
+  $('vHr').textContent = hrLive() ? hrValue : '--';
+  $('road').style.backgroundPositionX = (-(ride.dist * 3) % 60) + 'px';
+}
+
+/* ---------- 풍경 영상 ---------- */
+const video = $('video'); let vRate = 1, hasVideo = false;
+$('fileVideo').addEventListener('change', e => {
+  const f = e.target.files[0]; if(!f) return;
+  if(video.src) URL.revokeObjectURL(video.src);
+  video.src = URL.createObjectURL(f); hasVideo = true;
+  video.style.display = 'block'; $('noVideo').style.display = 'none';
+  video.load(); toast('영상을 골랐어요: ' + f.name);
+});
+function driveVideo(dt){
+  if(!hasVideo) return;
+  const moving = ride.state === 'riding' && speed > 1;
+  if(!moving){ if(!video.paused) video.pause(); return; }
+  const target = Math.min(2.5, Math.max(0.3, speed / cfg.base));
+  vRate += (target - vRate) * Math.min(1, dt * 2);
+  if(Math.abs(video.playbackRate - vRate) > 0.02) video.playbackRate = vRate;
+  if(video.paused) video.play().catch(()=>{});
+}
+
+/* ---------- 화면 꺼짐 방지 ---------- */
+let wakeLock = null;
+async function keepAwake(on){
+  try{
+    if(on && !wakeLock && 'wakeLock' in navigator){ wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => wakeLock = null); }
+    if(!on && wakeLock){ await wakeLock.release(); wakeLock = null; }
+  }catch(e){}
+}
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && ride.state === 'riding') keepAwake(true); });
+
+/* ---------- 기록 ---------- */
+function loadHist(){ return store.get('bike.history', []); }
+function finishRide(){
+  if(ride.moving < 10){ resetRide(); setState('idle'); toast('10초 미만이라 저장하지 않았어요'); keepAwake(false); return; }
+  const rec = {
+    id: Date.now(), start: ride.start || Date.now(), sec: Math.round(ride.moving),
+    km: +(ride.dist/1000).toFixed(2), avgKmh: +((ride.dist/1000) / (ride.moving/3600)).toFixed(1),
+    maxKmh: +ride.spdMax.toFixed(1), avgRpm: Math.round(ride.cadSum / Math.max(ride.cadN, 1)),
+    kcal: Math.round(ride.kj), avgW: Math.round(ride.kj * 1000 / Math.max(ride.moving,1)),
+    avgHr: ride.hrN ? Math.round(ride.hrSum / ride.hrN) : null, maxHr: ride.hrMax || null,
+    avgLv: +(ride.lvSum / Math.max(ride.cadN,1)).toFixed(1)
+  };
+  const h = loadHist(); h.unshift(rec);
+  const ok = store.set('bike.history', h);
+  toast(ok ? `저장했어요 · ${fmtTime(rec.sec)} · ${rec.km} km · ${rec.kcal} kcal` : '저장에 실패했어요 (저장 공간 문제)', 5000);
+  resetRide(); setState('idle'); keepAwake(false);
+}
+function fmtDate(ts){ const d = new Date(ts); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function showHistory(){
+  const h = loadHist(); const now = new Date();
+  const wk = new Date(now); wk.setHours(0,0,0,0); wk.setDate(wk.getDate() - ((wk.getDay()+6)%7));
+  const mo = new Date(now.getFullYear(), now.getMonth(), 1);
+  const agg = from => h.filter(r => r.start >= from).reduce((a,r) => (a.n++, a.km += r.km, a.sec += r.sec, a.kcal += r.kcal, a), { n:0, km:0, sec:0, kcal:0 });
+  const box = (t, a) => `<div><span>${t}</span><b>${a.km.toFixed(1)} km</b><span>${a.n}회 · ${fmtTime(a.sec)} · ${a.kcal} kcal</span></div>`;
+  $('sumBox').innerHTML = box('이번 주', agg(+wk)) + box('이번 달', agg(+mo)) + box('전체', agg(0));
+  $('histBody').innerHTML = h.length ? h.map(r => `<tr><td>${fmtDate(r.start)}</td><td>${fmtTime(r.sec)}</td><td>${r.km} km</td><td>${r.avgKmh}</td><td>${r.avgRpm}</td><td>${r.kcal}</td><td>${r.avgHr ?? '-'}</td><td><button data-del="${r.id}">삭제</button></td></tr>`).join('')
+    : '<tr><td colspan="8" style="text-align:center;color:var(--sub)">아직 기록이 없어요</td></tr>';
+  $('mHistory').classList.add('show');
+}
+$('histBody').addEventListener('click', e => {
+  const id = e.target.dataset.del; if(!id) return;
+  if(!confirm('이 기록을 지울까요?')) return;
+  store.set('bike.history', loadHist().filter(r => String(r.id) !== id)); showHistory();
+});
+$('btnCsv').onclick = () => {
+  const h = loadHist();
+  const rows = [['날짜','운동시간(초)','거리(km)','평균속도(km/h)','최고속도(km/h)','평균회전수(rpm)','칼로리(kcal)','평균파워(W)','평균심박','최고심박','평균저항']]
+    .concat(h.map(r => [new Date(r.start).toLocaleString('ko-KR'), r.sec, r.km, r.avgKmh, r.maxKmh, r.avgRpm, r.kcal, r.avgW, r.avgHr ?? '', r.maxHr ?? '', r.avgLv]));
+  const csv = '﻿' + rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv' }));
+  a.download = '무무라이딩_기록.csv'; a.click();
+};
+
+/* ---------- 설정 ---------- */
+function openSettings(){
+  $('sMpr').value = cfg.mpr; $('sBase').value = cfg.base; $('sRatio').value = cfg.ratio;
+  $('sSim').classList.toggle('on', cfg.sim); $('mSettings').classList.add('show');
+}
+$('sSim').onclick = () => $('sSim').classList.toggle('on');
+$('btnSaveSettings').onclick = () => {
+  const num = (id, d, lo, hi) => { const v = parseFloat($(id).value); return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
+  cfg.mpr = num('sMpr', DEFAULTS.mpr, 1, 12); cfg.base = num('sBase', DEFAULTS.base, 5, 60); cfg.ratio = num('sRatio', DEFAULTS.ratio, 1, 10);
+  cfg.sim = $('sSim').classList.contains('on'); saveCfg(); applySim();
+  $('mSettings').classList.remove('show'); toast('설정을 저장했어요');
+};
+function applySim(){ $('sim').style.display = cfg.sim ? 'flex' : 'none'; if(!cfg.sim) $('simRange').value = 0; }
+$('simRange').oninput = e => $('simVal').textContent = e.target.value;
+
+/* 플라이휠 비율 맞추기 */
+let calib = null, calibTimer = null;
+$('btnCalib').onclick = () => { $('mSettings').classList.remove('show'); $('calibInfo').textContent = CSC.hasWheel ? '플라이휠 회전: 0' : '먼저 플라이휠 센서(스피드 모드)를 연결해 주세요'; $('mCalib').classList.add('show'); };
+$('calibStart').onclick = () => { calib = CSC.wheelTotal; clearInterval(calibTimer); calibTimer = setInterval(() => $('calibInfo').textContent = '플라이휠 회전: ' + (CSC.wheelTotal - calib), 300); };
+$('calibDone').onclick = () => {
+  clearInterval(calibTimer);
+  const n = calib === null ? 0 : CSC.wheelTotal - calib;
+  if(n < 20){ toast('플라이휠 회전이 잡히지 않았어요. 센서 연결과 모드를 확인해 주세요.', 5000); return; }
+  cfg.ratio = +(n / 20).toFixed(2); saveCfg(); calib = null;
+  $('mCalib').classList.remove('show'); toast('비율을 ' + cfg.ratio + '로 맞췄어요');
+};
+$('calibCancel').onclick = () => { clearInterval(calibTimer); calib = null; $('mCalib').classList.remove('show'); };
+
+/* ---------- 버튼 ---------- */
+function setLevel(v){ cfg.level = Math.min(10, Math.max(1, v)); $('rLv').textContent = cfg.level; saveCfg(); }
+$('rUp').onclick = () => setLevel(cfg.level + 1);
+$('rDown').onclick = () => setLevel(cfg.level - 1);
+$('mainBtn').onclick = () => {
+  if(ride.state === 'riding') setState('paused');
+  else { if(ride.state === 'idle') ride.start = Date.now(); setState('riding'); }
+};
+$('stopBtn').onclick = () => { if(ride.state === 'idle' && ride.moving === 0){ toast('아직 운동 기록이 없어요'); return; } if(confirm('운동을 끝내고 기록을 저장할까요?')) finishRide(); };
+$('btnSensor').onclick = connectSensor;
+$('btnHr').onclick = connectHr;
+$('btnVideo').onclick = () => $('fileVideo').click();
+$('btnHistory').onclick = showHistory;
+$('histClose').onclick = () => $('mHistory').classList.remove('show');
+$('btnSettings').onclick = openSettings;
+$('btnFull').onclick = () => { if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(()=>{}); };
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if(e.target === m) m.classList.remove('show'); }));
+window.addEventListener('beforeunload', e => { if(ride.moving > 10){ e.preventDefault(); e.returnValue = ''; } });
+
+/* ---------- 시작 ---------- */
+setLevel(cfg.level); applySim(); setState('idle');
+if(!navigator.bluetooth) setChip('dotSensor','txtSensor','','이 브라우저는 블루투스 미지원');
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+requestAnimationFrame(tick);
+window.__bike = { parseCsc, CSC, sensorCadence, cfg }; /* 시험용 */
+</script>
+</body>
+</html>

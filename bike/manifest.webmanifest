@@ -1,0 +1,16 @@
+{
+  "name": "무무 라이딩",
+  "short_name": "무무 라이딩",
+  "description": "실내자전거 라이딩 앱",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0f1720",
+  "theme_color": "#0f1720",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
