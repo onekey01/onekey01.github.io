@@ -34,7 +34,14 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 5000);
 function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
-addEventListener('resize', resize); resize();
+/* 화면 맞춤: 기준 1280×800으로 설계하고, 실제 화면의 빠듯한 쪽에 맞춰 통째로 확대·축소 */
+const BASE_W = 1280, BASE_H = 800;
+function fitUI() {
+  const w = innerWidth, h = innerHeight, s = Math.min(w / BASE_W, h / BASE_H);
+  document.querySelectorAll('.fit').forEach((el) => { el.style.width = w / s + 'px'; el.style.height = h / s + 'px'; el.style.transform = `scale(${s})`; });
+}
+addEventListener('resize', () => { resize(); fitUI(); }); resize(); fitUI();
+addEventListener('orientationchange', () => setTimeout(() => { resize(); fitUI(); }, 300));
 
 const rider = new Rider(); scene.add(rider.root);
 let world = null, course = null;
