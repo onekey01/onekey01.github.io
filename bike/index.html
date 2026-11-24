@@ -37,11 +37,15 @@ button.on{background:var(--accent);color:#1b1300;border-color:transparent;font-w
 .bar{height:10px;border-radius:6px;background:rgba(255,255,255,.15);overflow:hidden;margin:8px 0}.bar i{display:block;height:100%;background:linear-gradient(90deg,#ffb020,#ff7a1a);width:0}
 #me small{color:var(--sub);display:block;line-height:1.5}
 #me button{width:100%;margin-top:10px}
-#courses{display:flex;gap:14px;align-self:end;justify-content:flex-end;min-width:0}
-.course{flex:1 1 0;min-width:0;max-width:340px;padding:14px;border-radius:18px;background:var(--panel);border:2px solid var(--line);backdrop-filter:blur(8px);cursor:pointer}
+#courseArea{align-self:end;min-width:0;display:flex;flex-direction:column;gap:10px}
+#tabs{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}#tabs button{padding:8px 14px;font-size:16px}#tabs button.sel{background:var(--accent);color:#1b1300;font-weight:800}
+#courses{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory;justify-content:flex-start}
+#courses::-webkit-scrollbar{height:6px}#courses::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3);border-radius:3px}
+.course{flex:0 0 280px;scroll-snap-align:start;padding:14px;border-radius:18px;background:var(--panel);border:2px solid var(--line);backdrop-filter:blur(8px);cursor:pointer}
 .course.sel{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,176,32,.25)}
 .cname{font-size:21px;font-weight:800}.csub{color:var(--sub);font-size:14px;margin:2px 0 8px}
 .course canvas{width:100%;height:70px;display:block}
+.course.loading{opacity:.5}.ctag{font-size:12px;color:var(--sub);margin-top:4px;min-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cstat{display:flex;justify-content:space-between;font-size:14px;margin-top:6px}.cbest{color:var(--accent);font-size:14px;margin-top:4px;min-height:18px}
 #go{grid-column:2;display:flex;justify-content:flex-end;gap:10px}
 #btnRide{font-size:24px;padding:16px 44px;border-radius:18px}
@@ -142,7 +146,7 @@ td em{font-style:normal;font-size:12px;background:rgba(255,176,32,.25);color:var
     <button id="btnHistory">📋 운동 기록</button>
     <button id="btnSettings">⚙️ 설정</button>
   </div>
-  <div id="courses"></div>
+  <div id="courseArea"><div id="tabs"></div><div id="courses"></div></div>
   <div id="go"><button id="btnRide" class="primary">달리기 ▶</button></div>
 </div>
 

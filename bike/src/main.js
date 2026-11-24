@@ -10,7 +10,7 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
 };
-const DEF = { weight: 70, ratio: 3.5, level: 5, test: false, testMode: 'steady', jersey: 'orange', bike: 'white', course: 0 };
+const DEF = { weight: 70, ratio: 3.5, level: 5, test: false, testMode: 'steady', jersey: 'orange', bike: 'white', course: 0, courseId: 'coast', tab: '가상' };
 const cfg = Object.assign({}, DEF, store.get('bike2.cfg', {}));
 const saveCfg = () => store.set('bike2.cfg', cfg);
 const prof = Object.assign({ xp: 0, best: {}, done: {} }, store.get('bike2.profile', {}));
@@ -51,7 +51,7 @@ function applyLook() {
 }
 function loadCourse(i) {
   if (world) world.dispose();
-  course = COURSES[i]; cfg.course = i; saveCfg();
+  course = COURSES[i]; cfg.course = i; cfg.courseId = course.id; saveCfg();
   world = buildWorld(scene, course);
 }
 
@@ -60,7 +60,7 @@ const P = { pos: new THREE.Vector3(), ahead: new THREE.Vector3(), cam: new THREE
 let mode = 'menu';
 const ride = {};
 function resetRide() {
-  Object.assign(ride, { d: 0, v: 0, moving: 0, kj: 0, climb: 0, lastY: null, xp: 0, matched: 0, laps: 0, lapStart: 0, startAt: Date.now(),
+  Object.assign(ride, { d: 0, v: 0, moving: 0, summitDone: 0, climbStart: 0, kj: 0, climb: 0, lastY: null, xp: 0, matched: 0, laps: 0, lapStart: 0, startAt: Date.now(),
     cadSum: 0, hrSum: 0, hrN: 0, hrMax: 0, spdMax: 0, startLevel: levelOf(prof.xp).level, xpShown: 0, unlocked: [], test: cfg.test });
 }
 resetRide();
@@ -111,14 +111,25 @@ function step(dt) {
   }
   ride.xp += (dd / 1000) * 10;
   if (Math.abs(cfg.level - rec) <= 1 && cadence > 0) { ride.matched += dd; ride.xp += (dd / 1000) * 5; }
+  // 왕복 코스: 정상 도착
+  const P0 = world.path;
+  if (P0.outback) {
+    const lapNo = Math.floor(ride.d / P0.length), u = ride.d - lapNo * P0.length;
+    if (u >= P0.fwd && ride.summitDone <= lapNo) {
+      ride.summitDone = lapNo + 1; const t = ride.moving - ride.climbStart;
+      const hill = courseStats(course).climb > 100; let msg = `${hill ? '⛰' : '🏁'} ${course.summit} 도착! ${hill ? '오르막' : '편도'} 기록 ${fmtTime(t)}`; const best = prof.best[course.id];
+      if (!best || t < best) { prof.best[course.id] = Math.round(t); if (best) msg += ' · 최고 기록 갱신!'; }
+      ride.xp += 40; toast(msg + (hill ? ' · +40 경험치 · 이제 내려가요' : ' · +40 경험치 · 이제 돌아가요'), 6000); saveProf();
+    }
+  }
   // 한 바퀴 완주
   const lap = Math.floor(ride.d / world.path.length);
   if (lap > ride.laps) {
     ride.laps = lap; const lapTime = ride.moving - ride.lapStart; ride.lapStart = ride.moving;
-    let bonus = 30, msg = `${lap}바퀴 완주! 기록 ${fmtTime(lapTime)}`;
+    ride.climbStart = ride.moving;
+    let bonus = 30, msg = P0.outback ? `왕복 ${lap}회 완주! ${fmtTime(lapTime)}` : `${lap}바퀴 완주! 기록 ${fmtTime(lapTime)}`;
     if (!prof.done[course.id]) { bonus += 100; prof.done[course.id] = true; msg += ' · 첫 완주 보너스'; }
-    const best = prof.best[course.id];
-    if (!best || lapTime < best) { prof.best[course.id] = Math.round(lapTime); if (best) msg += ' · 최고 기록 갱신!'; }
+    if (!P0.outback) { const best = prof.best[course.id]; if (!best || lapTime < best) { prof.best[course.id] = Math.round(lapTime); if (best) msg += ' · 최고 기록 갱신!'; } }
     ride.xp += bonus; toast(msg + ` · +${bonus} 경험치`, 5000); saveProf();
   }
   // 레벨업 확인
@@ -175,7 +186,10 @@ function hud() {
   g.className = grade > 4 ? 'hard' : grade > 1.5 ? 'mid' : grade < -1.5 ? 'down' : '';
   const lapD = ride.d % world.path.length;
   $('vDist').textContent = (ride.d / 1000).toFixed(2);
-  $('vLap').textContent = `${ride.laps + 1}바퀴째 · ${(lapD / 1000).toFixed(1)} / ${(world.path.length / 1000).toFixed(1)} km`;
+  const Pw = world.path;
+  $('vLap').textContent = Pw.outback
+    ? (lapD < Pw.fwd ? `오르막 · ${(lapD / 1000).toFixed(1)} / ${(Pw.fwd / 1000).toFixed(1)} km` : `내리막 · 출발점까지 ${((Pw.length - lapD) / 1000).toFixed(1)} km`)
+    : `${ride.laps + 1}바퀴째 · ${(lapD / 1000).toFixed(1)} / ${(Pw.length / 1000).toFixed(1)} km`;
   $('vClimb').textContent = Math.round(ride.climb) + ' m';
   drawProfile($('profile'), course, lapD / world.path.length);
   // 노브 안내
@@ -203,15 +217,21 @@ function renderMenu() {
   $('mLevel').textContent = lv.level; $('mXpBar').style.width = (lv.into / lv.need) * 100 + '%';
   $('mXp').textContent = `${Math.floor(lv.into)} / ${lv.need} 경험치`;
   const nr = nextReward(lv.level); $('mNext').textContent = nr ? `다음 보상: Lv ${nr.L} ${nr.t}` : '모든 보상을 모았어요!';
+  const tabs = ['가상', '해외', '국내', '순환'];
+  if (!tabs.includes(cfg.tab)) cfg.tab = course.tab;
+  $('tabs').innerHTML = tabs.map((t) => `<button class="${t === cfg.tab ? 'sel' : ''}" data-tab="${t}">${{ 가상: '🎮 가상 코스', 해외: '🌍 해외 명소', 국내: '🇰🇷 국내 명소', 순환: '🔁 순환 코스' }[t]}</button>`).join('');
   const box = $('courses'); box.innerHTML = '';
   COURSES.forEach((c, i) => {
+    if (c.tab !== cfg.tab) return;
     const st = courseStats(c), best = prof.best[c.id];
+    const one = c.kind === 'outback' && c.real;
     const el = document.createElement('div'); el.className = 'course' + (i === cfg.course ? ' sel' : '');
-    el.innerHTML = `<div class="cname">${c.name}</div><div class="csub">${c.sub}</div><canvas width="300" height="70"></canvas>
-      <div class="cstat"><span>${(c.length / 1000).toFixed(0)} km</span><span>오르막 ${st.climb} m</span><span>최대 ${st.maxGrade.toFixed(0)}%</span></div>
-      <div class="cbest">${best ? '내 최고 ' + fmtTime(best) : prof.done[c.id] ? '' : '첫 완주 보너스 +100'}</div>`;
+    el.innerHTML = `<div class="cname">${c.flag || ''} ${c.name}</div><div class="csub">${c.sub}</div><canvas width="300" height="64"></canvas>
+      <div class="cstat"><span>${one ? '편도 ' + (c.len / 1000).toFixed(1) : (c.length / 1000).toFixed(1)} km</span><span>오르막 ${st.climb} m</span><span>최대 ${st.maxGrade.toFixed(0)}%</span></div>
+      <div class="ctag">${c.real ? (one ? '왕복' : '순환') + ' · 실제 지도' + (c.note ? ' · ' + c.note : '') : '가상 코스'}</div>
+      <div class="cbest">${best ? (one ? '내 최고 오르막 ' : '내 최고 ') + fmtTime(best) : prof.done[c.id] ? '' : '첫 완주 보너스 +100'}</div>`;
     drawProfile(el.querySelector('canvas'), c);
-    el.onclick = () => { if (cfg.course !== i) { loadCourse(i); ride.d = 0; renderMenu(); } };
+    el.onclick = () => { if (cfg.course !== i) { el.classList.add('loading'); setTimeout(() => { loadCourse(i); ride.d = 0; renderMenu(); }, 30); } };
     box.appendChild(el);
   });
   $('btnTest').classList.toggle('on', cfg.test);
@@ -352,6 +372,7 @@ const bt = makeBluetooth((kind, st, text) => { $(kind === 'sensor' ? 'dotSensor'
 $('btnSensor').onclick = () => bt.connectSensor();
 $('btnHr').onclick = () => bt.connectHr();
 $('btnRide').onclick = startRide;
+$('tabs').addEventListener('click', (e) => { const t = e.target.closest('[data-tab]'); if (!t) return; cfg.tab = t.dataset.tab; saveCfg(); renderMenu(); });
 $('btnEnd').onclick = () => { if (confirm('라이딩을 끝내고 기록을 저장할까요?')) endRide(); };
 $('btnLocker').onclick = () => { renderLocker(); $('mLocker').classList.add('show'); };
 $('btnHistory').onclick = showHistory;
@@ -377,7 +398,7 @@ function loop() {
 }
 
 /* ---------------- 시작 ---------------- */
-loadCourse(Math.min(cfg.course, COURSES.length - 1)); applyLook(); setLevel(cfg.level, true); applyTest(); renderMenu();
+{ const ci = COURSES.findIndex((c) => c.id === cfg.courseId); loadCourse(ci >= 0 ? ci : 0); } applyLook(); setLevel(cfg.level, true); applyTest(); renderMenu();
 document.body.dataset.screen = 'menu';
 if (!navigator.bluetooth) { $('txtSensor').textContent = '블루투스 미지원 브라우저'; }
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
