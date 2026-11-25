@@ -1,10 +1,11 @@
 // 3D 세계: 코스 길·지형·나무·건물·바다·하늘·랜드마크
 import * as THREE from 'three';
-import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { TEX } from './textures.js';
 
-const SUN_DIR = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - 38), THREE.MathUtils.degToRad(150));
+const DEFAULT_SUN = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - 38), THREE.MathUtils.degToRad(150));
+/** 산·고개 코스는 맑은 하늘, 나머지는 구름 낀 하늘 */
+export const skyFor = (course) => (['alps', 'stelvio', 'ventoux', 'seorak', 'mountain'].includes(course.theme) ? 'clear' : 'cloudy');
 
 // 테마: 지형 모양과 색, 나무·건물 수
 const BROADLEAF = { coast: 0.6, hills: 0.35, seoulHill: 0.6, seoulFlat: 0.9, paris: 1, nyc: 0.85, jeju: 0.8, lake: 0.55 }; // 활엽수 비율 (나머지는 침엽수)
@@ -140,25 +141,16 @@ export class Path {
   ll(lon, lat) { const [x, z] = this.proj.fwd(lon, lat); return [x * this.scale, z * this.scale]; }
 }
 
-export function buildWorld(scene, course, renderer) {
+export function buildWorld(scene, course, renderer, sky) {
+  const SUN_DIR = sky?.sun || DEFAULT_SUN;
   const thName = course.theme, th = THEMES[thName];
   const path = new Path(course);
   const group = new THREE.Group();
-  // 하늘: 대기 산란 하늘 + 같은 하늘을 반사광(환경광)으로도 사용
-  const sky = new Sky(); sky.scale.setScalar(4500);
-  const su = sky.material.uniforms;
-  su.turbidity.value = course.theme === 'nyc' || course.theme === 'paris' || course.theme.startsWith('seoul') ? 6 : 3.5;
-  su.rayleigh.value = 1.6; su.mieCoefficient.value = 0.004; su.mieDirectionalG.value = 0.8; su.sunPosition.value.copy(SUN_DIR);
-  group.add(sky);
-  let envTex = null;
-  if (renderer) {
-    const envScene = new THREE.Scene(), s2 = new Sky(); s2.scale.setScalar(900); s2.material.uniforms.sunPosition.value.copy(SUN_DIR);
-    s2.material.uniforms.turbidity.value = su.turbidity.value; envScene.add(s2);
-    const pm = new THREE.PMREMGenerator(renderer); envTex = pm.fromScene(envScene, 0, 0.1, 1000).texture; pm.dispose(); s2.material.dispose(); s2.geometry.dispose();
-    scene.environment = envTex; scene.environmentIntensity = 0.55;
-  }
-  scene.background = new THREE.Color(th.fog);
-  scene.fog = new THREE.Fog(th.fog, 400, th.fogFar * 1.3);
+  // 하늘: 실제 하늘 사진(HDRI) — 배경과 반사광에 같이 씀
+  const envTex = null;
+  scene.background = sky?.bg || new THREE.Color(th.fog);
+  scene.environment = sky?.env || null; scene.environmentIntensity = 0.9; scene.backgroundIntensity = 1.0;
+  scene.fog = new THREE.Fog(sky?.fog ?? th.fog, 700, th.fogFar * 1.8); // 먼 산이 지평선 색으로 흐려지는 대기 원근감
   const sea = course.sea || (thName === 'coast' ? null : null);
   const parkInside = !!course.parkInside;
 
@@ -325,8 +317,8 @@ export function buildWorld(scene, course, renderer) {
     group.add(landmark(course.landmark.type, lx, ly, lz));
   }
 
-  group.add(new THREE.HemisphereLight(0xdfeaff, 0x55603f, 0.55));
-  const sun = new THREE.DirectionalLight(0xfff0d6, 3.2);
+  group.add(new THREE.HemisphereLight(0xdfeaff, 0x55603f, 0.5));
+  const sun = new THREE.DirectionalLight(0xfff0d6, 2.8);
   sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.04;
   Object.assign(sun.shadow.camera, { left: -45, right: 45, top: 45, bottom: -45, near: 1, far: 600 });
   group.add(sun, sun.target);

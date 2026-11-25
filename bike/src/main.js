@@ -1,7 +1,9 @@
 // 무무 라이딩 — 앱 본체
 import * as THREE from 'three';
 import { COURSES, courseStats, drawProfile } from './courses.js';
-import { buildWorld } from './world.js';
+import { buildWorld, skyFor } from './world.js';
+import { loadSky } from './sky.js';
+import { makePost } from './post.js';
 import { Rider, JERSEYS, BIKES } from './rider.js';
 import { CSC, sensorCadence, makeBluetooth, HR, hrLive } from './sensors.js';
 import { loadTextures } from './textures.js';
@@ -34,20 +36,23 @@ function nextReward(L) {
 
 /* ---------------- 3D ---------------- */
 const renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: true, powerPreference: 'high-performance' });
-renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.62;
+renderer.toneMapping = THREE.AgXToneMapping; renderer.toneMappingExposure = 0.82; // AgX: 밝은 하늘·햇빛에서 색이 덜 바래는 톤 매핑
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 /** 그래픽 품질: 높음 = 그림자 + 선명한 화면, 보통 = 그림자 끔 + 화면 해상도 낮춤 (태블릿이 버벅일 때) */
 function applyQuality() {
   const hi = cfg.quality !== 'low';
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, hi ? 1.5 : 1));
   renderer.shadowMap.enabled = hi;
+  if (hi && !post) post = makePost(renderer, scene, camera);
+  if (!hi && post) { post.dispose(); post = null; }
   scene.traverse((o) => { if (o.material) o.material.needsUpdate = true; });
   rider.blob.visible = !hi;
   resize?.();
 }
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 5000);
-function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+let post = null; // 화면 후처리 (품질 「높음」일 때만)
+function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); post?.setSize(w, h); }
 /* 화면 맞춤: 기준 1280×800으로 설계하고, 실제 화면의 빠듯한 쪽에 맞춰 통째로 확대·축소 */
 const BASE_W = 1280, BASE_H = 800;
 function fitUI() {
@@ -65,10 +70,11 @@ function applyLook() {
   const j = JERSEYS.find((x) => x.id === cfg.jersey) || JERSEYS[0], b = BIKES.find((x) => x.id === cfg.bike) || BIKES[0];
   rider.setLook(j, b);
 }
-function loadCourse(i) {
+async function loadCourse(i) {
+  const c = COURSES[i], sky = await loadSky(skyFor(c), renderer);
   if (world) world.dispose();
-  course = COURSES[i]; cfg.course = i; cfg.courseId = course.id; saveCfg();
-  world = buildWorld(scene, course, renderer);
+  course = c; cfg.course = i; cfg.courseId = course.id; saveCfg();
+  world = buildWorld(scene, course, renderer, sky);
   applyQuality();
 }
 
@@ -248,7 +254,7 @@ function renderMenu() {
       <div class="ctag">${c.real ? (one ? '왕복' : '순환') + ' · 실제 지도' + (c.note ? ' · ' + c.note : '') : '가상 코스'}</div>
       <div class="cbest">${best ? (one ? '내 최고 오르막 ' : '내 최고 ') + fmtTime(best) : prof.done[c.id] ? '' : '첫 완주 보너스 +100'}</div>`;
     drawProfile(el.querySelector('canvas'), c);
-    el.onclick = () => { if (cfg.course !== i) { el.classList.add('loading'); setTimeout(() => { loadCourse(i); ride.d = 0; renderMenu(); }, 30); } };
+    el.onclick = () => { if (cfg.course !== i) { el.classList.add('loading'); setTimeout(async () => { await loadCourse(i); ride.d = 0; renderMenu(); }, 30); } };
     box.appendChild(el);
   });
   $('btnTest').classList.toggle('on', cfg.test);
@@ -457,12 +463,12 @@ function loop() {
   world.followSun(rider.root.position);
   autoQuality(dt);
   if (mode === 'ride') hud();
-  renderer.render(scene, camera);
+  if (post) post.render(); else renderer.render(scene, camera);
   requestAnimationFrame(loop);
 }
 
 /* ---------------- 시작 ---------------- */
-loadTextures(renderer).then(() => { const ci = COURSES.findIndex((c) => c.id === cfg.courseId); loadCourse(ci >= 0 ? ci : 0); boot(); });
+loadTextures(renderer).then(async () => { const ci = COURSES.findIndex((c) => c.id === cfg.courseId); await loadCourse(ci >= 0 ? ci : 0); boot(); });
 function boot() {
   cloud = initCloud({
     getLocal: localData,
@@ -490,4 +496,4 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catc
 $('loading').remove();
 requestAnimationFrame(loop);
 }
-window.__bike = { ride, cfg, COURSES, get world() { return world; } }; // 시험용
+window.__bike = { ride, cfg, COURSES, get post() { return post; }, get world() { return world; } }; // 시험용
