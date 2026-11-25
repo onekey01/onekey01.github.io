@@ -1,5 +1,7 @@
-// 내 캐릭터(라이더 + 자전거). 앞쪽 = +z
+// 내 캐릭터(라이더 + 로드바이크). 앞쪽 = +z, 단위 m. 실제 로드바이크 치수(700×25c, 54 cm 프레임)와
+// 키 178 cm 라이더 비율로 만듦. 다리는 페달 위치에서 거꾸로 계산(발목→무릎→엉덩이)해서 움직임.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 export const JERSEYS = [
   { id: 'orange', name: '무무 주황', color: 0xff8a1f, level: 1 },
@@ -14,100 +16,230 @@ export const JERSEYS = [
 ];
 export const BIKES = [
   { id: 'white', name: '흰색', color: 0xf2f2f2, level: 1 },
-  { id: 'black', name: '무광 검정', color: 0x2a2a2a, level: 1 },
+  { id: 'black', name: '무광 검정', color: 0x2a2a2a, level: 1, matte: true },
   { id: 'red', name: '레이싱 빨강', color: 0xd8262b, level: 3 },
   { id: 'yellow', name: '노랑', color: 0xf5c518, level: 6 },
   { id: 'mint', name: '민트', color: 0x3fd6b5, level: 8 },
   { id: 'chrome', name: '크롬 은색', color: 0xc8ced6, level: 10, metal: true },
 ];
 
-const Y = new THREE.Vector3(0, 1, 0);
-function limb(r, color) { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.9, 1, 8), new THREE.MeshLambertMaterial({ color })); return m; }
-function place(mesh, a, b) {
-  const dir = new THREE.Vector3().subVectors(b, a), len = dir.length();
-  mesh.position.copy(a).addScaledVector(dir, 0.5); mesh.scale.set(1, len, 1);
-  mesh.quaternion.setFromUnitVectors(Y, dir.normalize());
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const Yax = V(0, 1, 0);
+
+/** 끝이 둥근 원뿔 막대 (팔다리·튜브). y=0 에서 y=len 까지. bulge: 중간 볼록(종아리·허벅지 근육) */
+function taper(len, r0, r1, bulge = 0, at = 0.4, seg = 14) {
+  const pts = [V(0, -r0, 0)];
+  for (let k = 1; k <= 3; k++) { const a = (k / 4) * Math.PI / 2; pts.push(V(Math.sin(a) * r0, -Math.cos(a) * r0, 0)); }
+  for (let i = 0; i <= 10; i++) {
+    const t = i / 10, b = bulge * Math.exp(-((t - at) ** 2) / 0.06);
+    pts.push(V(r0 + (r1 - r0) * t + b, t * len, 0));
+  }
+  for (let k = 1; k <= 3; k++) { const a = (k / 4) * Math.PI / 2; pts.push(V(Math.cos(a) * r1, len + Math.sin(a) * r1, 0)); }
+  pts.push(V(0, len + r1, 0));
+  return new THREE.LatheGeometry(pts.map((p) => new THREE.Vector2(p.x, p.y)), seg);
 }
+/** a→b 로 놓인 고정 막대 */
+function rod(a, b, r0, r1, mat, seg = 10) {
+  const d = new THREE.Vector3().subVectors(b, a), m = new THREE.Mesh(taper(d.length(), r0, r1 ?? r0, 0, 0.4, seg), mat);
+  m.position.copy(a); m.quaternion.setFromUnitVectors(Yax, d.normalize()); return m;
+}
+function aim(mesh, a, b) { mesh.position.copy(a); mesh.quaternion.setFromUnitVectors(Yax, new THREE.Vector3().subVectors(b, a).normalize()); }
+/** 두 마디 IK: a(시작)에서 c(끝)까지, 길이 l1·l2, pole 쪽으로 굽음 → 가운데 관절 */
+function ik(a, c, l1, l2, pole) {
+  const d = new THREE.Vector3().subVectors(c, a), dist = Math.min(d.length(), l1 + l2 - 1e-4); d.normalize();
+  const x = (l1 * l1 - l2 * l2 + dist * dist) / (2 * dist), h = Math.sqrt(Math.max(0, l1 * l1 - x * x));
+  const p = pole.clone().sub(d.clone().multiplyScalar(pole.dot(d))).normalize();
+  return a.clone().addScaledVector(d, x).addScaledVector(p, h);
+}
+/** 몸통: 골반 P에서 어깨 S까지 타원 단면을 이어 붙인 모양 */
+function torsoGeo(P, S, prof) {
+  const u = new THREE.Vector3().subVectors(S, P), len = u.length(); u.normalize();
+  const side = V(1, 0, 0), ven = new THREE.Vector3().crossVectors(side, u).normalize(); // ven: 배 쪽
+  const R = prof.length, C = 20, pos = [], idx = [];
+  for (let i = 0; i < R; i++) {
+    const [t, a, bBelly, bBack] = prof[i];
+    for (let j = 0; j < C; j++) {
+      const th = (j / C) * Math.PI * 2, s = Math.sin(th), b = s > 0 ? bBelly : bBack;
+      const p = P.clone().addScaledVector(u, t * len).addScaledVector(side, Math.cos(th) * a).addScaledVector(ven, s * b);
+      pos.push(p.x, p.y, p.z);
+    }
+  }
+  const c0 = P.clone().addScaledVector(u, prof[0][0] * len - 0.03), c1 = P.clone().addScaledVector(u, prof[R - 1][0] * len + 0.02);
+  pos.push(c0.x, c0.y, c0.z, c1.x, c1.y, c1.z); const i0 = R * C, i1 = i0 + 1;
+  for (let i = 0; i < R - 1; i++) for (let j = 0; j < C; j++) { const a = i * C + j, b = i * C + ((j + 1) % C), c = a + C, d = b + C; idx.push(a, b, c, b, d, c); }
+  for (let j = 0; j < C; j++) { idx.push(i0, (j + 1) % C, j); idx.push(i1, (R - 1) * C + j, (R - 1) * C + ((j + 1) % C)); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+
+// ---- 자전거 치수 (m) ----
+const WR = 0.336;                     // 바퀴 반지름 (림 0.311 + 타이어)
+const BB = V(0, 0.266, 0);            // 크랭크 축
+const RA = V(0, WR, -0.405), FA = V(0, WR, 0.585); // 뒤·앞 바퀴 축
+const ST = V(0, 0.266 + 0.50, -0.148);  // 시트 튜브 위 (프레임 끝)
+const HT = V(0, 0.80, 0.385), HB = V(0, 0.665, 0.43); // 헤드 튜브 위·아래
+const SADDLE = V(0, 0.975, -0.215);
+const BAR = V(0, 0.86, 0.49);          // 핸들바 가운데
+const CRANK = 0.1725;
+const HOOD = (sx) => V(sx * 0.205, 0.885, 0.585);
 
 export class Rider {
   constructor() {
     this.root = new THREE.Group();
     this.body = new THREE.Group(); this.root.add(this.body);
     this.crank = 0;
-    this.bikeMat = new THREE.MeshLambertMaterial({ color: 0xf2f2f2 });
-    this.jerseyMat = new THREE.MeshLambertMaterial({ color: 0xff8a1f });
-    this.trimMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-    const black = new THREE.MeshLambertMaterial({ color: 0x1b1b1b });
-    const skin = 0xf0c8a0;
+    // 재질: 프레임은 투명 코팅 도장, 옷은 천 광택, 피부는 부드럽게
+    this.bikeMat = new THREE.MeshPhysicalMaterial({ color: 0xf2f2f2, roughness: 0.35, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.08 });
+    this.jerseyMat = new THREE.MeshPhysicalMaterial({ color: 0xff8a1f, roughness: 0.62, sheen: 0.6, sheenRoughness: 0.5, sheenColor: 0xffffff });
+    this.trimMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.55, sheen: 0.4 });
+    const shorts = new THREE.MeshPhysicalMaterial({ color: 0x15161a, roughness: 0.5, sheen: 0.8, sheenRoughness: 0.4, sheenColor: 0x555a66 });
+    const skin = new THREE.MeshPhysicalMaterial({ color: 0xc48a66, roughness: 0.55, sheen: 0.25, sheenColor: 0xffc8a8 });
+    const rubber = new THREE.MeshStandardMaterial({ color: 0x1d1d1f, roughness: 0.85 });
+    const carbon = new THREE.MeshStandardMaterial({ color: 0x202226, roughness: 0.32, metalness: 0.2 });
+    const alu = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, roughness: 0.28, metalness: 1 });
+    const darkMetal = new THREE.MeshStandardMaterial({ color: 0x3a3d42, roughness: 0.35, metalness: 1 });
+    const white = new THREE.MeshPhysicalMaterial({ color: 0xf4f4f2, roughness: 0.4, clearcoat: 0.6 });
+    const lens = new THREE.MeshPhysicalMaterial({ color: 0x101418, roughness: 0.05, metalness: 0.6, clearcoat: 1 });
+    this.helmetMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.1 });
+    const add = (...o) => { for (const m of o) this.body.add(m); return o[0]; };
 
-    // 바퀴
-    this.wheels = [];
-    for (const z of [-0.52, 0.52]) {
-      const w = new THREE.Group();
-      w.add(new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.03, 8, 24), black));
-      const spokes = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.02, 12, 1, true), new THREE.MeshLambertMaterial({ color: 0x999999, wireframe: true }));
-      spokes.rotation.x = Math.PI / 2; w.add(spokes);
-      w.rotation.y = Math.PI / 2; w.position.set(0, 0.34, z); this.body.add(w); this.wheels.push(w);
+    // ---------- 바퀴 ----------
+    this.spins = [];
+    for (const A of [RA, FA]) {
+      const w = new THREE.Group(); w.position.copy(A); w.rotation.y = Math.PI / 2; add(w);
+      const spin = new THREE.Group(); w.add(spin); this.spins.push(spin);
+      spin.add(new THREE.Mesh(new THREE.TorusGeometry(0.3235, 0.0125, 10, 64), rubber));               // 타이어
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.296, 0.016, 8, 64), carbon); rim.scale.z = 0.75; spin.add(rim); // 림 (깊은 카본 림)
+      const sp = [];
+      for (let i = 0; i < 24; i++) { // 바퀴살 24개, 좌우 허브 테로 엇갈리게
+        const a = (i / 24) * Math.PI * 2, side = i % 2 ? 0.025 : -0.025;
+        const g = new THREE.CylinderGeometry(0.0011, 0.0011, 1, 3); const from = V(Math.cos(a + 0.2) * 0.022, Math.sin(a + 0.2) * 0.022, side), to = V(Math.cos(a) * 0.282, Math.sin(a) * 0.282, 0);
+        const d = new THREE.Vector3().subVectors(to, from); g.translate(0, 0.5, 0); g.scale(1, d.length(), 1);
+        g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(Yax, d.clone().normalize())); g.translate(from.x, from.y, from.z); sp.push(g);
+      }
+      spin.add(new THREE.Mesh(mergeGeometries(sp), alu));
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.1, 12), darkMetal); hub.rotation.x = Math.PI / 2; spin.add(hub);
     }
-    // 차체
-    const V = (x, y, z) => new THREE.Vector3(x, y, z);
-    const BB = V(0, 0.32, -0.02), SEAT = V(0, 0.9, -0.22), HEAD = V(0, 0.86, 0.38), REAR = V(0, 0.34, -0.52), FRONT = V(0, 0.34, 0.52), BAR = V(0, 0.98, 0.45);
-    for (const [a, b] of [[BB, SEAT], [SEAT, HEAD], [BB, HEAD], [BB, REAR], [SEAT, REAR], [HEAD, FRONT], [HEAD, BAR]]) { const t = limb(0.022, 0); t.material = this.bikeMat; place(t, a, b); this.body.add(t); }
-    const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.42, 6), black); bar.rotation.z = Math.PI / 2; bar.position.copy(BAR); this.body.add(bar);
-    const saddle = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.04, 0.26), black); saddle.position.set(0, 0.93, -0.22); this.body.add(saddle);
+    // ---------- 프레임 ----------
+    const F = this.bikeMat;
+    add(rod(BB, HB, 0.024, 0.021, F), rod(BB, ST, 0.017, 0.016, F), rod(ST, HT, 0.016, 0.017, F), rod(HB, HT, 0.022, 0.021, F));
+    for (const sx of [-1, 1]) {
+      const ra = RA.clone().setX(sx * 0.062), st = ST.clone().add(V(sx * 0.018, -0.02, 0)), bb = BB.clone().setX(sx * 0.03);
+      add(rod(bb, ra, 0.012, 0.008, F), rod(st, ra, 0.009, 0.007, F));
+      add(rod(HB.clone().setX(sx * 0.012), FA.clone().setX(sx * 0.05), 0.013, 0.008, F)); // 앞 포크
+    }
+    add(rod(ST.clone().add(V(0, -0.05, 0)), SADDLE.clone().add(V(0, -0.03, 0.015)), 0.0135, 0.0135, carbon)); // 싯포스트
+    const sad = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 8), rubber); sad.scale.set(0.068, 0.022, 0.135); sad.position.copy(SADDLE).add(V(0, -0.005, 0.01)); add(sad);
+    const nose = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), rubber); nose.scale.set(0.03, 0.018, 0.09); nose.position.copy(SADDLE).add(V(0, -0.006, 0.1)); add(nose);
+    add(rod(HT, BAR.clone().add(V(0, -0.005, -0.01)), 0.016, 0.015, carbon)); // 스템
+    add(rod(HT.clone().add(V(0, -0.02, 0)), HT.clone().add(V(0, 0.03, 0)), 0.019, 0.019, carbon)); // 스페이서
+    // 드롭 핸들: 가운데 막대 + 앞으로 나갔다 아래로 휘어 돌아오는 양쪽
+    add(rod(BAR.clone().setX(-0.2), BAR.clone().setX(0.2), 0.0125, 0.0125, carbon));
+    for (const sx of [-1, 1]) {
+      const c = new THREE.CatmullRomCurve3([V(sx * 0.2, BAR.y, BAR.z), V(sx * 0.205, BAR.y + 0.005, BAR.z + 0.07), V(sx * 0.208, BAR.y - 0.03, BAR.z + 0.12), V(sx * 0.21, BAR.y - 0.1, BAR.z + 0.11), V(sx * 0.212, BAR.y - 0.14, BAR.z + 0.05), V(sx * 0.214, BAR.y - 0.15, BAR.z - 0.04)]);
+      add(new THREE.Mesh(new THREE.TubeGeometry(c, 24, 0.0125, 8), rubber)); // 바 테이프
+      const hood = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), rubber); hood.scale.set(0.017, 0.028, 0.045); hood.position.copy(HOOD(sx)).add(V(0, -0.012, 0)); add(hood); // 브레이크 후드
+      add(rod(HOOD(sx).add(V(0, -0.02, 0.03)), V(sx * 0.21, BAR.y - 0.12, BAR.z + 0.13), 0.006, 0.004, alu)); // 브레이크 레버
+    }
+    // 크랭크·체인링 (회전), 체인·스프라켓·변속기 (고정)
+    this.crankG = new THREE.Group(); this.crankG.position.copy(BB); add(this.crankG);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.098, 0.006, 6, 48), darkMetal); ring.rotation.y = Math.PI / 2; ring.position.x = 0.052; this.crankG.add(ring);
+    const ring2 = new THREE.Mesh(new THREE.CylinderGeometry(0.094, 0.094, 0.003, 40), darkMetal); ring2.rotation.z = Math.PI / 2; ring2.position.x = 0.05; this.crankG.add(ring2);
+    this.pedals = [];
+    for (const [sx, dir] of [[-1, 1], [1, -1]]) { // 왼쪽 크랭크는 아래(각 0), 오른쪽은 위
+      const arm = rod(V(sx * 0.07, 0, 0), V(sx * 0.075, -dir * CRANK, 0), 0.011, 0.009, alu); this.crankG.add(arm);
+      const pg = new THREE.Group(); pg.position.set(sx * 0.11, -dir * CRANK, 0); this.crankG.add(pg);
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.014, 0.07), darkMetal); pg.add(body); this.pedals.push(pg);
+    }
+    const chainCurve = new THREE.CatmullRomCurve3([V(0.052, 0.266 + 0.1, 0.0), V(0.052, WR + 0.045, -0.405 + 0.01), V(0.052, WR, -0.45), V(0.052, WR - 0.045, -0.405), V(0.052, 0.17, -0.3), V(0.052, 0.266 - 0.1, 0.0), V(0.052, 0.266, 0.1)], true);
+    add(new THREE.Mesh(new THREE.TubeGeometry(chainCurve, 80, 0.0035, 4, true), darkMetal));
+    const cas = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.03, 0.04, 20), alu); cas.rotation.z = Math.PI / 2; cas.position.copy(RA).setX(0.04); add(cas);
+    add(rod(RA.clone().setX(0.06), RA.clone().add(V(0.065, -0.12, 0.02)), 0.008, 0.007, darkMetal)); // 뒤 변속기
+    // 물통
+    const bottle = new THREE.Mesh(taper(0.17, 0.034, 0.03, 0.002, 0.5, 14), new THREE.MeshPhysicalMaterial({ color: 0xf6f6f6, roughness: 0.35, transmission: 0, clearcoat: 0.3 }));
+    aim(bottle, BB.clone().lerp(HB, 0.22).add(V(0, 0.035, -0.02)), BB.clone().lerp(HB, 0.62).add(V(0, 0.035, -0.02))); add(bottle);
 
-    // 사람
-    this.HIP = V(0, 0.98, -0.22); this.BB = BB;
-    const SH = V(0, 1.42, 0.2);
-    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.15, 0.36, 4, 10), this.jerseyMat); place(torso, this.HIP, SH); torso.scale.set(1.05, 1, 0.8); torso.scale.y = 1; this.body.add(torso);
-    const stripe = new THREE.Mesh(new THREE.CapsuleGeometry(0.153, 0.08, 4, 10), this.trimMat); place(stripe, this.HIP.clone().lerp(SH, 0.42), this.HIP.clone().lerp(SH, 0.58)); this.body.add(stripe);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 10), new THREE.MeshLambertMaterial({ color: skin })); head.position.set(0, 1.6, 0.33); this.body.add(head);
-    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.125, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), this.trimMat); helmet.position.set(0, 1.63, 0.31); helmet.scale.set(1, 0.9, 1.25); this.body.add(helmet);
-    for (const x of [-0.17, 0.17]) {
-      const upper = limb(0.045, 0); upper.material = this.jerseyMat; const fore = limb(0.04, skin);
-      const s = V(x, 1.4, 0.2), e = V(x * 1.1, 1.17, 0.34), h = V(x * 1.15, 0.99, 0.45);
-      place(upper, s, e); place(fore, e, h); this.body.add(upper, fore);
+    // ---------- 사람 ----------
+    const HIPC = V(0, 1.035, -0.195), SHC = V(0, 1.335, 0.2);
+    this.hipL = V(-0.092, HIPC.y - 0.01, HIPC.z + 0.02); this.hipR = V(0.092, HIPC.y - 0.01, HIPC.z + 0.02);
+    // 몸통 (사이클복): [t, 반폭, 배 쪽 두께, 등 쪽 두께]
+    const torso = new THREE.Mesh(torsoGeo(HIPC, SHC, [[-0.08, 0.15, 0.11, 0.12], [0.08, 0.165, 0.12, 0.13], [0.3, 0.14, 0.1, 0.11], [0.55, 0.16, 0.11, 0.115], [0.78, 0.185, 0.11, 0.11], [0.95, 0.19, 0.085, 0.1], [1.04, 0.14, 0.06, 0.08]]), this.jerseyMat); add(torso);
+    const band = new THREE.Mesh(torsoGeo(HIPC, SHC, [[0.5, 0.163, 0.113, 0.118], [0.58, 0.168, 0.113, 0.116]]), this.trimMat); add(band); // 가슴 띠
+    const pelvis = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 12), shorts); pelvis.scale.set(0.145, 0.085, 0.115); pelvis.position.copy(HIPC).add(V(0, -0.02, 0.0)); add(pelvis); // 빕숏
+    // 목·머리·헬멧·고글
+    const neckB = SHC.clone().add(V(0, 0.02, 0.03)), head = SHC.clone().add(V(0, 0.135, 0.1));
+    add(rod(neckB, head.clone().add(V(0, -0.05, -0.02)), 0.05, 0.045, skin));
+    const skull = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), skin); skull.scale.set(0.078, 0.1, 0.098); skull.position.copy(head); skull.rotation.x = -0.35; add(skull);
+    const jaw = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 10), skin); jaw.scale.set(0.062, 0.05, 0.07); jaw.position.copy(head).add(V(0, -0.055, 0.04)); add(jaw);
+    const helmet = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 14, 0, Math.PI * 2, 0, Math.PI * 0.55), this.helmetMat);
+    helmet.scale.set(0.102, 0.105, 0.145); helmet.position.copy(head).add(V(0, 0.022, -0.012)); helmet.rotation.x = -0.32; add(helmet);
+    for (const vx of [-0.04, 0, 0.04]) { const v = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.006, 0.15), rubber); v.position.copy(head).add(V(vx, 0.118, -0.012)); v.rotation.x = -0.32; add(v); } // 헬멧 통풍구
+    const gl = new THREE.Mesh(new THREE.TorusGeometry(0.088, 0.013, 8, 24, Math.PI * 0.8), lens); // 고글: 얼굴 앞을 감싸는 띠
+    gl.rotation.set(Math.PI / 2 - 0.3, 0, Math.PI * 0.1); gl.scale.set(1, 1.18, 1.5); gl.position.copy(head).add(V(0, 0.01, 0.0)); add(gl);
+    // 팔: 어깨 → 팔꿈치 → 후드 잡은 손
+    for (const sx of [-1, 1]) {
+      const sh = SHC.clone().add(V(sx * 0.175, -0.025, -0.01)), hand = HOOD(sx).add(V(0, 0.012, -0.005));
+      const elbow = ik(sh, hand, 0.29, 0.28, V(sx * 0.5, -0.4, -0.6));
+      const delt = new THREE.Mesh(new THREE.SphereGeometry(0.058, 14, 10), this.jerseyMat); delt.position.copy(sh); add(delt);
+      const mid = sh.clone().lerp(elbow, 0.55);
+      add(rod(sh, mid, 0.05, 0.044, this.jerseyMat, 12), rod(mid, elbow, 0.043, 0.038, skin, 12)); // 반팔 소매 + 위팔
+      const sl = new THREE.Mesh(taper(0.012, 0.047, 0.047, 0, 0.4, 14), this.trimMat); aim(sl, mid.clone().lerp(sh, 0.04), mid); add(sl); // 소매 끝 띠
+      add(rod(elbow, hand.clone().lerp(elbow, 0.12), 0.038, 0.026, skin, 12));
+      const glove = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), rubber); glove.scale.set(0.03, 0.035, 0.05); glove.position.copy(hand); add(glove);
     }
-    // 다리 (페달에 맞춰 움직임)
-    this.legs = [-0.11, 0.11].map((x, k) => {
-      const thigh = limb(0.07, 0x1b1b1b), shin = limb(0.05, skin), foot = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.2), black);
-      const crankArm = limb(0.015, 0x666666);
-      this.body.add(thigh, shin, foot, crankArm);
-      return { x, thigh, shin, foot, crankArm, phase: k * Math.PI };
+    // 다리 (매 프레임 갱신): 허벅지(빕숏) + 무릎 아래(피부) + 양말 + 신발
+    this.L1 = 0.445; this.L2 = 0.435;
+    this.legs = [this.hipL, this.hipR].map((hip, k) => {
+      const thigh = new THREE.Mesh(taper(this.L1, 0.068, 0.05, 0.01, 0.35, 16), shorts);
+      const knee = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 10), skin);
+      const shin = new THREE.Mesh(taper(this.L2, 0.048, 0.03, 0.018, 0.28, 16), skin);
+      const sock = new THREE.Mesh(taper(0.09, 0.033, 0.031, 0, 0.4, 14), white);
+      const shoe = new THREE.Group();
+      const upper = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 10), white); upper.scale.set(0.045, 0.04, 0.135); upper.position.set(0, 0.012, 0); shoe.add(upper);
+      const sole = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.012, 0.25), rubber); sole.position.set(0, -0.022, 0); shoe.add(sole);
+      for (const s of [thigh, knee, shin, sock, shoe]) add(s);
+      return { hip, thigh, knee, shin, sock, shoe, phase: k * Math.PI, sx: k ? 1 : -1 };
     });
     this.updateLegs();
+    // 나중에 경험치로 열 부속을 갈아 끼우기 쉽게 부위별 참조를 모아 둠
+    this.parts = { helmet, goggles: gl, saddle: [sad, nose], wheels: this.spins, bottle, shoes: this.legs.map((g) => g.shoe), materials: { bike: this.bikeMat, jersey: this.jerseyMat, trim: this.trimMat, helmet: this.helmetMat, shorts, skin } };
 
-    // 바닥 그림자
-    const sh = new THREE.Mesh(new THREE.CircleGeometry(0.75, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25, depthWrite: false }));
-    sh.rotation.x = -Math.PI / 2; sh.scale.set(0.6, 1.3, 1); sh.position.y = 0.02; this.root.add(sh);
+    // 바닥 그림자 (품질 「보통」에서 그림자 대신)
+    const blob = new THREE.Mesh(new THREE.CircleGeometry(0.75, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25, depthWrite: false }));
+    blob.rotation.x = -Math.PI / 2; blob.scale.set(0.6, 1.4, 1); blob.position.y = 0.02; this.root.add(blob);
   }
   setLook(jersey, bike) {
     this.jerseyMat.color.setHex(jersey.color);
     this.trimMat.color.setHex(jersey.trim ?? 0xffffff);
-    this.bikeMat.color.setHex(bike.color);
-    this.bikeMat.emissive?.setHex(bike.metal ? 0x333a44 : 0x000000);
+    this.helmetMat.color.setHex(jersey.trim ?? 0xffffff);
+    const m = this.bikeMat; m.color.setHex(bike.color);
+    m.metalness = bike.metal ? 1 : 0; m.roughness = bike.metal ? 0.15 : bike.matte ? 0.6 : 0.35; m.clearcoat = bike.matte ? 0 : 1;
   }
   updateLegs() {
-    const L1 = 0.46, L2 = 0.46;
+    const t = new THREE.Vector3(), up = V(0, 1, 0);
     for (const g of this.legs) {
       const a = this.crank + g.phase;
-      const foot = new THREE.Vector3(g.x, this.BB.y - Math.cos(a) * 0.17, this.BB.z + Math.sin(a) * 0.17);
-      const hip = new THREE.Vector3(g.x, this.HIP.y, this.HIP.z);
-      const dy = foot.y - hip.y, dz = foot.z - hip.z;
-      const d = Math.min(Math.hypot(dy, dz), L1 + L2 - 0.001);
-      const base = Math.atan2(dz, dy); // 아래 방향 기준 각도
-      const k = Math.acos((L1 * L1 + d * d - L2 * L2) / (2 * L1 * d));
-      const knee = new THREE.Vector3(g.x, hip.y + Math.cos(base - k) * L1, hip.z + Math.sin(base - k) * L1); // 무릎은 앞으로
-      place(g.thigh, hip, knee); place(g.shin, knee, foot);
-      g.foot.position.copy(foot).add(new THREE.Vector3(0, -0.02, 0.03));
-      place(g.crankArm, new THREE.Vector3(g.x * 0.7, this.BB.y, this.BB.z), foot);
+      const pedal = V(g.sx * 0.115, BB.y - Math.cos(a) * CRANK, BB.z + Math.sin(a) * CRANK);
+      // 발목: 페달 축 위·뒤. 아래쪽에서는 뒤꿈치가 살짝 내려가고 위쪽에서는 발끝이 내려감
+      const ank = -0.25 + 0.22 * Math.sin(a - 0.6);  // 발 각도(앞이 내려가면 +)
+      const fd = V(0, -Math.sin(ank), Math.cos(ank)); // 발뒤꿈치→발끝 방향
+      const ankle = pedal.clone().add(V(0, 0.075, 0)).addScaledVector(fd, -0.075);
+      const knee = ik(g.hip, ankle, this.L1, this.L2, V(g.sx * 0.12, 0.2, 1));
+      aim(g.thigh, g.hip, knee); aim(g.shin, knee, ankle);
+      g.knee.position.copy(knee);
+      aim(g.sock, ankle.clone().lerp(knee, 0.02), ankle.clone().lerp(knee, 0.22));
+      // 신발: 발목 아래, 앞쪽이 페달 위
+      g.shoe.position.copy(pedal).addScaledVector(fd, -0.02).add(V(0, 0.03, 0));
+      g.shoe.quaternion.setFromUnitVectors(V(0, 0, 1), fd);
+      t.copy(up);
     }
+    this.crankG.rotation.x = -this.crank;
+    for (const p of this.pedals) p.rotation.x = this.crank; // 페달은 수평 유지
   }
   /** dt 초, cadence rpm, speed m/s */
   animate(dt, cadence, speed) {
     this.crank += (cadence / 60) * Math.PI * 2 * dt;
     this.updateLegs();
-    for (const w of this.wheels) w.children[1].rotation.y -= (speed / 0.34) * dt;
-    this.body.rotation.z = Math.sin(this.crank) * Math.min(cadence / 400, 0.04); // 페달 밟을 때 살짝 흔들림
+    for (const s of this.spins) s.rotation.z -= (speed / WR) * dt;
+    this.body.rotation.z = Math.sin(this.crank) * Math.min(cadence / 500, 0.03); // 페달 밟을 때 살짝 흔들림
   }
 }

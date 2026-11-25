@@ -180,6 +180,9 @@ function placeRider() {
   return side;
 }
 function updateCamera(dt, menu) {
+  const sc = window.__shotCam; // 시험용: 라이더를 정해진 각도에서 가까이 찍기
+  if (sc) { if (sc.cr !== null) { rider.crank = sc.cr; rider.updateLegs(); } const a = THREE.MathUtils.degToRad(sc.ang) + rider.root.rotation.y, rp = rider.root.position;
+    camera.position.set(rp.x + Math.sin(a) * sc.dist, rp.y + sc.hgt, rp.z + Math.cos(a) * sc.dist); camera.lookAt(rp.x, rp.y + 0.75, rp.z); return; }
   if (menu) {
     const t = performance.now() / 1000 * 0.15, r = 9;
     P.cam.set(rider.root.position.x + Math.sin(t) * r, rider.root.position.y + 3.2, rider.root.position.z + Math.cos(t) * r);
