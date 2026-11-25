@@ -13,23 +13,26 @@ export function loadTextures(renderer) {
       TEX[k] = t; imgs[k] = t.image; res();
     }, undefined, () => res()); // 실패해도 앱은 계속
   }))).then(() => {
-    TEX.road = roadTexture(imgs.asphalt, aniso);
+    asphaltImg = imgs.asphalt; anisoV = aniso;
+    TEX.road = roadTextureFor({ code: 'KR', center: '#f2c230', dash: 9.4, edge: '#e9e9e4' });
     TEX.water = waterNormal();
     return TEX;
   });
 }
 
-/** 아스팔트 사진 위에 차선을 그린 길 재질 */
-function roadTexture(img, aniso) {
-  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 1024;
+/** 아스팔트 사진 위에 나라별 차선(중앙선 색·점선 길이, 가장자리 선)을 그린 길 재질. 나라마다 한 번만 만들어 둠 */
+let asphaltImg = null, anisoV = 4; const roadCache = {};
+export function roadTextureFor(rules) {
+  const key = rules.code + rules.center + rules.dash; if (roadCache[key]) return roadCache[key];
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 1024; // 세로 1024 px = 길 16 m
   const g = cv.getContext('2d');
-  if (img) { g.drawImage(img, 0, 0, 512, 512); g.drawImage(img, 0, 512, 512, 512); g.fillStyle = 'rgba(40,42,46,.35)'; g.fillRect(0, 0, 512, 1024); }
+  if (asphaltImg) { g.drawImage(asphaltImg, 0, 0, 512, 512); g.drawImage(asphaltImg, 0, 512, 512, 512); g.fillStyle = 'rgba(40,42,46,.35)'; g.fillRect(0, 0, 512, 1024); }
   else { g.fillStyle = '#4a4d52'; g.fillRect(0, 0, 512, 1024); }
   g.globalAlpha = 0.92;
-  g.fillStyle = '#e9e9e4'; g.fillRect(14, 0, 14, 1024); g.fillRect(484, 0, 14, 1024);
-  g.fillStyle = '#f2c230'; g.fillRect(249, 0, 14, 600);
-  const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = aniso; t.colorSpace = THREE.SRGBColorSpace;
-  return t;
+  g.fillStyle = rules.edge; g.fillRect(14, 0, 14, 1024); g.fillRect(484, 0, 14, 1024);
+  g.fillStyle = rules.center; g.fillRect(249, 0, 14, Math.round((Math.min(16, rules.dash) / 16) * 1024));
+  const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = anisoV; t.colorSpace = THREE.SRGBColorSpace; t.userData.keep = true;
+  return (roadCache[key] = t);
 }
 
 /** 물결용 노멀 재질 (사인파 합성) */

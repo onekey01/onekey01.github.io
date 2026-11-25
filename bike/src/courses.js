@@ -39,7 +39,7 @@ function normalize(c) {
   if (c.kind === 'outback') c.summitAt = 0.5;
   return c;
 }
-VIRTUAL.forEach((c) => { c.tab = '가상'; c.kind = 'loop'; c.flag = '🎮'; if (typeof c.summit === 'number') { c.summitAt = c.summit; c.summit = '무무 고개 정상'; } });
+VIRTUAL.forEach((c) => { c.tab = '가상'; c.kind = 'loop'; c.flag = '🎮'; c.country = 'KR'; /* 가상 코스는 한국 도로 규칙 */ if (typeof c.summit === 'number') { c.summitAt = c.summit; c.summit = '무무 고개 정상'; } });
 export const COURSES = [...VIRTUAL, ...REAL.map(normalize)];
 
 /** 코스 전체 높이 정보(상승 고도 등) */

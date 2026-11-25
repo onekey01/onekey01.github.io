@@ -1,7 +1,8 @@
 // 3D 세계: 코스 길·지형·나무·건물·바다·하늘·랜드마크
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { TEX } from './textures.js';
+import { TEX, roadTextureFor } from './textures.js';
+import { roadRules } from './roads.js';
 import { IMP, impostorTrees, TIME } from './impostor.js';
 import { ROCKS } from './rocks.js';
 import { makeGrass } from './grass.js';
@@ -324,7 +325,7 @@ export function buildWorld(scene, course, renderer, sky, terr, hires) {
   }
 
   // 길 (한 방향 표본으로 한 번만 그림)
-  const tex = TEX.road || roadTexture(); const n = path.n, half = 4;
+  const tex = roadTextureFor(roadRules(course)); const n = path.n, half = 4; // 나라별 차선 색
   const rp = new Float32Array((n + 1) * 6), uv = new Float32Array((n + 1) * 4), idx = [];
   for (let i = 0; i <= n; i++) {
     const i0 = Math.max(0, i - 1), i1 = Math.min(n, i + 1);

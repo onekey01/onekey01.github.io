@@ -10,6 +10,7 @@ import { loadTerrain, SAT_CREDIT } from './terrain.js';
 import { loadHiresIndex, HIRES_CREDIT } from './hires.js';
 import { makeMinimap } from './minimap.js';
 import { stepSpeed } from './physics.js';
+import { roadRules, laneSign } from './roads.js';
 const minimap = makeMinimap(document.getElementById('mmap'), document.getElementById('cmp'));
 import { fetchWeather, classify, windVec, makePrecip, WIND, KIND_KO } from './weather.js';
 import { Rider, JERSEYS, BIKES } from './rider.js';
@@ -203,10 +204,10 @@ function placeRider() {
   const path = world.path;
   path.at(ride.d, P.pos); path.at(ride.d + 3, P.ahead);
   const dir = P.ahead.clone().sub(P.pos); const flat = Math.hypot(dir.x, dir.z) || 1;
-  // 우측통행 (한국·미국·프랑스·이탈리아 모두): 진행 방향의 오른쪽 = 진행 방향 × 위쪽 = (-dz, 0, dx)
+  // 통행 방향은 나라별 도로 규칙(roads.js). 진행 방향의 오른쪽 = 진행 방향 × 위쪽 = (-dz, 0, dx)
   // ※ 예전엔 이 벡터에 -1.6을 곱해 왼쪽 차선을 달렸음 (2026-11-26 무무 님 지적). 아래 laneCheck 가 매 코스마다 확인
   const side = new THREE.Vector3(-dir.z / flat, 0, dir.x / flat);
-  rider.root.position.copy(P.pos).addScaledVector(side, LANE_OFFSET); rider.root.position.y += 0.12;
+  rider.root.position.copy(P.pos).addScaledVector(side, LANE_OFFSET * laneSign(roadRules(course))); rider.root.position.y += 0.12; // 좌측통행 나라면 왼쪽 차선
   rider.root.rotation.set(0, Math.atan2(dir.x, dir.z), 0);
   rider.body.rotation.x = -Math.atan2(dir.y, flat);
   return side;
@@ -557,4 +558,4 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catc
 $('loading').remove();
 requestAnimationFrame(loop);
 }
-window.__bike = { ride, cfg, COURSES, get rider() { return rider; }, get post() { return post; }, get world() { return world; } }; // 시험용
+window.__bike = { ride, cfg, COURSES, roadRules, get course() { return course; }, get rider() { return rider; }, get post() { return post; }, get world() { return world; } }; // 시험용
