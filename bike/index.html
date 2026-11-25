@@ -68,6 +68,7 @@ button.on{background:var(--accent);color:#1b1300;border-color:transparent;font-w
 #knob{position:absolute;right:16px;top:50%;transform:translateY(-50%);padding:14px;width:230px;text-align:center;pointer-events:auto;transition:border-color .2s}
 #navR{position:absolute;left:16px;top:160px;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
 #cmp{width:120px;height:120px}#mmap{width:280px;height:280px;border-radius:50%;box-shadow:0 4px 18px rgba(0,0,0,.45)}
+#btnView{position:absolute;right:16px;top:calc(50% + 122px);width:230px;font-size:17px;padding:10px;pointer-events:auto}
 #knob.ok{border-color:var(--ok)}#knob.up{border-color:var(--warn)}#knob.down{border-color:var(--blue)}
 #knob .lbl{color:var(--sub);font-size:14px}
 #knob .rec{font-size:56px;font-weight:900;line-height:1.05}
@@ -170,6 +171,7 @@ td em{font-style:normal;font-size:12px;background:rgba(255,176,32,.25);color:var
     <div style="display:flex;gap:8px" class="p"><button id="btnTest2">시험 모드</button><button id="btnPause" class="big">⏸ 일시정지</button><button id="btnEnd" class="big stop">■ 그만하기</button></div>
   </div>
   <div id="navR"><canvas id="cmp" width="240" height="240"></canvas><canvas id="mmap" width="600" height="600"></canvas></div>
+  <button id="btnView" class="p">🚴 바이커 시선</button>
   <div id="knob" class="panel">
     <div class="lbl">권장 저항 (자전거 노브)</div>
     <div class="rec" id="recLv">5</div>

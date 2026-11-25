@@ -162,29 +162,41 @@ export class Rider {
     const HIPC = V(0, 1.035, -0.195), SHC = V(0, 1.335, 0.2);
     this.hipL = V(-0.092, HIPC.y - 0.01, HIPC.z + 0.02); this.hipR = V(0.092, HIPC.y - 0.01, HIPC.z + 0.02);
     // 몸통 (사이클복): [t, 반폭, 배 쪽 두께, 등 쪽 두께]
-    const torso = new THREE.Mesh(torsoGeo(HIPC, SHC, [[-0.08, 0.15, 0.11, 0.12], [0.08, 0.165, 0.12, 0.13], [0.3, 0.14, 0.1, 0.11], [0.55, 0.16, 0.11, 0.115], [0.78, 0.185, 0.11, 0.11], [0.95, 0.19, 0.085, 0.1], [1.04, 0.14, 0.06, 0.08]]), this.jerseyMat); add(torso);
-    const band = new THREE.Mesh(torsoGeo(HIPC, SHC, [[0.5, 0.163, 0.113, 0.118], [0.58, 0.168, 0.113, 0.116]]), this.trimMat); add(band); // 가슴 띠
+    const torso = new THREE.Mesh(torsoGeo(HIPC, SHC, [[-0.08, 0.15, 0.11, 0.12], [0.08, 0.165, 0.12, 0.13], [0.3, 0.14, 0.1, 0.11], [0.55, 0.16, 0.11, 0.115], [0.78, 0.185, 0.11, 0.11], [0.95, 0.19, 0.085, 0.1], [1.04, 0.14, 0.06, 0.08]]), this.jerseyMat);
+    // 윗몸(몸통·어깨·위팔)도 묶음: 바이커 시선에선 카메라 바로 앞을 가려서 숨기고 아래팔·손·자전거만 보임
+    const upperG = new THREE.Group(); this.body.add(upperG); this.upperG = upperG; upperG.add(torso);
+    const band = new THREE.Mesh(torsoGeo(HIPC, SHC, [[0.5, 0.163, 0.113, 0.118], [0.58, 0.168, 0.113, 0.116]]), this.trimMat); upperG.add(band); // 가슴 띠
     const pelvis = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 12), shorts); pelvis.scale.set(0.145, 0.085, 0.115); pelvis.position.copy(HIPC).add(V(0, -0.02, 0.0)); add(pelvis); // 빕숏
     // 목·머리·헬멧·고글
     const neckB = SHC.clone().add(V(0, 0.02, 0.03)), head = SHC.clone().add(V(0, 0.135, 0.1));
-    add(rod(neckB, head.clone().add(V(0, -0.05, -0.02)), 0.05, 0.045, skin));
-    const skull = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), skin); skull.scale.set(0.078, 0.1, 0.098); skull.position.copy(head); skull.rotation.x = -0.35; add(skull);
-    const jaw = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 10), skin); jaw.scale.set(0.062, 0.05, 0.07); jaw.position.copy(head).add(V(0, -0.055, 0.04)); add(jaw);
+    // 머리 부분은 한데 묶어 둠: 바이커 시선(1인칭)일 땐 카메라가 머리 안에 있으므로 숨김
+    const headG = new THREE.Group(); this.body.add(headG); this.headG = headG;
+    const addH = (...o) => { for (const m of o) headG.add(m); };
+    this.eye = head.clone().add(V(0, 0.13, -0.3)); // 1인칭 눈 위치: 헬멧 카메라처럼 머리 조금 위·뒤 (손·핸들이 화면 아래에 보이게)
+    addH(rod(neckB, head.clone().add(V(0, -0.05, -0.02)), 0.05, 0.045, skin));
+    const skull = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), skin); skull.scale.set(0.078, 0.1, 0.098); skull.position.copy(head); skull.rotation.x = -0.35; addH(skull);
+    const jaw = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 10), skin); jaw.scale.set(0.062, 0.05, 0.07); jaw.position.copy(head).add(V(0, -0.055, 0.04)); addH(jaw);
     const helmet = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 14, 0, Math.PI * 2, 0, Math.PI * 0.55), this.helmetMat);
-    helmet.scale.set(0.102, 0.105, 0.145); helmet.position.copy(head).add(V(0, 0.022, -0.012)); helmet.rotation.x = -0.32; add(helmet);
-    for (const vx of [-0.04, 0, 0.04]) { const v = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.006, 0.15), rubber); v.position.copy(head).add(V(vx, 0.118, -0.012)); v.rotation.x = -0.32; add(v); } // 헬멧 통풍구
+    helmet.scale.set(0.102, 0.105, 0.145); helmet.position.copy(head).add(V(0, 0.022, -0.012)); helmet.rotation.x = -0.32; addH(helmet);
+    for (const vx of [-0.04, 0, 0.04]) { const v = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.006, 0.15), rubber); v.position.copy(head).add(V(vx, 0.118, -0.012)); v.rotation.x = -0.32; addH(v); } // 헬멧 통풍구
     const gl = new THREE.Mesh(new THREE.TorusGeometry(0.088, 0.013, 8, 24, Math.PI * 0.8), lens); // 고글: 얼굴 앞을 감싸는 띠
-    gl.rotation.set(Math.PI / 2 - 0.3, 0, Math.PI * 0.1); gl.scale.set(1, 1.18, 1.5); gl.position.copy(head).add(V(0, 0.01, 0.0)); add(gl);
+    gl.rotation.set(Math.PI / 2 - 0.3, 0, Math.PI * 0.1); gl.scale.set(1, 1.18, 1.5); gl.position.copy(head).add(V(0, 0.01, 0.0)); addH(gl);
     // 팔: 어깨 → 팔꿈치 → 후드 잡은 손
     for (const sx of [-1, 1]) {
       const sh = SHC.clone().add(V(sx * 0.175, -0.025, -0.01)), hand = HOOD(sx).add(V(0, 0.012, -0.005));
       const elbow = ik(sh, hand, 0.29, 0.28, V(sx * 0.5, -0.4, -0.6));
-      const delt = new THREE.Mesh(new THREE.SphereGeometry(0.058, 14, 10), this.jerseyMat); delt.position.copy(sh); add(delt);
+      const delt = new THREE.Mesh(new THREE.SphereGeometry(0.058, 14, 10), this.jerseyMat); delt.position.copy(sh); upperG.add(delt);
       const mid = sh.clone().lerp(elbow, 0.55);
-      add(rod(sh, mid, 0.05, 0.044, this.jerseyMat, 12), rod(mid, elbow, 0.043, 0.038, skin, 12)); // 반팔 소매 + 위팔
-      const sl = new THREE.Mesh(taper(0.012, 0.047, 0.047, 0, 0.4, 14), this.trimMat); aim(sl, mid.clone().lerp(sh, 0.04), mid); add(sl); // 소매 끝 띠
+      upperG.add(rod(sh, mid, 0.05, 0.044, this.jerseyMat, 12), rod(mid, elbow, 0.043, 0.038, skin, 12)); // 반팔 소매 + 위팔
+      const sl = new THREE.Mesh(taper(0.012, 0.047, 0.047, 0, 0.4, 14), this.trimMat); aim(sl, mid.clone().lerp(sh, 0.04), mid); upperG.add(sl); // 소매 끝 띠
       add(rod(elbow, hand.clone().lerp(elbow, 0.12), 0.038, 0.026, skin, 12));
-      const glove = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), rubber); glove.scale.set(0.03, 0.035, 0.05); glove.position.copy(hand); add(glove);
+      // 장갑 낀 손: 손바닥 + 후드를 감싼 손가락 + 엄지 (1인칭에서 가까이 보임)
+      const palm = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), rubber); palm.scale.set(0.034, 0.03, 0.055); palm.position.copy(hand).add(V(0, 0.008, -0.01)); add(palm);
+      for (let f = 0; f < 4; f++) { // 손가락 4개가 후드 앞쪽을 감싸 쥠
+        const st = hand.clone().add(V(sx * (-0.016 + f * 0.011), 0.012, 0.03)), en = st.clone().add(V(0, -0.042, 0.022));
+        const fg = new THREE.Mesh(taper(st.distanceTo(en), 0.0095, 0.0085, 0, 0.4, 8), rubber); aim(fg, st, en); add(fg);
+      }
+      const th = new THREE.Mesh(taper(0.04, 0.011, 0.009, 0, 0.4, 8), rubber); aim(th, hand.clone().add(V(-sx * 0.022, 0.0, -0.015)), hand.clone().add(V(-sx * 0.035, 0.005, 0.03))); add(th);
     }
     // 다리 (매 프레임 갱신): 허벅지(빕숏) + 무릎 아래(피부) + 양말 + 신발
     this.L1 = 0.445; this.L2 = 0.435;

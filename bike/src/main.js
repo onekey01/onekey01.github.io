@@ -21,7 +21,7 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
 };
-const DEF = { quality: 'high', weight: 70, ratio: 3.5, level: 5, test: false, realWeather: true, testMode: 'steady', jersey: 'orange', bike: 'white', course: 0, courseId: 'coast', tab: '가상' };
+const DEF = { quality: 'high', weight: 70, ratio: 3.5, level: 5, test: false, realWeather: true, view: 'chase', testMode: 'steady', jersey: 'orange', bike: 'white', course: 0, courseId: 'coast', tab: '가상' };
 const cfg = Object.assign({}, DEF, store.get('bike2.cfg', {}));
 let cloud = null;
 const localData = () => ({ prof, cfg, history: store.get('bike2.history', []) });
@@ -214,7 +214,20 @@ function placeRider() {
   rider.body.rotation.x = -Math.atan2(dir.y, flat);
   return side;
 }
+// 1인칭 시선 방향: 몸 앞쪽(+z)을 보도록 뒤로 돌리고 28° 숙임 (손이 아래 수치 칸에 가리지 않게)
+const FP_LOOK = new THREE.Quaternion().setFromEuler(new THREE.Euler(-THREE.MathUtils.degToRad(28), Math.PI, 0, 'YXZ'));
 function updateCamera(dt, menu) {
+  const fp = !menu && cfg.view === 'fp'; rider.headG.visible = rider.upperG.visible = !fp;
+  if (fp) { // 바이커 시선: 헬멧 카메라 위치에서 달리는 쪽을 보고, 고개를 살짝 숙여 손·핸들이 화면 아래에 보이게
+    rider.body.updateWorldMatrix(true, false);
+    const e = rider.eye.clone(); e.y += Math.sin(rider.crank * 2) * 0.006; // 페달 밟을 때 살짝 흔들림
+    camera.position.copy(rider.body.localToWorld(e));
+    const q = new THREE.Quaternion(); rider.body.getWorldQuaternion(q);
+    camera.quaternion.copy(q).multiply(FP_LOOK);
+    if (camera.fov !== 84) { camera.fov = 84; camera.updateProjectionMatrix(); }
+    P.cam.copy(camera.position); return;
+  }
+  if (camera.fov !== 60) { camera.fov = 60; camera.updateProjectionMatrix(); }
   const sc = window.__shotCam; // 시험용: 라이더를 정해진 각도에서 가까이 찍기
   if (sc) { if (sc.cr !== null) { rider.crank = sc.cr; rider.updateLegs(); } const a = THREE.MathUtils.degToRad(sc.ang) + rider.root.rotation.y, rp = rider.root.position;
     camera.position.set(rp.x + Math.sin(a) * sc.dist, rp.y + sc.hgt, rp.z + Math.cos(a) * sc.dist); camera.lookAt(rp.x, rp.y + 0.75, rp.z); return; }
@@ -464,6 +477,10 @@ function pause(on) {
   if (on) { $('pauseInfo').textContent = `${course.name} · ${fmtTime(ride.moving)} · ${(ride.d / 1000).toFixed(2)} km · 경험치 +${Math.floor(ride.xp)}`; ride.v = 0; }
 }
 $('btnPause').onclick = () => pause(true);
+/* 시점: 지금 시점(뒤에서 따라감) ↔ 바이커 시선(1인칭). 버튼 또는 V 키 */
+const viewLabel = () => { $('btnView').textContent = cfg.view === 'fp' ? '🎥 뒤에서 보기' : '🚴 바이커 시선'; };
+function toggleView() { cfg.view = cfg.view === 'fp' ? 'chase' : 'fp'; saveCfg(); viewLabel(); P.cam.set(0, 0, 0); toast(cfg.view === 'fp' ? '바이커 시선으로 바꿨어요' : '뒤에서 따라가는 시점으로 바꿨어요', 1500); }
+$('btnView').onclick = toggleView; viewLabel();
 $('btnEnd').onclick = () => pause(true);
 $('pResume').onclick = () => pause(false);
 $('pSave').onclick = () => { $('mPause').classList.remove('show'); ride.paused = false; endRide(); };
@@ -475,6 +492,7 @@ $('pQuitYes').onclick = () => {
 addEventListener('keydown', (e) => { // PC 키보드: Esc·스페이스 = 일시정지/이어 타기, ↑↓ = 저항 단계
   if (mode !== 'ride') return;
   if (e.key === 'Escape' || e.key === ' ') { e.preventDefault(); pause(!ride.paused); }
+  if ((e.key === 'v' || e.key === 'V') && mode === 'ride') toggleView();
   else if (e.key === 'ArrowUp') setLevel(cfg.level + 1); else if (e.key === 'ArrowDown') setLevel(cfg.level - 1);
 });
 $('btnLocker').onclick = () => { renderLocker(); $('mLocker').classList.add('show'); };
