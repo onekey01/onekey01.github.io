@@ -7,6 +7,7 @@ import { makePost } from './post.js';
 import { loadImpostors, TIME } from './impostor.js';
 import { loadRocks } from './rocks.js';
 import { loadTerrain, SAT_CREDIT } from './terrain.js';
+import { fetchWeather, classify, windVec, makePrecip, WIND, KIND_KO } from './weather.js';
 import { Rider, JERSEYS, BIKES } from './rider.js';
 import { CSC, sensorCadence, makeBluetooth, HR, hrLive } from './sensors.js';
 import { loadTextures } from './textures.js';
@@ -17,7 +18,7 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
 };
-const DEF = { quality: 'high', weight: 70, ratio: 3.5, level: 5, test: false, testMode: 'steady', jersey: 'orange', bike: 'white', course: 0, courseId: 'coast', tab: '가상' };
+const DEF = { quality: 'high', weight: 70, ratio: 3.5, level: 5, test: false, realWeather: true, testMode: 'steady', jersey: 'orange', bike: 'white', course: 0, courseId: 'coast', tab: '가상' };
 const cfg = Object.assign({}, DEF, store.get('bike2.cfg', {}));
 let cloud = null;
 const localData = () => ({ prof, cfg, history: store.get('bike2.history', []) });
@@ -74,12 +75,35 @@ function applyLook() {
   const j = JERSEYS.find((x) => x.id === cfg.jersey) || JERSEYS[0], b = BIKES.find((x) => x.id === cfg.bike) || BIKES[0];
   rider.setLook(j, b);
 }
+/* 날씨: 실제 날씨 연동(기본) 또는 늘 맑음. 가상 코스는 실제 장소가 없어 서울 날씨를 씀 */
+let WX = null, wxKind = 'clear', windV = new THREE.Vector2(), precip = null;
+async function getWeather(c) {
+  if (!cfg.realWeather) return null;
+  if (window.__wx) return window.__wx; // 시험용: 날씨 흉내
+  const [lon, lat] = c.pts ? c.pts[0] : [126.978, 37.5665];
+  return fetchWeather(lat, lon);
+}
+function applyWeather() {
+  wxKind = classify(WX); windV = cfg.realWeather ? windVec(WX) : new THREE.Vector2(); WIND.value = Math.min(1, windV.length() / 12);
+  world.setWeather(wxKind);
+  if (precip) { scene.remove(precip.obj); precip.dispose(); precip = null; }
+  if (wxKind === 'rain' || wxKind === 'snow') { precip = makePrecip(wxKind, (WX?.precip || 0.5) / 4); scene.add(precip.obj); }
+}
+const wxSkyName = (c, kind) => (kind === 'clear' ? skyFor(c) : kind === 'cloudy' ? 'cloudy' : 'overcast');
+function wxText() {
+  if (!cfg.realWeather) return '☀️ 맑음 (실제 날씨 꺼짐)';
+  if (!WX) return '☀️ 맑음 (날씨를 못 받아옴)';
+  const [ic, ko] = KIND_KO[wxKind]; return `${ic} ${ko} ${Math.round(WX.temp)}°C · 바람 ${WX.wind.toFixed(1)} m/s`;
+}
+
 async function loadCourse(i) {
-  const c = COURSES[i], [sky, terr] = await Promise.all([loadSky(skyFor(c), renderer), loadTerrain(c.id, cfg.quality !== 'low', renderer)]);
+  const c0 = COURSES[i]; WX = await getWeather(c0);
+  const c = c0, [sky, terr] = await Promise.all([loadSky(wxSkyName(c, classify(WX)), renderer), loadTerrain(c.id, cfg.quality !== 'low', renderer)]);
   if (world) world.dispose();
   course = c; cfg.course = i; cfg.courseId = course.id; saveCfg();
   world = buildWorld(scene, course, renderer, sky, terr);
-  $('credit').textContent = terr ? SAT_CREDIT : ''; // 위성사진 출처 표시 (라이선스 조건)
+  $('credit').textContent = (terr ? SAT_CREDIT + ' · ' : '') + (cfg.realWeather && WX ? '날씨: Open-Meteo' : ''); // 출처 표시 (라이선스 조건)
+  applyWeather();
   applyQuality();
 }
 
@@ -102,7 +126,11 @@ function physics(dt) {
   const m = cfg.weight + 9, g = 9.81, th = Math.atan(grade / 100);
   const v = ride.v;
   const fDrive = power / Math.max(v, 2);
-  const fGrav = m * g * Math.sin(th), fRoll = m * g * 0.0045 * Math.cos(th), fAir = 0.5 * 1.2 * 0.34 * v * v;
+  // 바람: 달리는 방향 기준 맞바람(+)/뒷바람(-). 지상 10 m 풍속이라 라이더 높이(약 1 m)에선 0.7배
+  const P0 = world.path.at(ride.d), P1 = world.path.at(ride.d + 3), hx = P1.x - P0.x, hz = P1.z - P0.z, hl = Math.hypot(hx, hz) || 1;
+  ride.head = -(windV.x * hx + windV.y * hz) / hl * 0.7;
+  const va = v + ride.head;
+  const fGrav = m * g * Math.sin(th), fRoll = m * g * 0.0045 * Math.cos(th), fAir = 0.5 * 1.2 * 0.34 * va * Math.abs(va);
   ride.v = Math.max(0, v + ((fDrive - fGrav - fRoll * Math.sign(v || 1) - fAir) / (m + 2)) * dt);
   if (ride.v < 0.05 && power === 0 && grade >= 0) ride.v = 0;
   ride.v = Math.min(ride.v, 25);
@@ -207,6 +235,7 @@ let lastHud = 0;
 function hud() {
   const now = performance.now(); if (now - lastHud < 180) return; lastHud = now;
   const kmh = ride.v * 3.6;
+  const hd = ride.head || 0; $('vWx').textContent = wxText() + (Math.abs(hd) >= 0.5 ? (hd > 0 ? ' 맞바람' : ' 뒷바람') : '');
   $('vTime').textContent = fmtTime(ride.moving);
   $('vSpeed').textContent = kmh.toFixed(1);
   $('vCad').textContent = Math.round(cadence);
@@ -262,7 +291,7 @@ function renderMenu() {
       <div class="ctag">${c.real ? (one ? '왕복' : '순환') + ' · 실제 지도' + (c.note ? ' · ' + c.note : '') : '가상 코스'}</div>
       <div class="cbest">${best ? (one ? '내 최고 오르막 ' : '내 최고 ') + fmtTime(best) : prof.done[c.id] ? '' : '첫 완주 보너스 +100'}</div>`;
     drawProfile(el.querySelector('canvas'), c);
-    el.onclick = () => { if (cfg.course !== i) { el.classList.add('loading'); setTimeout(async () => { await loadCourse(i); ride.d = 0; renderMenu(); }, 30); } };
+    el.onclick = () => { if (cfg.course !== i) { el.classList.add('loading'); setTimeout(async () => { await loadCourse(i); ride.d = 0; renderMenu(); toast(wxText(), 3000); }, 30); } };
     box.appendChild(el);
   });
   $('btnTest').classList.toggle('on', cfg.test);
@@ -362,11 +391,13 @@ $('btnCsv').onclick = () => {
 };
 
 /* ---------------- 설정 ---------------- */
-function openSettings() { $('sQuality').value = cfg.quality; $('sWeight').value = cfg.weight; $('sRatio').value = cfg.ratio; $('mSettings').classList.add('show'); }
+function openSettings() { $('sWeather').checked = cfg.realWeather !== false; $('sQuality').value = cfg.quality; $('sWeight').value = cfg.weight; $('sRatio').value = cfg.ratio; $('mSettings').classList.add('show'); }
 $('btnSaveSettings').onclick = () => {
   const num = (id, d, lo, hi) => { const v = parseFloat($(id).value); return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
   if ($('sQuality').value !== cfg.quality) { cfg.quality = $('sQuality').value; autoDone = true; applyQuality(); }
-  cfg.weight = num('sWeight', DEF.weight, 30, 200); cfg.ratio = num('sRatio', DEF.ratio, 1, 10); saveCfg();
+  cfg.weight = num('sWeight', DEF.weight, 30, 200); cfg.ratio = num('sRatio', DEF.ratio, 1, 10);
+  const rw = $('sWeather').checked; if (rw !== cfg.realWeather) { cfg.realWeather = rw; saveCfg(); loadCourse(cfg.course).then(() => { if (mode === 'menu') renderMenu(); toast(wxText(), 4000); }); }
+  saveCfg();
   $('mSettings').classList.remove('show'); toast('설정을 저장했어요');
 };
 $('btnReset').onclick = () => {
@@ -472,6 +503,7 @@ function loop() {
   autoQuality(dt);
   if (mode === 'ride') hud();
   TIME.value = now / 1000;
+  if (precip) precip.update(camera.position, dt, windV);
   if (post) post.render(); else renderer.render(scene, camera);
   requestAnimationFrame(loop);
 }

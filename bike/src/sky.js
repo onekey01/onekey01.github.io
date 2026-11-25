@@ -6,6 +6,7 @@ import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js';
 const SKIES = {
   cloudy: { u: 0.595, elev: 48.0, fog: 0x9ca1ae },
   clear: { u: 0.600, elev: 43.1, fog: 0xb3bbc6 },
+  overcast: { u: 0.5, elev: 60, fog: 0x8c9098 }, // 흐림·비·눈·안개 (kloofendal_overcast_puresky)
 };
 const cache = {};
 

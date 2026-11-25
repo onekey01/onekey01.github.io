@@ -158,7 +158,7 @@ td em{font-style:normal;font-size:12px;background:rgba(255,176,32,.25);color:var
 
 <!-- 라이딩 화면 -->
 <div id="hud">
-  <div id="topL" class="panel p"><div class="t" id="vLap"></div><div class="s">총 <span id="vDist">0.00</span> km · 오른 높이 <span id="vClimb">0 m</span></div></div>
+  <div id="topL" class="panel p"><div class="t" id="vLap"></div><div class="s">총 <span id="vDist">0.00</span> km · 오른 높이 <span id="vClimb">0 m</span></div><div class="s" id="vWx"></div></div>
   <div id="topC" class="panel"><div id="vGrade">0.0%</div><canvas id="profile" width="440" height="64"></canvas></div>
   <div id="topR">
     <div id="lvBox" class="panel"><div class="row"><b id="hLevel">Lv 1</b><span id="hXp"></span></div><div class="bar"><i id="hXpBar"></i></div></div>
@@ -200,6 +200,7 @@ td em{font-style:normal;font-size:12px;background:rgba(255,176,32,.25);color:var
 
 <div class="modal fit" id="mSettings"><div class="sheet">
   <h2>설정</h2>
+  <div class="row"><div class="d">실제 날씨 연동<small>코스 현지의 지금 날씨(비·눈·안개·구름)와 바람을 그대로 가져옵니다. 맞바람이면 느려지고 뒷바람이면 빨라져요. 끄면 늘 맑고 바람이 없어요.</small></div><input type="checkbox" id="sWeather" style="width:34px;height:34px"></div>
   <div class="row"><div class="d">그래픽 품질<small>「높음」은 그림자와 선명한 화면, 「보통」은 그림자를 끄고 가볍게 돌아갑니다. 태블릿이 버벅이면 자동으로 「보통」으로 바뀌어요.</small></div><select id="sQuality" style="font-size:18px;padding:8px;border-radius:10px;background:#0f1720;color:#fff;border:1px solid var(--line)"><option value="high">높음</option><option value="low">보통</option></select></div>
   <div class="row"><div class="d">몸무게 (kg)<small>오르막에서 가상 속도를 계산할 때 씁니다. 무거울수록 오르막에서 느려져요.</small></div><input type="number" id="sWeight" step="1" min="30" max="200"></div>
   <div class="row"><div class="d">플라이휠 ÷ 페달 회전 비율<small>센서를 플라이휠 축(스피드 모드)에 달았을 때만 씁니다. 크랭크에 달았다면 무시해도 돼요. 모르면 「비율 맞추기」를 누르세요.</small></div><input type="number" id="sRatio" step="0.01" min="1" max="10"></div>

@@ -282,7 +282,7 @@ export function buildWorld(scene, course, renderer, sky, terr) {
   const rg = new THREE.BufferGeometry();
   rg.setAttribute('position', new THREE.BufferAttribute(rp, 3)); rg.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   rg.setIndex(idx); rg.computeVertexNormals();
-  const road = new THREE.Mesh(rg, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 })); road.receiveShadow = true; group.add(road);
+  const roadMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 }); const road = new THREE.Mesh(rg, roadMat); road.receiveShadow = true; group.add(road);
 
   const rand = rng(course.id.split('').reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7));
   const up = new THREE.Vector3(0, 1, 0), m = new THREE.Matrix4(), s = new THREE.Vector3(), quat = new THREE.Quaternion(), tint = new THREE.Color();
@@ -428,7 +428,7 @@ export function buildWorld(scene, course, renderer, sky, terr) {
     group.add(landmark(course.landmark.type, lx, ly, lz));
   }
 
-  group.add(new THREE.HemisphereLight(0xdfeaff, 0x55603f, 0.5));
+  const hemi = new THREE.HemisphereLight(0xdfeaff, 0x55603f, 0.5); group.add(hemi);
   const sun = new THREE.DirectionalLight(0xfff0d6, 2.8);
   sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.04;
   Object.assign(sun.shadow.camera, { left: -45, right: 45, top: 45, bottom: -45, near: 1, far: 600 });
@@ -438,7 +438,16 @@ export function buildWorld(scene, course, renderer, sky, terr) {
   followSun(path.at(0));
 
   scene.add(group);
-  return { path, group, heightAt, sun, followSun, grass, dispose() { scene.remove(group); envTex?.dispose(); group.traverse((o) => { if (o.userData.shared) return; o.geometry?.dispose(); if (o.material && o.material.map && o.material.map !== TEX.road && !o.material.map.userData.keep) o.material.map.dispose(); o.customDepthMaterial?.dispose(); o.material?.dispose?.(); }); } };
+  /** 날씨 반영: 해 세기, 하늘빛, 안개 거리, 젖은 길 */
+  const fogBase = { near: scene.fog.near, far: scene.fog.far };
+  const setWeather = (kind) => {
+    const L = { clear: [2.8, 0.5, 0.9], cloudy: [2.0, 0.6, 1.0], overcast: [0.55, 0.9, 1.25], fog: [0.45, 0.9, 1.2], rain: [0.4, 0.85, 1.15], snow: [0.6, 1.0, 1.3] }[kind] || [2.8, 0.5, 0.9];
+    sun.intensity = L[0]; hemi.intensity = L[1]; scene.environmentIntensity = L[2]; sun.castShadow = kind === 'clear' || kind === 'cloudy';
+    const F = { fog: [15, 260], rain: [60, 900], snow: [40, 600], overcast: [300, fogBase.far * 0.8] }[kind] || [fogBase.near, fogBase.far];
+    scene.fog.near = F[0]; scene.fog.far = F[1];
+    const wet = kind === 'rain'; roadMat.roughness = wet ? 0.22 : 0.85; roadMat.color.setScalar(wet ? 0.5 : 1); roadMat.envMapIntensity = wet ? 1.6 : 1; // 젖은 길: 어둡고 하늘이 비침
+  };
+  return { path, group, heightAt, sun, followSun, grass, setWeather, dispose() { scene.remove(group); envTex?.dispose(); group.traverse((o) => { if (o.userData.shared) return; o.geometry?.dispose(); if (o.material && o.material.map && o.material.map !== TEX.road && !o.material.map.userData.keep) o.material.map.dispose(); o.customDepthMaterial?.dispose(); o.material?.dispose?.(); }); } };
 }
 
 function roadTexture() {

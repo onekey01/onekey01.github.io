@@ -1,6 +1,7 @@
 // 길가 풀숲: 라이더 둘레 약 170 m 안의 길 양옆에만 풀잎 다발을 심고, 달리면서 앞쪽으로 옮겨 심음.
 // 풀잎은 바람에 흔들리고, 밑동은 어둡고 끝은 밝은 색. 멀리 있는 풀은 지형 질감이 대신함.
 import * as THREE from 'three';
+import { WIND } from './weather.js';
 
 function hash(i) { let s = (i * 2654435761) >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
 
@@ -34,11 +35,11 @@ export function makeGrass(path, groundAt, opts, time) {
   const max = opts.max || 6000;
   const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, side: THREE.DoubleSide });
   mat.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, { uTime: time, cBase: { value: new THREE.Color(opts.base) }, cTip: { value: new THREE.Color(opts.tip) } });
-    sh.vertexShader = 'attribute float aT; uniform float uTime; varying float vT;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+    Object.assign(sh.uniforms, { uWind: WIND, uTime: time, cBase: { value: new THREE.Color(opts.base) }, cTip: { value: new THREE.Color(opts.tip) } });
+    sh.vertexShader = 'attribute float aT; uniform float uTime, uWind; varying float vT;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
       vT = aT; vec3 ip = instanceMatrix[3].xyz;
       float wv = sin(uTime * 1.8 + ip.x * 0.15 + ip.z * 0.11) * 0.6 + sin(uTime * 3.1 + ip.x * 0.4) * 0.25; // 바람
-      transformed.x += wv * 0.12 * aT * aT; transformed.z += wv * 0.06 * aT * aT;
+      wv *= 0.6 + uWind * 2.4; transformed.x += wv * 0.12 * aT * aT; transformed.z += wv * 0.06 * aT * aT; // 바람이 세면 더 흔들림
       float fd = distance(ip, cameraPosition); transformed.y *= 1.0 - smoothstep(110.0, 165.0, fd); // 멀어지면 땅으로 스며들 듯 줄어듦`);
     sh.fragmentShader = 'uniform vec3 cBase, cTip; varying float vT;\n' + sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
       diffuseColor.rgb *= mix(cBase, cTip, smoothstep(0.0, 1.0, vT)) * (0.75 + 0.25 * vT);`).replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>
