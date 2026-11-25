@@ -9,6 +9,7 @@ import { loadRocks } from './rocks.js';
 import { loadTerrain, SAT_CREDIT } from './terrain.js';
 import { loadHiresIndex, HIRES_CREDIT } from './hires.js';
 import { makeMinimap } from './minimap.js';
+import { stepSpeed } from './physics.js';
 const minimap = makeMinimap(document.getElementById('mmap'), document.getElementById('cmp'));
 import { fetchWeather, classify, windVec, makePrecip, WIND, KIND_KO } from './weather.js';
 import { Rider, JERSEYS, BIKES } from './rider.js';
@@ -128,17 +129,10 @@ const powerFrom = (cad, lv) => (cad <= 0 ? 0 : cad * (0.6 + 0.24 * lv)); // 패�
 
 /** 힘(W)과 경사로 가상 속도 계산 */
 function physics(dt) {
-  const m = cfg.weight + 9, g = 9.81, th = Math.atan(grade / 100);
-  const v = ride.v;
-  const fDrive = power / Math.max(v, 2);
   // 바람: 달리는 방향 기준 맞바람(+)/뒷바람(-). 지상 10 m 풍속이라 라이더 높이(약 1 m)에선 0.7배
   const P0 = world.path.at(ride.d), P1 = world.path.at(ride.d + 3), hx = P1.x - P0.x, hz = P1.z - P0.z, hl = Math.hypot(hx, hz) || 1;
   ride.head = -(windV.x * hx + windV.y * hz) / hl * 0.7;
-  const va = v + ride.head;
-  const fGrav = m * g * Math.sin(th), fRoll = m * g * 0.0045 * Math.cos(th), fAir = 0.5 * 1.2 * 0.34 * va * Math.abs(va);
-  ride.v = Math.max(0, v + ((fDrive - fGrav - fRoll * Math.sign(v || 1) - fAir) / (m + 2)) * dt);
-  if (ride.v < 0.05 && power === 0 && grade >= 0) ride.v = 0;
-  ride.v = Math.min(ride.v, 25);
+  ride.v = stepSpeed(ride.v, power, grade, cfg.weight + 9, ride.head, dt);
 }
 
 /* 시험 모드: 센서 없이 페달 흉내 */

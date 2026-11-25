@@ -106,14 +106,26 @@ export class Path {
       this.grid.get(key).push(i);
     }
     this.coarse = []; for (let i = 0; i < n; i += 40) this.coarse.push(i);
-    // 같은 길을 오가는 순환 코스(샹젤리제 등): 겹치는 구간의 높이를 하나로 맞춤 — 높이 자료가 달라 길이 두 겹으로 겹쳐 라이더가 묻혔음
+    // 같은 길을 오가는 순환 코스(샹젤리제 등): 나란히 겹치는 구간의 높이를 하나로 맞춤 — 높이 자료가 달라 길이 두 겹으로 겹쳐 라이더가 묻혔음
+    // ※ 방향이 나란한 곳만 (다리·고가처럼 엇갈려 지나는 곳은 그대로). 맞춘 뒤 아래에서 턱을 없앰
+    const dirAt = (i) => { const a = Math.max(0, i - 2), b = Math.min(n, i + 2), dx = this.x[b] - this.x[a], dz = this.z[b] - this.z[a], l = Math.hypot(dx, dz) || 1; return [dx / l, dz / l]; };
     const full = new Map(); for (let i = 0; i <= n; i++) { const k = Math.floor(this.x[i] / 10) + ',' + Math.floor(this.z[i] / 10); if (!full.has(k)) full.set(k, []); full.get(k).push(i); }
     for (let pass = 0; pass < 3; pass++) for (let i = 0; i <= n; i++) {
-      const cx = Math.floor(this.x[i] / 10), cz = Math.floor(this.z[i] / 10);
+      const cx = Math.floor(this.x[i] / 10), cz = Math.floor(this.z[i] / 10), di = dirAt(i);
       for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) for (const j of full.get(cx + dx + ',' + (cz + dz)) || []) {
         if (Math.abs(i - j) < 60 || Math.hypot(this.x[i] - this.x[j], this.z[i] - this.z[j]) > 9) continue;
+        const dj = dirAt(j); if (Math.abs(di[0] * dj[0] + di[1] * dj[1]) < 0.85) continue; // 엇갈려 지나는 길은 건드리지 않음
         const m = (this.y[i] + this.y[j]) / 2; this.y[i] = this.y[j] = m;
       }
+    }
+    // 턱 없애기 (재발 방지 규칙, 2026-11-26 「평지에서 멈춤」 제보):
+    // 1) 순환 코스는 끝과 시작 높이를 이어 붙임  2) 살짝 매끈하게  3) 2 m마다 높이 차를 경사 15.5% 이하로 제한
+    if (course.kind === 'loop' || !course.pts) { const gap = this.y[n] - this.y[0]; for (let i = 0; i <= n; i++) this.y[i] -= gap * (i / n); }
+    { const src = this.y.slice(), W = 4; for (let i = 0; i <= n; i++) { let s2 = 0, c2 = 0; for (let k = -W; k <= W; k++) { const j = i + k; if (j >= 0 && j <= n) { s2 += src[j]; c2++; } } this.y[i] = s2 / c2; } }
+    const maxStep = (course.kind === 'loop' ? 0.10 : 0.155) * this.step; // 순환(도심·공원·해안) 코스는 10%, 고개 코스는 15.5%
+    for (let pass = 0; pass < 4; pass++) {
+      for (let i = 1; i <= n; i++) this.y[i] = Math.min(this.y[i - 1] + maxStep, Math.max(this.y[i - 1] - maxStep, this.y[i]));
+      for (let i = n - 1; i >= 0; i--) this.y[i] = Math.min(this.y[i + 1] + maxStep, Math.max(this.y[i + 1] - maxStep, this.y[i]));
     }
     let minX = 1e9, maxX = -1e9, minZ = 1e9, maxZ = -1e9;
     for (let i = 0; i <= n; i++) { minX = Math.min(minX, this.x[i]); maxX = Math.max(maxX, this.x[i]); minZ = Math.min(minZ, this.z[i]); maxZ = Math.max(maxZ, this.z[i]); }
