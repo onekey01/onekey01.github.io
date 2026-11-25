@@ -4,6 +4,8 @@ import { COURSES, courseStats, drawProfile } from './courses.js';
 import { buildWorld, skyFor } from './world.js';
 import { loadSky } from './sky.js';
 import { makePost } from './post.js';
+import { loadImpostors, TIME } from './impostor.js';
+import { loadRocks } from './rocks.js';
 import { Rider, JERSEYS, BIKES } from './rider.js';
 import { CSC, sensorCadence, makeBluetooth, HR, hrLive } from './sensors.js';
 import { loadTextures } from './textures.js';
@@ -43,6 +45,7 @@ function applyQuality() {
   const hi = cfg.quality !== 'low';
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, hi ? 1.5 : 1));
   renderer.shadowMap.enabled = hi;
+  if (world?.grass) { world.grass.cap = hi ? 7000 : 1800; world.grass.update(rider.root.position, true); }
   if (hi && !post) post = makePost(renderer, scene, camera);
   if (!hi && post) { post.dispose(); post = null; }
   scene.traverse((o) => { if (o.material) o.material.needsUpdate = true; });
@@ -463,12 +466,13 @@ function loop() {
   world.followSun(rider.root.position);
   autoQuality(dt);
   if (mode === 'ride') hud();
+  TIME.value = now / 1000;
   if (post) post.render(); else renderer.render(scene, camera);
   requestAnimationFrame(loop);
 }
 
 /* ---------------- 시작 ---------------- */
-loadTextures(renderer).then(async () => { const ci = COURSES.findIndex((c) => c.id === cfg.courseId); await loadCourse(ci >= 0 ? ci : 0); boot(); });
+Promise.all([loadTextures(renderer), loadImpostors(renderer), loadRocks(renderer)]).then(async () => { const ci = COURSES.findIndex((c) => c.id === cfg.courseId); await loadCourse(ci >= 0 ? ci : 0); boot(); });
 function boot() {
   cloud = initCloud({
     getLocal: localData,

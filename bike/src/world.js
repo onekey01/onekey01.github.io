@@ -2,6 +2,9 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { TEX } from './textures.js';
+import { IMP, impostorTrees, TIME } from './impostor.js';
+import { ROCKS } from './rocks.js';
+import { makeGrass } from './grass.js';
 
 const DEFAULT_SUN = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - 38), THREE.MathUtils.degToRad(150));
 /** 산·고개 코스는 맑은 하늘, 나머지는 구름 낀 하늘 */
@@ -211,6 +214,17 @@ export function buildWorld(scene, course, renderer, sky) {
   }
   geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.setAttribute('aSplat', new THREE.BufferAttribute(spl, 4));
   const terrain = new THREE.Mesh(geo, terrainMaterial()); terrain.receiveShadow = true; group.add(terrain);
+  // 실제로 그려진 지형 삼각형의 높이 (나무·바위·풀이 뜨거나 묻히지 않게) + 잔디 비율
+  const gx0 = (b.minX + b.maxX) / 2 - W / 2, gz0 = (b.minZ + b.maxZ) / 2 - D / 2, gdx = W / segX, gdz = D / segZ, row = segX + 1;
+  const groundAt = (x, z) => {
+    const fx0 = (x - gx0) / gdx, fz0 = (z - gz0) / gdz;
+    const k = Math.min(segX - 1, Math.max(0, Math.floor(fx0))), j = Math.min(segZ - 1, Math.max(0, Math.floor(fz0)));
+    const fx = Math.min(1, Math.max(0, fx0 - k)), fz = Math.min(1, Math.max(0, fz0 - j));
+    const ia = j * row + k, ib = ia + row, ic = ib + 1, id = ia + 1, Y = (i) => pos.getY(i);
+    const y = fx + fz <= 1 ? Y(ia) + fx * (Y(id) - Y(ia)) + fz * (Y(ib) - Y(ia)) : Y(ic) + (1 - fx) * (Y(ib) - Y(ic)) + (1 - fz) * (Y(id) - Y(ic));
+    const gw = (spl[ia * 4] * (1 - fx) + spl[id * 4] * fx) * (1 - fz) + (spl[ib * 4] * (1 - fx) + spl[ic * 4] * fx) * fz;
+    return { y, grass: gw };
+  };
 
   if (thName === 'coast' || sea) {
     const lvl = sea ? sea.level : 0.6;
@@ -243,15 +257,27 @@ export function buildWorld(scene, course, renderer, sky) {
 
   // 나무
   const count = th.trees;
-  const leafy = BROADLEAF[thName] ?? 0.1;
-  const fm = new THREE.InstancedMesh(pineGeo(), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92 }), count);
-  const bm2 = new THREE.InstancedMesh(broadGeo(), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 }), count);
-  const tm = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.22, 0.34, 1, 6).translate(0, 0.5, 0), new THREE.MeshStandardMaterial({ color: 0x5b4230, roughness: 1 }), count * 2);
+  const leafy = BROADLEAF[thName] ?? 0; // 산악 코스는 침엽수만
+  // 실사 나무 사진판(임포스터)이 있으면 그것으로, 없으면 예전 도형 나무로
+  const CONIF = ['fir_a', 'fir_b', 'fir_c'].filter((k) => IMP[k]), BROAD = ['broad_a', 'broad_b', 'broad_c', 'broad_d'].filter((k) => IMP[k]);
+  const useImp = CONIF.length > 0, impMesh = {}, impN = {};
+  for (const k of [...CONIF, ...BROAD]) { impMesh[k] = impostorTrees(k, count, TIME); impN[k] = 0; }
+  const fm = new THREE.InstancedMesh(pineGeo(), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92 }), useImp ? 1 : count);
+  const bm2 = new THREE.InstancedMesh(broadGeo(), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 }), useImp ? 1 : count);
+  const tm = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.22, 0.34, 1, 6).translate(0, 0.5, 0), new THREE.MeshStandardMaterial({ color: 0x5b4230, roughness: 1 }), useImp ? 1 : count * 2);
   let nPine = 0, nBroad = 0;
   let placed = 0, tries = 0;
   const putTree = (x, z, sc) => {
-    const h = heightAt(x, z), broad = rand() < leafy;
-    const sy = sc * (0.8 + rand() * 0.5); quat.setFromAxisAngle(up, rand() * 6.28);
+    const h = groundAt(x, z).y, broad = rand() < leafy;
+    quat.setFromAxisAngle(up, rand() * 6.28);
+    if (useImp) { // 실제 크기: 침엽수 9~17 m, 활엽수 7~12 m
+      const list = broad && BROAD.length ? BROAD : CONIF, k = list[Math.floor(rand() * list.length)], I = IMP[k];
+      const tall = (list === CONIF ? 9 + 8 * Math.min(1, (sc - 0.7) / 0.8) : 7 + 5 * Math.min(1, (sc - 0.7) / 0.8)) * (0.9 + rand() * 0.2), f = tall / I.H;
+      s.set(f, f * (0.92 + rand() * 0.16), f); m.compose(new THREE.Vector3(x, h - 0.15, z), quat, s);
+      tint.setRGB(1, 1, 1).offsetHSL((rand() - 0.5) * 0.04, (rand() - 0.5) * 0.1, (rand() - 0.5) * 0.1);
+      impMesh[k].setMatrixAt(impN[k], m); impMesh[k].setColorAt(impN[k], tint); impN[k]++; placed++; return;
+    }
+    const sy = sc * (0.8 + rand() * 0.5);
     s.set(sc, sy, sc);
     m.compose(new THREE.Vector3(x, h - 0.3, z), quat, s);
     tint.setHex(th.treeTint[Math.floor(rand() * th.treeTint.length)]).offsetHSL((rand() - 0.5) * 0.03, 0, (rand() - 0.5) * 0.08);
@@ -268,7 +294,7 @@ export function buildWorld(scene, course, renderer, sky) {
   }
   while (placed < count && tries++ < count * 14) {
     const [x, z] = randPt();
-    const near = path.nearest(x, z); if (near.dist < 13) continue;
+    const near = path.nearest(x, z); if (near.dist < 9) continue;
     if (near.dist > 160 && rand() < 0.55) continue;
     if (th.flat && parkInside && !path.inside(x, z)) continue; // 공원 안에만 나무
     if (th.flat && !parkInside && near.dist > 60) continue;
@@ -279,9 +305,57 @@ export function buildWorld(scene, course, renderer, sky) {
     if (th.city && h < th.cityBase + 8) continue;
     putTree(x, z, 0.7 + rand() * 0.8);
   }
-  fm.count = nPine; bm2.count = nBroad; tm.count = placed;
-  for (const o of [fm, bm2, tm]) { o.castShadow = true; o.receiveShadow = true; }
-  group.add(fm, bm2, tm);
+  // 길가 덤불 (실사 사진판)
+  const SHR = ['shrub_b', 'shrub_c'].filter((k) => IMP[k]);
+  if (useImp && SHR.length && !th.city) {
+    for (const k of SHR) { impMesh[k] = impostorTrees(k, Math.ceil(count * 0.3), TIME); impN[k] = 0; }
+    for (let t = 0, nS = 0; nS < count * 0.5 && t < count * 4; t++) {
+      const i = Math.floor(rand() * (path.n + 1)), sg = rand() < 0.5 ? -1 : 1, i1 = Math.min(path.n, i + 1), i0 = Math.max(0, i - 1);
+      let sx = path.z[i1] - path.z[i0], sz = -(path.x[i1] - path.x[i0]); const l = Math.hypot(sx, sz) || 1;
+      const lat = 6.5 + Math.pow(rand(), 1.6) * 35, x = path.x[i] + (sx / l) * lat * sg, z = path.z[i] + (sz / l) * lat * sg;
+      const gr = groundAt(x, z); if (gr.grass < 0.5 || path.nearest(x, z).dist < 6) continue;
+      if (th.flat && parkInside && !path.inside(x, z)) continue;
+      if (th.treeLine && gr.y > th.treeLine + 150) continue;
+      const k = SHR[Math.floor(rand() * SHR.length)], f = (0.8 + rand() * 1.1) / IMP[k].H; quat.setFromAxisAngle(up, rand() * 6.28);
+      s.set(f, f * (0.85 + rand() * 0.3), f); m.compose(new THREE.Vector3(x, gr.y - 0.1, z), quat, s);
+      tint.setRGB(1, 1, 1).offsetHSL((rand() - 0.5) * 0.05, 0, (rand() - 0.5) * 0.12);
+      if (impN[k] < impMesh[k].instanceMatrix.count) { impMesh[k].setMatrixAt(impN[k], m); impMesh[k].setColorAt(impN[k], tint); impN[k]++; nS++; }
+    }
+  }
+  if (useImp) { for (const k in impMesh) { impMesh[k].count = impN[k]; if (impN[k]) group.add(impMesh[k]); else impMesh[k].geometry.dispose(); } }
+  else { fm.count = nPine; bm2.count = nBroad; tm.count = placed;
+    for (const o of [fm, bm2, tm]) { o.castShadow = true; o.receiveShadow = true; }
+    group.add(fm, bm2, tm); }
+
+  // 바위: 산악 코스는 길가·비탈에 많이, 평지·도시는 조금
+  if (ROCKS.length) {
+    const mtn = ['alps', 'stelvio', 'ventoux', 'seorak', 'mountain'].includes(thName);
+    const nR = mtn ? 520 : thName === 'jeju' || thName === 'coast' ? 260 : th.city || th.flat ? 25 : 160;
+    const rm = ROCKS.map((r) => { const o = new THREE.InstancedMesh(r.geo, r.mat, nR); o.count = 0; o.castShadow = true; o.receiveShadow = true; o.userData.shared = true; return o; });
+    for (let t = 0, k = 0; k < nR && t < nR * 12; t++) {
+      const i = Math.floor(rand() * (path.n + 1)), sg = rand() < 0.5 ? -1 : 1, i1 = Math.min(path.n, i + 1), i0 = Math.max(0, i - 1);
+      let sx = path.z[i1] - path.z[i0], sz = -(path.x[i1] - path.x[i0]); const l = Math.hypot(sx, sz) || 1; sx /= l; sz /= l;
+      const far = rand() < 0.35, lat = far ? 25 + rand() * 120 : 5.5 + Math.pow(rand(), 1.5) * 22;
+      const x = path.x[i] + sx * lat * sg, z = path.z[i] + sz * lat * sg;
+      if (path.nearest(x, z).dist < 5.5) continue;
+      const gr = groundAt(x, z); if (sea && gr.y < sea.level + 0.5 && thName !== 'jeju') continue;
+      if (th.flat && parkInside && !path.inside(x, z)) continue;
+      const big = far && mtn ? 2.5 + rand() * 5 : 0.35 + Math.pow(rand(), 2.2) * (mtn ? 2.6 : 1.4);
+      quat.setFromEuler(new THREE.Euler((rand() - 0.5) * 0.4, rand() * 6.28, (rand() - 0.5) * 0.4));
+      s.set(big * (0.8 + rand() * 0.4), big * (0.6 + rand() * 0.6), big * (0.8 + rand() * 0.4));
+      m.compose(new THREE.Vector3(x, gr.y - big * 0.18, z), quat, s);
+      const o = rm[k % rm.length]; tint.setRGB(1, 1, 1).multiplyScalar(thName === 'jeju' ? 0.42 : thName === 'ventoux' ? 1.15 : 0.85 + rand() * 0.25);
+      o.setMatrixAt(o.count, m); o.setColorAt(o.count, tint); o.count++; k++;
+    }
+    for (const o of rm) if (o.count) group.add(o);
+  }
+
+  // 길가 풀숲 (라이더 주변만)
+  const gc = new THREE.Color(th.grass), grass = makeGrass(path, groundAt, {
+    base: gc.clone().multiplyScalar(0.62).getHex(), tip: gc.clone().offsetHSL(-0.015, 0.06, 0.0).getHex(), max: 7000,
+    avoid: (x, z) => (sea && groundAt(x, z).y < sea.level + 1.2) || (th.flat && parkInside && !path.inside(x, z)),
+  }, TIME);
+  grass.mesh.userData.shared = false; group.add(grass.mesh);
 
   // 건물
   if (th.bld) {
@@ -323,11 +397,11 @@ export function buildWorld(scene, course, renderer, sky) {
   Object.assign(sun.shadow.camera, { left: -45, right: 45, top: 45, bottom: -45, near: 1, far: 600 });
   group.add(sun, sun.target);
   /** 해와 그림자 범위를 내 캐릭터 주변으로 옮김 */
-  const followSun = (p) => { sun.target.position.copy(p); sun.position.copy(p).addScaledVector(SUN_DIR, 300); };
+  const followSun = (p) => { sun.target.position.copy(p); sun.position.copy(p).addScaledVector(SUN_DIR, 300); grass.update(p); };
   followSun(path.at(0));
 
   scene.add(group);
-  return { path, group, heightAt, sun, followSun, dispose() { scene.remove(group); envTex?.dispose(); group.traverse((o) => { o.geometry?.dispose(); if (o.material && o.material.map && o.material.map !== TEX.road) o.material.map.dispose(); o.material?.dispose?.(); }); } };
+  return { path, group, heightAt, sun, followSun, grass, dispose() { scene.remove(group); envTex?.dispose(); group.traverse((o) => { if (o.userData.shared) return; o.geometry?.dispose(); if (o.material && o.material.map && o.material.map !== TEX.road && !o.material.map.userData.keep) o.material.map.dispose(); o.customDepthMaterial?.dispose(); o.material?.dispose?.(); }); } };
 }
 
 function roadTexture() {
