@@ -33,6 +33,15 @@ function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 10139
 const noise = (x, z) =>
   Math.sin(x * 0.004 + Math.cos(z * 0.003)) * 0.5 + Math.sin(z * 0.006 + x * 0.002) * 0.3 +
   Math.sin((x + z) * 0.011) * 0.2 + Math.sin(x * 0.023 - z * 0.019) * 0.1;
+// 길가 세밀 굴곡용 값 노이즈 (위치만으로 정해지는 결정적 값)
+const hash2 = (x, z) => { const h = Math.sin(x * 127.1 + z * 311.7) * 43758.5453; return h - Math.floor(h); };
+function vnoise(x, z) {
+  const xi = Math.floor(x), zi = Math.floor(z), xf = x - xi, zf = z - zi, u = xf * xf * (3 - 2 * xf), v = zf * zf * (3 - 2 * zf);
+  const a = hash2(xi, zi), b = hash2(xi + 1, zi), c = hash2(xi, zi + 1), d = hash2(xi + 1, zi + 1);
+  return (a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v) * 2 - 1;
+}
+const fbm = (x, z) => vnoise(x, z) * 0.55 + vnoise(x * 2.03 + 17, z * 2.03 - 9) * 0.27 + vnoise(x * 4.1 - 3, z * 4.1 + 21) * 0.13 + vnoise(x * 8.3 + 7, z * 8.3 + 5) * 0.05;
+const ridged = (x, z) => { const n = 1 - Math.abs(vnoise(x, z)), m = 1 - Math.abs(vnoise(x * 2.1 + 5, z * 2.1 - 7)); return n * n * 0.7 + m * m * 0.3; };
 const smoothstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
 /** 위도·경도 → 미터(동쪽 +x, 북쪽 -z) */
@@ -212,7 +221,8 @@ export function buildWorld(scene, course, renderer, sky, terr) {
     const t = smoothstep(blend0, blend1, near.dist);
     const h = roadY + (natural(x, z, near) - roadY) * t + (farY - roadY) * Math.min(1, t * 2) * (1 - t);
     // 실제 지형 재발 방지: 길가 땅이 길보다 급하게 솟지 않게 (도시 지형 자료엔 건물 높이가 섞여 길이 묻혔음)
-    return terr ? Math.min(h, roadY + Math.max(0, near.dist - blend0) * 0.25 + Math.max(0, near.dist - blend1) * 2) : h;
+    const e = Math.max(0, near.dist - blend0); // 길가 상한을 매끈한 곡선으로 (꺾인 직선이면 비탈에 일직선 주름이 생겼음)
+    return terr ? Math.min(h, roadY + e * 0.3 + e * e * 0.025) : h;
   };
 
   // 지형 메쉬 + 색
@@ -246,7 +256,8 @@ export function buildWorld(scene, course, renderer, sky, terr) {
     c.offsetHSL(0, 0, jitter - 0.05); c.toArray(col, i * 3); spl.set(w, i * 4);
   }
   geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.setAttribute('aSplat', new THREE.BufferAttribute(spl, 4));
-  const terrain = new THREE.Mesh(geo, terr ? satMaterial(terr.sat) : terrainMaterial()); terrain.receiveShadow = true; group.add(terrain);
+  const patchU = { value: new THREE.Vector4(0, 0, 0, 0) }; // 세밀 지형 조각 자리 (그 안의 거친 지형은 그리지 않음)
+  const terrain = new THREE.Mesh(geo, terr ? satMaterial(terr.sat, patchU) : terrainMaterial()); terrain.receiveShadow = true; group.add(terrain);
   // 실제로 그려진 지형 삼각형의 높이 (나무·바위·풀이 뜨거나 묻히지 않게) + 잔디 비율
   const gx0 = (b.minX + b.maxX) / 2 - W / 2, gz0 = (b.minZ + b.maxZ) / 2 - D / 2, gdx = W / segX, gdz = D / segZ, row = segX + 1;
   const groundAt = (x, z) => {
@@ -257,8 +268,21 @@ export function buildWorld(scene, course, renderer, sky, terr) {
     const y = fx + fz <= 1 ? Y(ia) + fx * (Y(id) - Y(ia)) + fz * (Y(ib) - Y(ia)) : Y(ic) + (1 - fx) * (Y(ib) - Y(ic)) + (1 - fz) * (Y(id) - Y(ic));
     const gw = (spl[ia * 4] * (1 - fx) + spl[id * 4] * fx) * (1 - fz) + (spl[ib * 4] * (1 - fx) + spl[ic * 4] * fx) * fz;
     const fo = terr ? (forestV[ia] * (1 - fx) + forestV[id] * fx) * (1 - fz) + (forestV[ib] * (1 - fx) + forestV[ic] * fx) * fz : 1;
-    return { y, grass: gw, forest: fo };
+    const ny = (nor.getY(ia) + nor.getY(id) + nor.getY(ib) + nor.getY(ic)) / 4;
+    return { y, grass: gw, forest: fo, ny };
   };
+  // 길가 세밀 굴곡 (실제 지형 코스): 풀밭은 잔잔한 둔덕, 숲은 조금 더, 가파른 비탈은 바위가 튀어나온 능선. 길 바로 옆은 평평 + 얕은 도랑
+  // ※ 실제 측량이 아니라 경사·위성사진 색에 맞춰 그럴듯하게 만든 굴곡
+  const detailAt = (x, z, g = groundAt(x, z), dist = path.nearest(x, z).dist) => {
+    if (!terr) return 0;
+    const steep = 1 - smoothstep(0.62, 0.9, g.ny), mask = smoothstep(5.2, 16, dist);
+    const meadow = fbm(x / 18, z / 18) * (0.8 + g.forest * 0.5) + vnoise(x / 5, z / 5) * 0.22;
+    const rock = ((ridged(x / 11, z / 11) - 0.45) * 6 + fbm(x / 7, z / 7) * 1.8) * steep; // 비탈 높이 수십 m에 맞춘 바위 굴곡 (±1 m로는 안 보였음)
+    const ditch = -0.28 * Math.exp(-(((dist - 6.4) / 1.1) ** 2)) * (1 - steep);
+    return (meadow * (1 - steep * 0.5) + rock) * mask + ditch;
+  };
+  const groundObj = (x, z) => { const g = groundAt(x, z); return g.y + Math.min(0, detailAt(x, z, g)); }; // 나무·바위는 굴곡 위로 뜨지 않게
+  const groundFine = (x, z) => { const g = groundAt(x, z); return { ...g, y: g.y + detailAt(x, z, g) }; };
 
   if (thName === 'coast' || sea) {
     const lvl = sea ? sea.level : 0.6;
@@ -302,7 +326,7 @@ export function buildWorld(scene, course, renderer, sky, terr) {
   let nPine = 0, nBroad = 0;
   let placed = 0, tries = 0;
   const putTree = (x, z, sc) => {
-    const h = groundAt(x, z).y, broad = rand() < leafy;
+    const h = groundObj(x, z), broad = rand() < leafy;
     quat.setFromAxisAngle(up, rand() * 6.28);
     if (useImp) { // 실제 크기: 침엽수 9~17 m, 활엽수 7~12 m
       const list = broad && BROAD.length ? BROAD : CONIF, k = list[Math.floor(rand() * list.length)], I = IMP[k];
@@ -352,7 +376,7 @@ export function buildWorld(scene, course, renderer, sky, terr) {
       if (th.flat && parkInside && !path.inside(x, z)) continue;
       if (th.treeLine && gr.y > th.treeLine + 150) continue;
       const k = SHR[Math.floor(rand() * SHR.length)], f = (0.8 + rand() * 1.1) / IMP[k].H; quat.setFromAxisAngle(up, rand() * 6.28);
-      s.set(f, f * (0.85 + rand() * 0.3), f); m.compose(new THREE.Vector3(x, gr.y - 0.1, z), quat, s);
+      s.set(f, f * (0.85 + rand() * 0.3), f); m.compose(new THREE.Vector3(x, groundObj(x, z) - 0.1, z), quat, s);
       tint.setRGB(1, 1, 1).offsetHSL((rand() - 0.5) * 0.05, 0, (rand() - 0.5) * 0.12);
       if (impN[k] < impMesh[k].instanceMatrix.count) { impMesh[k].setMatrixAt(impN[k], m); impMesh[k].setColorAt(impN[k], tint); impN[k]++; nS++; }
     }
@@ -378,7 +402,7 @@ export function buildWorld(scene, course, renderer, sky, terr) {
       const big = far && mtn ? 2.5 + rand() * 5 : 0.35 + Math.pow(rand(), 2.2) * (mtn ? 2.6 : 1.4);
       quat.setFromEuler(new THREE.Euler((rand() - 0.5) * 0.4, rand() * 6.28, (rand() - 0.5) * 0.4));
       s.set(big * (0.8 + rand() * 0.4), big * (0.6 + rand() * 0.6), big * (0.8 + rand() * 0.4));
-      m.compose(new THREE.Vector3(x, gr.y - big * 0.18, z), quat, s);
+      m.compose(new THREE.Vector3(x, groundObj(x, z) - big * 0.18, z), quat, s);
       const o = rm[k % rm.length]; tint.setRGB(0.78, 0.78, 0.8).multiplyScalar(thName === 'jeju' ? 0.45 : thName === 'ventoux' ? 1.3 : 0.85 + rand() * 0.25); // 사진 질감이 붉어 회색 쪽으로
       o.setMatrixAt(o.count, m); o.setColorAt(o.count, tint); o.count++; k++;
     }
@@ -387,7 +411,7 @@ export function buildWorld(scene, course, renderer, sky, terr) {
 
   // 길가 풀숲 (라이더 주변만)
   const satCol = terr ? (x, z) => { const [lo, la] = path.lonlat(x, z), c = satAt(terr, lo, la); return new THREE.Color().setRGB(c[0], c[1], c[2], THREE.SRGBColorSpace); } : null;
-  const gc = new THREE.Color(th.grass), grass = makeGrass(path, groundAt, { colorAt: satCol,
+  const gc = new THREE.Color(th.grass), grass = makeGrass(path, terr ? groundFine : groundAt, { colorAt: satCol,
     base: gc.clone().multiplyScalar(0.62).getHex(), tip: gc.clone().offsetHSL(-0.015, 0.06, 0.0).getHex(), max: 7000,
     avoid: (x, z) => (sea && groundAt(x, z).y < sea.level + 1.2) || (th.flat && parkInside && !path.inside(x, z)),
   }, TIME);
@@ -434,7 +458,46 @@ export function buildWorld(scene, course, renderer, sky, terr) {
   Object.assign(sun.shadow.camera, { left: -45, right: 45, top: 45, bottom: -45, near: 1, far: 600 });
   group.add(sun, sun.target);
   /** 해와 그림자 범위를 내 캐릭터 주변으로 옮김 */
-  const followSun = (p) => { sun.target.position.copy(p); sun.position.copy(p).addScaledVector(SUN_DIR, 300); grass.update(p); };
+  // 라이더 둘레 세밀 지형 조각: 480 m 네모를 2.4 m 간격으로 다시 그림, 50 m 넘게 움직이면 옮겨 그림
+  let patch = null;
+  if (terr) {
+    const HALF = 240, NS = 200, cellP = (HALF * 2) / NS;
+    const pg = new THREE.PlaneGeometry(HALF * 2, HALF * 2, NS, NS); pg.rotateX(-Math.PI / 2);
+    pg.setAttribute('aSplat', new THREE.Float32BufferAttribute(new Float32Array((NS + 1) ** 2 * 4), 4));
+    const pmat = satMaterial(terr.sat, { value: new THREE.Vector4(0, 0, 0, 0) }); pmat.polygonOffset = true; pmat.polygonOffsetFactor = -1; pmat.polygonOffsetUnits = -1;
+    const pm = new THREE.Mesh(pg, pmat); pm.receiveShadow = true; pm.frustumCulled = false; pm.visible = false; group.add(pm);
+    const base = pg.attributes.position.array.slice(), B = terr.box, NV = (NS + 1) ** 2;
+    const nY = new Float32Array(NV), nUV = new Float32Array(NV * 2), nS = new Float32Array(NV * 4);
+    let at = null, job = null; // 다시 그리기를 여러 프레임에 나눠 함 (한 번에 하면 태블릿에서 0.15초 넘게 멈칫)
+    const finish = (j) => {
+      const P = pg.attributes.position;
+      for (let i = 0; i < NV; i++) P.setXYZ(i, j.cx + base[i * 3], nY[i], j.cz + base[i * 3 + 2]);
+      pg.computeVertexNormals(); // 삼각형 법선 (이웃 두 칸 차이로 계산하면 잔 굴곡이 뭉개졌음)
+      pg.attributes.uv.array.set(nUV); pg.attributes.aSplat.array.set(nS);
+      P.needsUpdate = pg.attributes.uv.needsUpdate = pg.attributes.aSplat.needsUpdate = true;
+      patchU.value.set(j.cx, j.cz, HALF - 1.5, 1); pm.visible = true; at = { x: j.cx, z: j.cz };
+    };
+    const work = (budget) => {
+      const t0 = performance.now(), j = job;
+      while (j.i < NV) {
+        const i = j.i++, lx = base[i * 3], lz = base[i * 3 + 2], x = j.cx + lx, z = j.cz + lz, g = groundAt(x, z);
+        const edge = 1 - smoothstep(HALF - 45, HALF - 3, Math.max(Math.abs(lx), Math.abs(lz)));
+        nY[i] = g.y + detailAt(x, z, g) * edge;
+        const [lo, la] = path.lonlat(x, z); nUV[i * 2] = (lo - B.w) / (B.e - B.w); nUV[i * 2 + 1] = (la - B.s) / (B.n - B.s); nS[i * 4] = g.grass; nS[i * 4 + 1] = 1 - g.grass;
+        if ((i & 255) === 0 && performance.now() - t0 > budget) return;
+      }
+      job = null; finish(j);
+    };
+    patch = {
+      update(p, force) {
+        if (job) { work(force ? 1e9 : 5); return; }
+        if (!force && at && Math.hypot(p.x - at.x, p.z - at.z) < 50) return;
+        job = { cx: Math.round(p.x / cellP) * cellP, cz: Math.round(p.z / cellP) * cellP, i: 0 };
+        work(force || !at ? 1e9 : 5); // 처음(코스 열 때)은 한 번에, 달리는 중에는 프레임마다 조금씩
+      },
+    };
+  }
+  const followSun = (p) => { sun.target.position.copy(p); sun.position.copy(p).addScaledVector(SUN_DIR, 300); patch?.update(p); grass.update(p); };
   followSun(path.at(0));
 
   scene.add(group);
@@ -447,7 +510,7 @@ export function buildWorld(scene, course, renderer, sky, terr) {
     scene.fog.near = F[0]; scene.fog.far = F[1];
     const wet = kind === 'rain'; roadMat.roughness = wet ? 0.22 : 0.85; roadMat.color.setScalar(wet ? 0.5 : 1); roadMat.envMapIntensity = wet ? 1.6 : 1; // 젖은 길: 어둡고 하늘이 비침
   };
-  return { path, group, heightAt, sun, followSun, grass, setWeather, dispose() { scene.remove(group); envTex?.dispose(); group.traverse((o) => { if (o.userData.shared) return; o.geometry?.dispose(); if (o.material && o.material.map && o.material.map !== TEX.road && !o.material.map.userData.keep) o.material.map.dispose(); o.customDepthMaterial?.dispose(); o.material?.dispose?.(); }); } };
+  return { path, group, heightAt, sun, followSun, grass, setWeather, patch, dispose() { scene.remove(group); envTex?.dispose(); group.traverse((o) => { if (o.userData.shared) return; o.geometry?.dispose(); if (o.material && o.material.map && o.material.map !== TEX.road && !o.material.map.userData.keep) o.material.map.dispose(); o.customDepthMaterial?.dispose(); o.material?.dispose?.(); }); } };
 }
 
 function roadTexture() {
@@ -528,14 +591,15 @@ function terrainMaterial() {
 }
 
 /** 위성사진 지형 재질: 사진 색 위에, 가까운 땅만 풀·흙 사진의 결을 겹쳐 흐릿함을 줄임 */
-function satMaterial(sat) {
+function satMaterial(sat, patchU) {
   const mat = new THREE.MeshStandardMaterial({ map: sat, roughness: 0.95, metalness: 0 });
   mat.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, { tGrass: { value: TEX.grass || null }, tRock: { value: TEX.rock || null } });
+    Object.assign(sh.uniforms, { tGrass: { value: TEX.grass || null }, tRock: { value: TEX.rock || null }, uPatch: patchU });
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 aSplat; varying vec4 vSplat; varying vec3 vWPos; varying float vSteep;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvSplat = aSplat; vWPos = (modelMatrix * vec4(position, 1.0)).xyz; vSteep = normal.y;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D tGrass, tRock; varying vec4 vSplat; varying vec3 vWPos; varying float vSteep;')
-      .replace('#include <map_fragment>', `#include <map_fragment>
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D tGrass, tRock; uniform vec4 uPatch; varying vec4 vSplat; varying vec3 vWPos; varying float vSteep;')
+      .replace('#include <map_fragment>', `if (uPatch.w > 0.5 && abs(vWPos.x - uPatch.x) < uPatch.z && abs(vWPos.z - uPatch.y) < uPatch.z) discard; // 세밀 조각이 대신 그림
+        #include <map_fragment>
         diffuseColor.rgb *= 1.25; // 위성사진은 실제 반사율보다 살짝 어두움
         vec2 tp = vWPos.xz; float dcam = distance(vWPos, cameraPosition);
         const vec3 LW = vec3(0.3, 0.59, 0.11);
@@ -549,7 +613,7 @@ function satMaterial(sat) {
         det = 1.0 + (det - 1.0) * 2.6; // 풀·바위 사진 자체의 명암 차이가 작아서 키움 (디버그 색으로 확인: 그대로면 0.85~1.0)
         diffuseColor.rgb *= mix(1.0, clamp(det, 0.4, 1.7), k);`);
   };
-  mat.customProgramCacheKey = () => 'sat-terrain';
+  mat.customProgramCacheKey = () => 'sat-terrain2';
   return mat;
 }
 
