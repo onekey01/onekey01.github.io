@@ -61,6 +61,9 @@ button.on{background:var(--accent);color:#1b1300;border-color:transparent;font-w
 #profile{width:440px;height:64px;display:block;margin-top:6px}
 #topR{position:absolute;right:16px;top:14px;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
 #lvBox{padding:8px 14px;min-width:200px}#lvBox .row{display:flex;justify-content:space-between;font-size:15px}#lvBox b{color:var(--accent)}
+#topR button.big{font-size:20px;padding:12px 18px;font-weight:800}#topR button.stop{background:#e5484d;border-color:transparent;color:#fff}
+#courses{cursor:grab}#courses.dragging{cursor:grabbing;user-select:none}#courses.dragging .course{pointer-events:none}
+#mPause .sheet{width:min(520px,92%);text-align:center}#mPause .sheet button{display:block;width:100%;margin-top:12px;font-size:21px;padding:16px}#pResume{background:var(--accent);color:#1b1300;font-weight:800;border:none}#pSave{background:#2f9e5b;border:none;font-weight:800}
 #testBadge{display:none;align-items:center;gap:6px;background:rgba(255,176,32,.9);color:#231600;font-weight:800;border-radius:999px;padding:5px 12px;font-size:14px}
 #knob{position:absolute;right:16px;top:50%;transform:translateY(-50%);padding:14px;width:230px;text-align:center;pointer-events:auto;transition:border-color .2s}
 #knob.ok{border-color:var(--ok)}#knob.up{border-color:var(--warn)}#knob.down{border-color:var(--blue)}
@@ -159,7 +162,7 @@ td em{font-style:normal;font-size:12px;background:rgba(255,176,32,.25);color:var
   <div id="topR">
     <div id="lvBox" class="panel"><div class="row"><b id="hLevel">Lv 1</b><span id="hXp"></span></div><div class="bar"><i id="hXpBar"></i></div></div>
     <span id="testBadge">🧪 시험 모드</span>
-    <div style="display:flex;gap:8px" class="p"><button id="btnTest2">시험 모드</button><button id="btnEnd">끝내기</button></div>
+    <div style="display:flex;gap:8px" class="p"><button id="btnTest2">시험 모드</button><button id="btnPause" class="big">⏸ 일시정지</button><button id="btnEnd" class="big stop">■ 그만하기</button></div>
   </div>
   <div id="knob" class="panel">
     <div class="lbl">권장 저항 (자전거 노브)</div>
@@ -215,6 +218,16 @@ td em{font-style:normal;font-size:12px;background:rgba(255,176,32,.25);color:var
   <div class="sum" id="sumBox"></div>
   <div style="overflow:auto"><table><thead><tr><th>날짜</th><th>코스</th><th>시간</th><th>거리</th><th>오른 높이</th><th>평균 km/h</th><th>kcal</th><th>평균 심박</th><th></th></tr></thead><tbody id="histBody"></tbody></table></div>
   <div class="actions"><button id="btnCsv">엑셀용 파일로 내려받기</button><button class="primary" data-close>닫기</button></div>
+</div></div>
+
+<div class="modal fit" id="mPause"><div class="sheet">
+  <h2>⏸ 일시정지</h2>
+  <div id="pauseInfo" style="color:var(--sub);font-size:17px"></div>
+  <button id="pResume">▶ 이어 타기</button>
+  <button id="pSave">💾 저장하고 끝내기</button>
+  <button id="pQuit">🗑 저장하지 않고 나가기</button>
+  <button id="pQuitYes" style="display:none;background:#e5484d;border:none;font-weight:800">정말 기록 없이 나가기</button>
+  <div style="color:var(--sub);font-size:13px;margin-top:12px">PC에서는 Esc·스페이스로 일시정지, ↑↓ 키로 저항 단계를 바꿀 수 있어요</div>
 </div></div>
 
 <div class="modal fit" id="mSummary"><div class="sheet">

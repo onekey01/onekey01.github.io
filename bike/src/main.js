@@ -77,7 +77,7 @@ const P = { pos: new THREE.Vector3(), ahead: new THREE.Vector3(), cam: new THREE
 let mode = 'menu';
 const ride = {};
 function resetRide() {
-  Object.assign(ride, { d: 0, v: 0, moving: 0, summitDone: 0, climbStart: 0, kj: 0, climb: 0, lastY: null, xp: 0, matched: 0, laps: 0, lapStart: 0, startAt: Date.now(),
+  Object.assign(ride, { paused: false, d: 0, v: 0, moving: 0, summitDone: 0, climbStart: 0, kj: 0, climb: 0, lastY: null, xp: 0, matched: 0, laps: 0, lapStart: 0, startAt: Date.now(),
     cadSum: 0, hrSum: 0, hrN: 0, hrMax: 0, spdMax: 0, startLevel: levelOf(prof.xp).level, xpShown: 0, unlocked: [], test: cfg.test });
 }
 resetRide();
@@ -390,14 +390,49 @@ const bt = makeBluetooth((kind, st, text) => { $(kind === 'sensor' ? 'dotSensor'
 $('btnSensor').onclick = () => bt.connectSensor();
 $('btnHr').onclick = () => bt.connectHr();
 $('btnRide').onclick = startRide;
+/* 코스 목록: 마우스로 끌기·휠로 좌우 넘기기 (터치는 원래 밀어서 넘어감) */
+(() => {
+  const box = $('courses'); let down = false, moved = false, x0 = 0, s0 = 0, vx = 0, lastX = 0, lastT = 0;
+  box.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') return; down = true; moved = false; x0 = lastX = e.clientX; s0 = box.scrollLeft; vx = 0; lastT = performance.now(); box.style.scrollSnapType = 'none'; });
+  addEventListener('pointermove', (e) => {
+    if (!down) return; const dx = e.clientX - x0;
+    if (Math.abs(dx) > 6) moved = true;
+    if (moved) { box.scrollLeft = s0 - dx; const t = performance.now(); vx = (e.clientX - lastX) / Math.max(1, t - lastT); lastX = e.clientX; lastT = t; box.classList.add('dragging'); }
+  });
+  addEventListener('pointerup', () => {
+    if (!down) return; down = false; box.classList.remove('dragging');
+    let v = vx * 16; const glide = () => { if (Math.abs(v) < 0.5) { box.style.scrollSnapType = ''; return; } box.scrollLeft -= v; v *= 0.92; requestAnimationFrame(glide); }; glide(); // 손을 놓으면 미끄러지듯 멈춤
+  });
+  box.addEventListener('click', (e) => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true); // 끌기 끝에 카드가 눌리지 않게
+  box.addEventListener('wheel', (e) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { box.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+})();
 $('tabs').addEventListener('click', (e) => { const t = e.target.closest('[data-tab]'); if (!t) return; cfg.tab = t.dataset.tab; saveCfg(); renderMenu(); });
-$('btnEnd').onclick = () => { if (confirm('라이딩을 끝내고 기록을 저장할까요?')) endRide(); };
+/* 일시정지·그만하기 (브라우저 확인창 대신 앱 안의 창을 씀 — 확인창은 화면을 멈추게 할 수 있음) */
+function pause(on) {
+  if (mode !== 'ride') return;
+  ride.paused = on; $('mPause').classList.toggle('show', on); $('pQuitYes').style.display = 'none'; $('pQuit').style.display = 'block';
+  if (on) { $('pauseInfo').textContent = `${course.name} · ${fmtTime(ride.moving)} · ${(ride.d / 1000).toFixed(2)} km · 경험치 +${Math.floor(ride.xp)}`; ride.v = 0; }
+}
+$('btnPause').onclick = () => pause(true);
+$('btnEnd').onclick = () => pause(true);
+$('pResume').onclick = () => pause(false);
+$('pSave').onclick = () => { $('mPause').classList.remove('show'); ride.paused = false; endRide(); };
+$('pQuit').onclick = () => { $('pQuitYes').style.display = 'block'; $('pQuit').style.display = 'none'; }; // 실수로 지우지 않게 한 단계 더 확인
+$('pQuitYes').onclick = () => {
+  $('mPause').classList.remove('show'); keepAwake(false); ride.paused = false;
+  mode = 'menu'; document.body.dataset.screen = 'menu'; resetRide(); renderMenu(); toast('기록 없이 메뉴로 나왔어요');
+};
+addEventListener('keydown', (e) => { // PC 키보드: Esc·스페이스 = 일시정지/이어 타기, ↑↓ = 저항 단계
+  if (mode !== 'ride') return;
+  if (e.key === 'Escape' || e.key === ' ') { e.preventDefault(); pause(!ride.paused); }
+  else if (e.key === 'ArrowUp') setLevel(cfg.level + 1); else if (e.key === 'ArrowDown') setLevel(cfg.level - 1);
+});
 $('btnLocker').onclick = () => { renderLocker(); $('mLocker').classList.add('show'); };
 $('btnHistory').onclick = showHistory;
 $('btnSettings').onclick = openSettings;
 $('btnFull').onclick = goLandscape;
 document.querySelectorAll('[data-close]').forEach((b) => (b.onclick = () => b.closest('.modal').classList.remove('show')));
-document.querySelectorAll('.modal').forEach((m) => m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('show'); }));
+document.querySelectorAll('.modal').forEach((m) => m.addEventListener('click', (e) => { if (e.target !== m) return; if (m.id === 'mPause') pause(false); else m.classList.remove('show'); })); // 일시정지 창 바깥을 누르면 이어 타기
 addEventListener('beforeunload', (e) => { if (mode === 'ride' && ride.moving > 10) { e.preventDefault(); e.returnValue = ''; } });
 // 처음 화면을 누르면 가로·전체화면 시도 (안드로이드 크롬)
 document.addEventListener('pointerdown', function first() { goLandscape(); document.removeEventListener('pointerdown', first); }, { once: true });
@@ -414,7 +449,7 @@ function autoQuality(dt) {
 /* ---------------- 반복 ---------------- */
 function loop() {
   const now = performance.now(), dt = Math.min((now - tPrev) / 1000, 0.1); tPrev = now;
-  if (mode === 'ride') step(dt);
+  if (mode === 'ride' && !ride.paused) step(dt);
   else { cadence = 0; grade = world.path.grade(ride.d); }
   placeRider();
   rider.animate(dt, mode === 'ride' ? cadence : 0, mode === 'ride' ? ride.v : 0);
