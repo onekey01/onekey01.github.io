@@ -9,13 +9,22 @@ const img = (src) => new Promise((res, rej) => { const i = new Image(); i.onload
 const pixels = (im, w = im.naturalWidth, h = im.naturalHeight) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(im, 0, 0, w, h); return g.getImageData(0, 0, w, h).data; };
 
 /** hi: 품질 「높음」이면 4096 사진, 아니면 2048. 없거나 실패하면 null (예전 지형으로) */
-export async function loadTerrain(id, hi, renderer) {
+export async function loadTerrain(id, hi, renderer, hasWater = true) {
   const box = TERR_META[id]; if (!box) return null;
   const key = id + (hi ? 'H' : 'L'); if (cache.has(key)) return cache.get(key);
   try {
     const [demI, satI, satS] = await Promise.all([img('terrain/' + id + '_dem.png'), img('terrain/' + id + (hi ? '_sat.jpg' : '_sat2k.jpg')), img('terrain/' + id + '_sat2k.jpg')]);
     const N = demI.naturalWidth, p = pixels(demI), dem = new Float32Array(N * N);
     for (let i = 0; i < N * N; i++) dem[i] = ((p[i * 4] << 16) | (p[i * 4 + 1] << 8) | p[i * 4 + 2]) / 10 - 1000;
+    // 재발 방지 규칙(2026-11-26 센트럴파크 「폭탄 맞은 땅」 제보): 지형 자료 오류 청소
+    // 1) 물이 없는 코스는 바다·강 바닥을 -3 m 아래로 파지 않음 (뉴욕 강가에 -766 m 구덩이가 있었음)
+    // 2) 주변 5×5 중앙값보다 8 m 넘게 튀고, 주변 굴곡(MAD)의 4배를 넘는 점은 중앙값으로 (진짜 능선은 주변도 험해서 남음)
+    if (!hasWater) for (let i = 0; i < N * N; i++) if (dem[i] < -3) dem[i] = -3;
+    { const src = dem.slice(), w = []; for (let y = 2; y < N - 2; y++) for (let x = 2; x < N - 2; x++) {
+      w.length = 0; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) w.push(src[(y + dy) * N + x + dx]);
+      w.sort((p2, q2) => p2 - q2); const med = w[12], dev = src[y * N + x] - med; if (Math.abs(dev) < 8) continue;
+      const mad = w.map((v) => Math.abs(v - med)).sort((p2, q2) => p2 - q2)[12]; if (Math.abs(dev) > 4 * mad) dem[y * N + x] = med;
+    } }
     // 지형 자료의 구멍(-100 m 아래 엉뚱한 값, 뉴욕 등에서 발견)은 이웃 값으로 메움
     for (let pass = 0; pass < 40; pass++) { let left = 0;
       for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const i = y * N + x; if (dem[i] > -100) continue; let s = 0, c = 0;

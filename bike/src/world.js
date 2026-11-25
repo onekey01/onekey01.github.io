@@ -68,6 +68,23 @@ function cleanPts(p, loop) {
   return a;
 }
 
+/** 닫힌 길을 5 m 간격으로 다시 찍고 앞뒤 ±20 m 평균을 두 번 → 40 m보다 짧은 지그재그만 사라지고 큰 굽이는 남음 */
+function smoothLoop(pts) {
+  const out = [], n = pts.length; let carry = 0;
+  for (let i = 0; i < n; i++) {
+    const a = pts[i], b = pts[(i + 1) % n], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    for (let t = carry; t < L; t += 5) out.push([a[0] + ((b[0] - a[0]) * t) / L, a[1] + ((b[1] - a[1]) * t) / L]);
+    carry = (carry - L) % 5; if (carry < 0) carry += 5;
+  }
+  let cur = out;
+  for (let pass = 0; pass < 2; pass++) {
+    const m = cur.length, nx = new Array(m);
+    for (let i = 0; i < m; i++) { let sx = 0, sz = 0; for (let k = -4; k <= 4; k++) { const q = cur[(i + k + m) % m]; sx += q[0]; sz += q[1]; } nx[i] = [sx / 9, sz / 9]; }
+    cur = nx;
+  }
+  return cur.filter((_, i) => i % 2 === 0); // 10 m 간격이면 곡선 만들기에 충분
+}
+
 export class Path {
   constructor(course) {
     this.step = 2;
@@ -75,7 +92,8 @@ export class Path {
     if (course.pts) {
       const pr = projector(course.pts[0][0], course.pts[0][1]);
       this.proj = pr;
-      const flat = cleanPts(course.pts.map(([lo, la]) => pr.fwd(lo, la)), course.kind === 'loop');
+      let flat = cleanPts(course.pts.map(([lo, la]) => pr.fwd(lo, la)), course.kind === 'loop');
+      if (course.kind === 'loop') flat = smoothLoop(flat); // 도심·공원·해안 순환: 길찾기 자료의 잔물결(5~10 m 지그재그) 펴기 — 센트럴파크 초입 「폭탄 맞은 길」 제보
       let curve = new THREE.CatmullRomCurve3(flat.map(([x, z]) => new THREE.Vector3(x, 0, z)), course.kind === 'loop', 'centripetal', 0.5);
       const k = course.len / curve.getLength();
       curve = new THREE.CatmullRomCurve3(flat.map(([x, z]) => new THREE.Vector3(x * k, 0, z * k)), course.kind === 'loop', 'centripetal', 0.5);
@@ -527,7 +545,7 @@ export function buildWorld(scene, course, renderer, sky, terr, hires) {
     scene.fog.near = F[0]; scene.fog.far = F[1];
     const wet = kind === 'rain'; roadMat.roughness = wet ? 0.22 : 0.85; roadMat.color.setScalar(wet ? 0.5 : 1); roadMat.envMapIntensity = wet ? 1.6 : 1; // 젖은 길: 어둡고 하늘이 비침
   };
-  return { path, group, heightAt, sun, followSun, grass, setWeather, patch, dispose() { scene.remove(group); envTex?.dispose(); group.traverse((o) => { if (o.userData.shared) return; o.geometry?.dispose(); if (o.material && o.material.map && o.material.map !== TEX.road && !o.material.map.userData.keep) o.material.map.dispose(); o.customDepthMaterial?.dispose(); o.material?.dispose?.(); }); } };
+  return { path, group, heightAt, groundAt, sun, followSun, grass, setWeather, patch, dispose() { scene.remove(group); envTex?.dispose(); group.traverse((o) => { if (o.userData.shared) return; o.geometry?.dispose(); if (o.material && o.material.map && o.material.map !== TEX.road && !o.material.map.userData.keep) o.material.map.dispose(); o.customDepthMaterial?.dispose(); o.material?.dispose?.(); }); } };
 }
 
 function roadTexture() {

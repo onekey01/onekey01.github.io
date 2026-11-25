@@ -102,7 +102,7 @@ function wxText() {
 
 async function loadCourse(i) {
   const c0 = COURSES[i]; WX = await getWeather(c0);
-  const c = c0, [sky, terr] = await Promise.all([loadSky(wxSkyName(c, classify(WX)), renderer), loadTerrain(c.id, cfg.quality !== 'low', renderer)]);
+  const c = c0, [sky, terr] = await Promise.all([loadSky(wxSkyName(c, classify(WX)), renderer), loadTerrain(c.id, cfg.quality !== 'low', renderer, !!c.sea || ['coast', 'jeju', 'lake'].includes(c.theme))]);
   if (world) world.dispose();
   course = c; cfg.course = i; cfg.courseId = course.id; saveCfg();
   const hires = terr ? await loadHiresIndex(c.id) : null; if (hires) hires.size = cfg.quality !== 'low' ? 2048 : 1024;
