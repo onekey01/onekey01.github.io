@@ -6,6 +6,7 @@ import { loadSky } from './sky.js';
 import { makePost } from './post.js';
 import { loadImpostors, TIME } from './impostor.js';
 import { loadRocks } from './rocks.js';
+import { loadTerrain, SAT_CREDIT } from './terrain.js';
 import { Rider, JERSEYS, BIKES } from './rider.js';
 import { CSC, sensorCadence, makeBluetooth, HR, hrLive } from './sensors.js';
 import { loadTextures } from './textures.js';
@@ -74,10 +75,11 @@ function applyLook() {
   rider.setLook(j, b);
 }
 async function loadCourse(i) {
-  const c = COURSES[i], sky = await loadSky(skyFor(c), renderer);
+  const c = COURSES[i], [sky, terr] = await Promise.all([loadSky(skyFor(c), renderer), loadTerrain(c.id, cfg.quality !== 'low', renderer)]);
   if (world) world.dispose();
   course = c; cfg.course = i; cfg.courseId = course.id; saveCfg();
-  world = buildWorld(scene, course, renderer, sky);
+  world = buildWorld(scene, course, renderer, sky, terr);
+  $('credit').textContent = terr ? SAT_CREDIT : ''; // 위성사진 출처 표시 (라이선스 조건)
   applyQuality();
 }
 

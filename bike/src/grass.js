@@ -52,6 +52,8 @@ export function makeGrass(path, groundAt, opts, time) {
   // 길 표본(2 m)마다 심을 다발을 한 번만 정해 둠 (다시 심어도 같은 자리)
   const cache = new Map(), m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), v = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), tint = new THREE.Color();
   const per = opts.density ?? 1;
+  // 위성사진 색을 쓸 때: 풀 기본색(cBase~cTip)을 흰색 기준으로 바꿔 사진 색이 그대로 나오게
+  const kC = new THREE.Color(1, 1, 1); if (opts.colorAt) { opts.base = 0x9a9a9a; opts.tip = 0xe6e6d8; kC.setRGB(1.5, 1.5, 1.5); }
   const plan = (i) => {
     let c = cache.get(i); if (c) return c;
     c = []; const r = hash(i + 17), n = path.n;
@@ -64,7 +66,9 @@ export function makeGrass(path, groundAt, opts, time) {
         const x = path.x[i] + sx * lat * sg + (path.x[i1] - path.x[i0]) / l * along, z = path.z[i] + sz * lat * sg + (path.z[i1] - path.z[i0]) / l * along;
         const g = groundAt(x, z); if (g.grass < 0.55 || opts.avoid?.(x, z)) continue;
         if (path.nearest(x, z).dist < 4.6) continue; // 굽잇길: 다른 길 위에는 안 심음
-        c.push(x, g.y, z, 0.38 + r() * 0.45 + (lat < 7 ? 0.15 : 0), r() * 6.28, r());
+        let cr = -1, cg = 0, cb = 0;
+        if (opts.colorAt) { const k = opts.colorAt(x, z); cr = k.r; cg = k.g; cb = k.b; } // 위성사진의 그 자리 색
+        c.push(x, g.y, z, 0.38 + r() * 0.45 + (lat < 7 ? 0.15 : 0), r() * 6.28, r(), cr, cg, cb);
       }
     }
     cache.set(i, c); return c;
@@ -78,10 +82,13 @@ export function makeGrass(path, groundAt, opts, time) {
     for (let i = 0; i <= path.n && k < lim; i++) {
       const dx = path.x[i] - p.x, dz = path.z[i] - p.z; if (dx * dx + dz * dz > R2) continue;
       const c = plan(i);
-      for (let j = 0; j < c.length && k < lim; j += 6) {
+      for (let j = 0; j < c.length && k < lim; j += 9) {
         q.setFromAxisAngle(up, c[j + 4]); s.setScalar(c[j + 3]); v.set(c[j], c[j + 1] - 0.05, c[j + 2]);
         m.compose(v, q, s); mesh.setMatrixAt(k, m);
-        tint.setRGB(1, 1, 1).offsetHSL((c[j + 5] - 0.5) * 0.05, 0, (c[j + 5] - 0.5) * 0.16); mesh.setColorAt(k, tint); k++;
+        if (c[j + 6] >= 0) { // 숲 사진은 아주 어두워서 풀잎이 검게 보임 → 밝기 바닥을 둠
+          tint.setRGB(c[j + 6] * kC.r, c[j + 7] * kC.g, c[j + 8] * kC.b); const L = tint.r * 0.3 + tint.g * 0.59 + tint.b * 0.11;
+          if (L < 0.32) tint.multiplyScalar(0.32 / Math.max(L, 0.02)); } else tint.setRGB(1, 1, 1);
+        tint.offsetHSL((c[j + 5] - 0.5) * 0.05, c[j + 6] >= 0 ? 0.18 : 0, (c[j + 5] - 0.5) * 0.16 - (c[j + 6] >= 0 ? 0.04 : 0)); mesh.setColorAt(k, tint); k++; // 사진 색은 조금 진하게
       }
     }
     mesh.count = k; mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
