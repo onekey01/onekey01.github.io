@@ -66,6 +66,8 @@ button.on{background:var(--accent);color:#1b1300;border-color:transparent;font-w
 #mPause .sheet{width:min(520px,92%);text-align:center}#mPause .sheet button{display:block;width:100%;margin-top:12px;font-size:21px;padding:16px}#pResume{background:var(--accent);color:#1b1300;font-weight:800;border:none}#pSave{background:#2f9e5b;border:none;font-weight:800}
 #testBadge{display:none;align-items:center;gap:6px;background:rgba(255,176,32,.9);color:#231600;font-weight:800;border-radius:999px;padding:5px 12px;font-size:14px}
 #knob{position:absolute;right:16px;top:50%;transform:translateY(-50%);padding:14px;width:230px;text-align:center;pointer-events:auto;transition:border-color .2s}
+#navR{position:absolute;left:16px;top:160px;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+#cmp{width:120px;height:120px}#mmap{width:280px;height:280px;border-radius:50%;box-shadow:0 4px 18px rgba(0,0,0,.45)}
 #knob.ok{border-color:var(--ok)}#knob.up{border-color:var(--warn)}#knob.down{border-color:var(--blue)}
 #knob .lbl{color:var(--sub);font-size:14px}
 #knob .rec{font-size:56px;font-weight:900;line-height:1.05}
@@ -86,7 +88,8 @@ body.testing #testPanel{display:flex}
 #simWrap{display:none;align-items:center;gap:8px}#simWrap input{width:200px;accent-color:var(--accent)}
 [data-screen=menu] #hud{display:none}[data-screen=ride] #menu{display:none}
 /* 알림 */
-#credit{position:fixed;right:6px;bottom:1px;font-size:10px;line-height:1.3;color:rgba(255,255,255,.72);text-shadow:0 0 3px #000;pointer-events:none;z-index:45;max-width:60vw;text-align:right}
+#credit{position:absolute;right:6px;bottom:1px;font-size:10px;line-height:1.3;color:rgba(255,255,255,.72);text-shadow:0 0 3px #000;pointer-events:none;z-index:45;max-width:60vw;text-align:right}
+[data-screen=ride] #credit{bottom:auto;top:146px;right:auto;left:50%;transform:translateX(-50%);text-align:center;max-width:470px}
 #toast{position:fixed;left:50%;top:175px;transform:translateX(-50%);background:rgba(0,0,0,.85);border:1px solid var(--line);padding:12px 20px;border-radius:12px;font-size:18px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:40;max-width:80vw;text-align:center}
 #toast.show{opacity:1}
 #levelUp{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.8);opacity:0;transition:.35s;pointer-events:none;z-index:45;text-align:center;padding:26px 40px;background:radial-gradient(circle,rgba(255,176,32,.95),rgba(255,122,26,.95));color:#2a1700;border-radius:24px;box-shadow:0 10px 50px rgba(255,140,0,.5)}
@@ -129,6 +132,7 @@ td em{font-style:normal;font-size:12px;background:rgba(255,176,32,.25);color:var
 <div id="rotate"><div class="ph"></div><div style="font-size:24px;font-weight:800">태블릿을 가로로 돌려 주세요</div><div style="color:var(--sub)">무무 라이딩은 가로 화면에서만 동작해요</div></div>
 
 <div id="ui" class="fit">
+<div id="credit"></div>
 <div id="status">
   <span class="chip"><span class="dot" id="dotSensor"></span><span id="txtSensor">센서 없음</span></span>
   <span class="chip"><span class="dot" id="dotHr"></span><span id="txtHr">심박 없음</span></span>
@@ -165,6 +169,7 @@ td em{font-style:normal;font-size:12px;background:rgba(255,176,32,.25);color:var
     <span id="testBadge">🧪 시험 모드</span>
     <div style="display:flex;gap:8px" class="p"><button id="btnTest2">시험 모드</button><button id="btnPause" class="big">⏸ 일시정지</button><button id="btnEnd" class="big stop">■ 그만하기</button></div>
   </div>
+  <div id="navR"><canvas id="cmp" width="240" height="240"></canvas><canvas id="mmap" width="600" height="600"></canvas></div>
   <div id="knob" class="panel">
     <div class="lbl">권장 저항 (자전거 노브)</div>
     <div class="rec" id="recLv">5</div>
@@ -239,7 +244,6 @@ td em{font-style:normal;font-size:12px;background:rgba(255,176,32,.25);color:var
   <div class="actions"><button class="primary" data-close>메뉴로</button></div>
 </div></div>
 
-<div id="credit"></div>
 <script src="app.js"></script>
 </body>
 </html>

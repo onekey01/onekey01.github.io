@@ -7,6 +7,9 @@ import { makePost } from './post.js';
 import { loadImpostors, TIME } from './impostor.js';
 import { loadRocks } from './rocks.js';
 import { loadTerrain, SAT_CREDIT } from './terrain.js';
+import { loadHiresIndex, HIRES_CREDIT } from './hires.js';
+import { makeMinimap } from './minimap.js';
+const minimap = makeMinimap(document.getElementById('mmap'), document.getElementById('cmp'));
 import { fetchWeather, classify, windVec, makePrecip, WIND, KIND_KO } from './weather.js';
 import { Rider, JERSEYS, BIKES } from './rider.js';
 import { CSC, sensorCadence, makeBluetooth, HR, hrLive } from './sensors.js';
@@ -101,8 +104,10 @@ async function loadCourse(i) {
   const c = c0, [sky, terr] = await Promise.all([loadSky(wxSkyName(c, classify(WX)), renderer), loadTerrain(c.id, cfg.quality !== 'low', renderer)]);
   if (world) world.dispose();
   course = c; cfg.course = i; cfg.courseId = course.id; saveCfg();
-  world = buildWorld(scene, course, renderer, sky, terr);
-  $('credit').textContent = (terr ? SAT_CREDIT + ' · ' : '') + (cfg.realWeather && WX ? '날씨: Open-Meteo' : ''); // 출처 표시 (라이선스 조건)
+  const hires = terr ? await loadHiresIndex(c.id) : null; if (hires) hires.size = cfg.quality !== 'low' ? 2048 : 1024;
+  world = buildWorld(scene, course, renderer, sky, terr, hires);
+  minimap.setCourse(world.path, terr);
+  $('credit').textContent = (hires ? HIRES_CREDIT + ' · ' : '') + (terr ? SAT_CREDIT + ' · ' : '') + (cfg.realWeather && WX ? '날씨: Open-Meteo' : ''); // 출처 표시 (라이선스 조건)
   applyWeather();
   applyQuality();
 }
@@ -501,7 +506,7 @@ function loop() {
   updateCamera(dt, mode === 'menu');
   world.followSun(rider.root.position);
   autoQuality(dt);
-  if (mode === 'ride') hud();
+  if (mode === 'ride') { hud(); const a = world.path.at(ride.d), b = world.path.at(ride.d + 4); minimap.draw(rider.root.position, { x: b.x - a.x, z: b.z - a.z }, ride.d, windV, cfg.realWeather !== false); }
   TIME.value = now / 1000;
   if (precip) precip.update(camera.position, dt, windV);
   if (post) post.render(); else renderer.render(scene, camera);

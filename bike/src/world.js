@@ -6,6 +6,7 @@ import { IMP, impostorTrees, TIME } from './impostor.js';
 import { ROCKS } from './rocks.js';
 import { makeGrass } from './grass.js';
 import { demAt, satAt, landKind } from './terrain.js';
+import { hiresPainter } from './hires.js';
 
 const DEFAULT_SUN = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - 38), THREE.MathUtils.degToRad(150));
 /** 산·고개 코스는 맑은 하늘, 나머지는 구름 낀 하늘 */
@@ -165,7 +166,7 @@ export class Path {
   lonlat(x, z) { return this.proj.inv(x / this.scale, z / this.scale); }
 }
 
-export function buildWorld(scene, course, renderer, sky, terr) {
+export function buildWorld(scene, course, renderer, sky, terr, hires) {
   const SUN_DIR = sky?.sun || DEFAULT_SUN;
   const thName = course.theme, th = THEMES[thName];
   const path = new Path(course);
@@ -464,11 +465,12 @@ export function buildWorld(scene, course, renderer, sky, terr) {
     const HALF = 240, NS = 200, cellP = (HALF * 2) / NS;
     const pg = new THREE.PlaneGeometry(HALF * 2, HALF * 2, NS, NS); pg.rotateX(-Math.PI / 2);
     pg.setAttribute('aSplat', new THREE.Float32BufferAttribute(new Float32Array((NS + 1) ** 2 * 4), 4));
-    const pmat = satMaterial(terr.sat, { value: new THREE.Vector4(0, 0, 0, 0) }); pmat.polygonOffset = true; pmat.polygonOffsetFactor = -1; pmat.polygonOffsetUnits = -1;
+    const painter = hires ? hiresPainter(course.id, hires, path, terr, hires.size || 2048) : null; // 국내 코스: 고해상도 항공사진
+    const pmat = satMaterial(painter ? painter.tex : terr.sat, { value: new THREE.Vector4(0, 0, 0, 0) }); pmat.polygonOffset = true; pmat.polygonOffsetFactor = -1; pmat.polygonOffsetUnits = -1;
     const pm = new THREE.Mesh(pg, pmat); pm.receiveShadow = true; pm.frustumCulled = false; pm.visible = false; group.add(pm);
     const base = pg.attributes.position.array.slice(), B = terr.box, NV = (NS + 1) ** 2;
     const nY = new Float32Array(NV), nUV = new Float32Array(NV * 2), nS = new Float32Array(NV * 4);
-    let at = null, job = null; // 다시 그리기를 여러 프레임에 나눠 함 (한 번에 하면 태블릿에서 0.15초 넘게 멈칫)
+    let at = null, job = null, paintDone = true; // 다시 그리기를 여러 프레임에 나눠 함 (한 번에 하면 태블릿에서 0.15초 넘게 멈칫)
     const finish = (j) => {
       const P = pg.attributes.position;
       for (let i = 0; i < NV; i++) P.setXYZ(i, j.cx + base[i * 3], nY[i], j.cz + base[i * 3 + 2]);
@@ -483,16 +485,19 @@ export function buildWorld(scene, course, renderer, sky, terr) {
         const i = j.i++, lx = base[i * 3], lz = base[i * 3 + 2], x = j.cx + lx, z = j.cz + lz, g = groundAt(x, z);
         const edge = 1 - smoothstep(HALF - 45, HALF - 3, Math.max(Math.abs(lx), Math.abs(lz)));
         nY[i] = g.y + detailAt(x, z, g) * edge;
-        const [lo, la] = path.lonlat(x, z); nUV[i * 2] = (lo - B.w) / (B.e - B.w); nUV[i * 2 + 1] = (la - B.s) / (B.n - B.s); nS[i * 4] = g.grass; nS[i * 4 + 1] = 1 - g.grass;
+        if (painter) { nUV[i * 2] = (lx + HALF) / (2 * HALF); nUV[i * 2 + 1] = 1 - (lz + HALF) / (2 * HALF); } // 조각 그림 좌표
+        else { const [lo, la] = path.lonlat(x, z); nUV[i * 2] = (lo - B.w) / (B.e - B.w); nUV[i * 2 + 1] = (la - B.s) / (B.n - B.s); } nS[i * 4] = g.grass; nS[i * 4 + 1] = 1 - g.grass;
         if ((i & 255) === 0 && performance.now() - t0 > budget) return;
       }
-      job = null; finish(j);
+      if (!paintDone) return; // 사진 조각이 다 그려질 때까지 기다렸다가 함께 바꿈
+      job = null; finish(j); painter?.commit();
     };
     patch = {
       update(p, force) {
         if (job) { work(force ? 1e9 : 5); return; }
         if (!force && at && Math.hypot(p.x - at.x, p.z - at.z) < 50) return;
         job = { cx: Math.round(p.x / cellP) * cellP, cz: Math.round(p.z / cellP) * cellP, i: 0 };
+        if (painter) { paintDone = false; const first = !at; const pr = painter.paint(job.cx, job.cz, HALF); if (first) { paintDone = true; painter.commit(); pr.then(() => painter.commit()); } else pr.then(() => { paintDone = true; }); }
         work(force || !at ? 1e9 : 5); // 처음(코스 열 때)은 한 번에, 달리는 중에는 프레임마다 조금씩
       },
     };
