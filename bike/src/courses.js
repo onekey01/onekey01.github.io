@@ -33,16 +33,6 @@ const polyLen = (pts) => { let d = 0; for (let i = 1; i < pts.length; i++) { con
 function normalize(c) {
   c.real = true; c.tab = TAB[c.id] || '국내';
   if (!c.len) c.len = Math.round(polyLen(c.pts) / 100) * 100;
-  if (c.elevLL) { // 좌표로 높이를 주는 코스: 경로를 따라 표로 만듦
-    const N = 200, tab = [], total = polyLen(c.pts); let acc = 0, j = 0, segs = [];
-    for (let i = 1; i < c.pts.length; i++) { const l = polyLen([c.pts[i - 1], c.pts[i]]); segs.push([acc, l, c.pts[i - 1], c.pts[i]]); acc += l; }
-    for (let k = 0; k <= N; k++) {
-      const want = (k / N) * total; while (j < segs.length - 1 && segs[j][0] + segs[j][1] < want) j++;
-      const [s0, l, a, b] = segs[j], u = l ? Math.min(1, (want - s0) / l) : 0;
-      tab.push(c.elevLL(a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u));
-    }
-    c.elev = (t) => { const f = Math.min(N, Math.max(0, t * N)), i = Math.floor(f), u = f - i; return tab[i] + ((tab[Math.min(N, i + 1)] - tab[i]) * u); };
-  }
   c.elevFwd = c.elev;
   c.length = c.kind === 'outback' ? c.len * 2 : c.len;
   c.elev = c.kind === 'outback' ? (s) => c.elevFwd(s < 0.5 ? s * 2 : 2 - s * 2) : c.elevFwd;

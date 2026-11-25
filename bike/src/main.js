@@ -4,17 +4,21 @@ import { COURSES, courseStats, drawProfile } from './courses.js';
 import { buildWorld } from './world.js';
 import { Rider, JERSEYS, BIKES } from './rider.js';
 import { CSC, sensorCadence, makeBluetooth, HR, hrLive } from './sensors.js';
+import { loadTextures } from './textures.js';
+import { initCloud } from './cloud.js';
 
 /* ---------------- 저장 ---------------- */
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
 };
-const DEF = { weight: 70, ratio: 3.5, level: 5, test: false, testMode: 'steady', jersey: 'orange', bike: 'white', course: 0, courseId: 'coast', tab: '가상' };
+const DEF = { quality: 'high', weight: 70, ratio: 3.5, level: 5, test: false, testMode: 'steady', jersey: 'orange', bike: 'white', course: 0, courseId: 'coast', tab: '가상' };
 const cfg = Object.assign({}, DEF, store.get('bike2.cfg', {}));
-const saveCfg = () => store.set('bike2.cfg', cfg);
+let cloud = null;
+const localData = () => ({ prof, cfg, history: store.get('bike2.history', []) });
+const saveCfg = () => { store.set('bike2.cfg', cfg); cloud?.push(localData()); };
 const prof = Object.assign({ xp: 0, best: {}, done: {} }, store.get('bike2.profile', {}));
-const saveProf = () => store.set('bike2.profile', prof);
+const saveProf = () => { store.set('bike2.profile', prof); cloud?.push(localData()); };
 
 const $ = (id) => document.getElementById(id);
 function toast(msg, ms = 3000) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), ms); }
@@ -30,7 +34,17 @@ function nextReward(L) {
 
 /* ---------------- 3D ---------------- */
 const renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.62;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+/** 그래픽 품질: 높음 = 그림자 + 선명한 화면, 보통 = 그림자 끔 + 화면 해상도 낮춤 (태블릿이 버벅일 때) */
+function applyQuality() {
+  const hi = cfg.quality !== 'low';
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, hi ? 1.5 : 1));
+  renderer.shadowMap.enabled = hi;
+  scene.traverse((o) => { if (o.material) o.material.needsUpdate = true; });
+  rider.blob.visible = !hi;
+  resize?.();
+}
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 5000);
 function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
@@ -44,6 +58,8 @@ addEventListener('resize', () => { resize(); fitUI(); }); resize(); fitUI();
 addEventListener('orientationchange', () => setTimeout(() => { resize(); fitUI(); }, 300));
 
 const rider = new Rider(); scene.add(rider.root);
+rider.root.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+rider.blob = rider.root.children[rider.root.children.length - 1]; rider.blob.castShadow = false;
 let world = null, course = null;
 function applyLook() {
   const j = JERSEYS.find((x) => x.id === cfg.jersey) || JERSEYS[0], b = BIKES.find((x) => x.id === cfg.bike) || BIKES[0];
@@ -52,7 +68,8 @@ function applyLook() {
 function loadCourse(i) {
   if (world) world.dispose();
   course = COURSES[i]; cfg.course = i; cfg.courseId = course.id; saveCfg();
-  world = buildWorld(scene, course);
+  world = buildWorld(scene, course, renderer);
+  applyQuality();
 }
 
 /* ---------------- 상태 ---------------- */
@@ -164,7 +181,7 @@ function updateCamera(dt, menu) {
   const want = back.clone(); want.y += 3.0;
   const rp = rider.root.position;
   want.x += rp.x - P.pos.x; want.z += rp.z - P.pos.z;
-  const k = Math.min(1, dt * 4);
+  const k = P.cam.distanceTo(want) > 40 ? 1 : Math.min(1, dt * 4); // 순간 이동(출발·코스 바꿈)이면 바로 따라붙음
   P.cam.lerp(want, P.cam.lengthSq() === 0 ? 1 : k);
   P.look.lerp(new THREE.Vector3(ahead.x + rp.x - P.pos.x, ahead.y + 1.2, ahead.z + rp.z - P.pos.z), P.look.lengthSq() === 0 ? 1 : k);
   camera.position.copy(P.cam); camera.lookAt(P.look);
@@ -290,7 +307,7 @@ function endRide() {
       climb: Math.round(ride.climb), avgKmh: +((ride.d / 1000) / (ride.moving / 3600)).toFixed(1), maxKmh: +(ride.spdMax * 3.6).toFixed(1),
       avgRpm: Math.round(ride.cadSum / ride.moving), kcal: Math.round(ride.kj), avgHr: ride.hrN ? Math.round(ride.hrSum / ride.hrN) : null,
       maxHr: ride.hrMax || null, xp: gained, test: ride.test });
-    saved = store.set('bike2.history', h);
+    saved = store.set('bike2.history', h); cloud?.push(localData(), h[0]);
   }
   const rows = [
     ['코스', course.name], ['운동 시간', fmtTime(ride.moving)], ['거리', (ride.d / 1000).toFixed(2) + ' km'], ['오른 높이', Math.round(ride.climb) + ' m'],
@@ -320,7 +337,7 @@ function showHistory() {
 }
 $('histBody').addEventListener('click', (e) => {
   const id = e.target.dataset.del; if (!id || !confirm('이 기록을 지울까요?')) return;
-  store.set('bike2.history', store.get('bike2.history', []).filter((r) => String(r.id) !== id)); showHistory();
+  store.set('bike2.history', store.get('bike2.history', []).filter((r) => String(r.id) !== id)); cloud?.removeRide(id); showHistory();
 });
 $('btnCsv').onclick = () => {
   const h = store.get('bike2.history', []);
@@ -331,9 +348,10 @@ $('btnCsv').onclick = () => {
 };
 
 /* ---------------- 설정 ---------------- */
-function openSettings() { $('sWeight').value = cfg.weight; $('sRatio').value = cfg.ratio; $('mSettings').classList.add('show'); }
+function openSettings() { $('sQuality').value = cfg.quality; $('sWeight').value = cfg.weight; $('sRatio').value = cfg.ratio; $('mSettings').classList.add('show'); }
 $('btnSaveSettings').onclick = () => {
   const num = (id, d, lo, hi) => { const v = parseFloat($(id).value); return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
+  if ($('sQuality').value !== cfg.quality) { cfg.quality = $('sQuality').value; autoDone = true; applyQuality(); }
   cfg.weight = num('sWeight', DEF.weight, 30, 200); cfg.ratio = num('sRatio', DEF.ratio, 1, 10); saveCfg();
   $('mSettings').classList.remove('show'); toast('설정을 저장했어요');
 };
@@ -384,6 +402,15 @@ addEventListener('beforeunload', (e) => { if (mode === 'ride' && ride.moving > 1
 // 처음 화면을 누르면 가로·전체화면 시도 (안드로이드 크롬)
 document.addEventListener('pointerdown', function first() { goLandscape(); document.removeEventListener('pointerdown', first); }, { once: true });
 
+/* 버벅임 감지: 주행 중 5초 평균이 초당 24장 아래면 품질을 「보통」으로 낮춤 (한 번만) */
+let fpsT = 0, fpsN = 0, autoDone = false;
+function autoQuality(dt) {
+  if (mode !== 'ride' || autoDone || cfg.quality === 'low') return;
+  fpsT += dt; fpsN++;
+  if (fpsT >= 5) { const fps = fpsN / fpsT; fpsT = 0; fpsN = 0;
+    if (fps < 24) { autoDone = true; cfg.quality = 'low'; saveCfg(); applyQuality(); toast('화면이 버벅여서 그래픽을 「보통」으로 낮췄어요 (설정에서 바꿀 수 있어요)', 5000); } }
+}
+
 /* ---------------- 반복 ---------------- */
 function loop() {
   const now = performance.now(), dt = Math.min((now - tPrev) / 1000, 0.1); tPrev = now;
@@ -392,16 +419,40 @@ function loop() {
   placeRider();
   rider.animate(dt, mode === 'ride' ? cadence : 0, mode === 'ride' ? ride.v : 0);
   updateCamera(dt, mode === 'menu');
+  world.followSun(rider.root.position);
+  autoQuality(dt);
   if (mode === 'ride') hud();
   renderer.render(scene, camera);
   requestAnimationFrame(loop);
 }
 
 /* ---------------- 시작 ---------------- */
-{ const ci = COURSES.findIndex((c) => c.id === cfg.courseId); loadCourse(ci >= 0 ? ci : 0); } applyLook(); setLevel(cfg.level, true); applyTest(); renderMenu();
+loadTextures(renderer).then(() => { const ci = COURSES.findIndex((c) => c.id === cfg.courseId); loadCourse(ci >= 0 ? ci : 0); boot(); });
+function boot() {
+  cloud = initCloud({
+    getLocal: localData,
+    applyMerged(m) {
+      Object.assign(prof, m.prof); store.set('bike2.profile', prof);
+      const q = cfg.quality; Object.assign(cfg, m.cfg); store.set('bike2.cfg', cfg);
+      store.set('bike2.history', m.history);
+      applyLook(); if (q !== cfg.quality) applyQuality(); if (mode === 'menu') renderMenu();
+    },
+    onStatus(text, st) { $('acctTxt').textContent = text; $('acctDot').className = 'dot ' + st; },
+    onUser(u) {
+      $('btnLogin').textContent = u ? '로그아웃' : '구글로 로그인';
+      $('acctName').textContent = u ? (u.displayName || u.email || '로그인됨') + ' 님' : '로그인 안 됨';
+    },
+  });
+  $('btnLogin').onclick = async () => {
+    if (!cloud) return toast('로그인 기능을 불러오지 못했어요');
+    try { if (cloud.user) { await cloud.logout(); toast('로그아웃했어요. 이 기기 기록은 그대로 남아요'); } else await cloud.login(); }
+    catch (e) { toast('로그인 실패: ' + (e.code || e.message), 5000); }
+  };
+  applyLook(); setLevel(cfg.level, true); applyTest(); renderMenu();
 document.body.dataset.screen = 'menu';
 if (!navigator.bluetooth) { $('txtSensor').textContent = '블루투스 미지원 브라우저'; }
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 $('loading').remove();
 requestAnimationFrame(loop);
+}
 window.__bike = { ride, cfg, COURSES, get world() { return world; } }; // 시험용

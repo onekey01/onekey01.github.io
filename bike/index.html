@@ -37,6 +37,7 @@ button.on{background:var(--accent);color:#1b1300;border-color:transparent;font-w
 .bar{height:10px;border-radius:6px;background:rgba(255,255,255,.15);overflow:hidden;margin:8px 0}.bar i{display:block;height:100%;background:linear-gradient(90deg,#ffb020,#ff7a1a);width:0}
 #me small{color:var(--sub);display:block;line-height:1.5}
 #me button{width:100%;margin-top:10px}
+#acct{margin:12px 0 4px;padding:10px;border-radius:12px;background:rgba(255,255,255,.06)}#acct .an{display:flex;align-items:center;gap:8px}#acct small{margin-top:4px}#acct button{margin-top:8px;background:#fff;color:#222;font-weight:700}
 #courseArea{align-self:end;min-width:0;display:flex;flex-direction:column;gap:10px}
 #tabs{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}#tabs button{padding:8px 14px;font-size:16px}#tabs button.sel{background:var(--accent);color:#1b1300;font-weight:800}
 #courses{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory;justify-content:flex-start}
@@ -142,6 +143,7 @@ td em{font-style:normal;font-size:12px;background:rgba(255,176,32,.25);color:var
     <div class="lv"><span>레벨</span><b id="mLevel">1</b></div>
     <div class="bar"><i id="mXpBar"></i></div>
     <small id="mXp"></small><small id="mNext"></small>
+    <div id="acct"><div class="an"><span class="dot" id="acctDot"></span><b id="acctName">로그인 안 됨</b></div><small id="acctTxt">로그인하면 PC·태블릿 기록이 합쳐져요</small><button id="btnLogin">구글로 로그인</button></div>
     <button id="btnLocker">🎽 꾸미기 (보상)</button>
     <button id="btnHistory">📋 운동 기록</button>
     <button id="btnSettings">⚙️ 설정</button>
@@ -194,6 +196,7 @@ td em{font-style:normal;font-size:12px;background:rgba(255,176,32,.25);color:var
 
 <div class="modal fit" id="mSettings"><div class="sheet">
   <h2>설정</h2>
+  <div class="row"><div class="d">그래픽 품질<small>「높음」은 그림자와 선명한 화면, 「보통」은 그림자를 끄고 가볍게 돌아갑니다. 태블릿이 버벅이면 자동으로 「보통」으로 바뀌어요.</small></div><select id="sQuality" style="font-size:18px;padding:8px;border-radius:10px;background:#0f1720;color:#fff;border:1px solid var(--line)"><option value="high">높음</option><option value="low">보통</option></select></div>
   <div class="row"><div class="d">몸무게 (kg)<small>오르막에서 가상 속도를 계산할 때 씁니다. 무거울수록 오르막에서 느려져요.</small></div><input type="number" id="sWeight" step="1" min="30" max="200"></div>
   <div class="row"><div class="d">플라이휠 ÷ 페달 회전 비율<small>센서를 플라이휠 축(스피드 모드)에 달았을 때만 씁니다. 크랭크에 달았다면 무시해도 돼요. 모르면 「비율 맞추기」를 누르세요.</small></div><input type="number" id="sRatio" step="0.01" min="1" max="10"></div>
   <div class="row"><div class="d">레벨·보상 처음으로<small>시험 모드로 쌓인 경험치까지 지우고 레벨 1부터 다시 시작합니다. 운동 기록 목록은 남아요.</small></div><button id="btnReset">처음으로</button></div>
