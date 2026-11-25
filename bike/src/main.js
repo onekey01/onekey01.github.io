@@ -198,12 +198,15 @@ function step(dt) {
 }
 
 /* ---------------- 카메라 ---------------- */
+const LANE_OFFSET = 1.6; // 길 가운데에서 오른쪽으로 1.6 m (길 폭 8 m의 오른쪽 차선 가운데쯤)
 function placeRider() {
   const path = world.path;
   path.at(ride.d, P.pos); path.at(ride.d + 3, P.ahead);
   const dir = P.ahead.clone().sub(P.pos); const flat = Math.hypot(dir.x, dir.z) || 1;
-  const side = new THREE.Vector3(-dir.z / flat, 0, dir.x / flat); // 오른쪽 차선
-  rider.root.position.copy(P.pos).addScaledVector(side, -1.6); rider.root.position.y += 0.12;
+  // 우측통행 (한국·미국·프랑스·이탈리아 모두): 진행 방향의 오른쪽 = 진행 방향 × 위쪽 = (-dz, 0, dx)
+  // ※ 예전엔 이 벡터에 -1.6을 곱해 왼쪽 차선을 달렸음 (2026-11-26 무무 님 지적). 아래 laneCheck 가 매 코스마다 확인
+  const side = new THREE.Vector3(-dir.z / flat, 0, dir.x / flat);
+  rider.root.position.copy(P.pos).addScaledVector(side, LANE_OFFSET); rider.root.position.y += 0.12;
   rider.root.rotation.set(0, Math.atan2(dir.x, dir.z), 0);
   rider.body.rotation.x = -Math.atan2(dir.y, flat);
   return side;
@@ -554,4 +557,4 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catc
 $('loading').remove();
 requestAnimationFrame(loop);
 }
-window.__bike = { ride, cfg, COURSES, get post() { return post; }, get world() { return world; } }; // 시험용
+window.__bike = { ride, cfg, COURSES, get rider() { return rider; }, get post() { return post; }, get world() { return world; } }; // 시험용
