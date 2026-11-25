@@ -95,9 +95,15 @@ export class Path {
       this.proj = pr;
       let flat = cleanPts(course.pts.map(([lo, la]) => pr.fwd(lo, la)), course.kind === 'loop');
       if (course.kind === 'loop') flat = smoothLoop(flat); // 도심·공원·해안 순환: 길찾기 자료의 잔물결(5~10 m 지그재그) 펴기 — 센트럴파크 초입 「폭탄 맞은 길」 제보
+      // 길이 재기 표본 수(arcLengthDivisions)를 점 수의 10배로 (재발 방지, 2026-11-26 전체 코스 점검):
+      // 기본값 200으로는 점 2,000개짜리 헤어핀 길(스텔비오)의 길이를 14% 짧게 재서, 세상 전체가 14% 늘어나고
+      // 높이표가 앞으로 밀려 길이 실제 땅보다 최대 130 m 떠 있었음
+      const DIV = Math.max(200, flat.length * 10);
       let curve = new THREE.CatmullRomCurve3(flat.map(([x, z]) => new THREE.Vector3(x, 0, z)), course.kind === 'loop', 'centripetal', 0.5);
+      curve.arcLengthDivisions = DIV;
       const k = course.len / curve.getLength();
       curve = new THREE.CatmullRomCurve3(flat.map(([x, z]) => new THREE.Vector3(x * k, 0, z * k)), course.kind === 'loop', 'centripetal', 0.5);
+      curve.arcLengthDivisions = DIV;
       this.scale = k;
       this.fwd = course.len;
       this.outback = course.kind === 'outback';
@@ -107,8 +113,10 @@ export class Path {
     } else {
       const pts2 = course.shape.map(([x, z]) => new THREE.Vector3(x, 0, z));
       let curve = new THREE.CatmullRomCurve3(pts2, true, 'centripetal');
+      curve.arcLengthDivisions = Math.max(200, pts2.length * 10);
       const k = course.length / curve.getLength();
       curve = new THREE.CatmullRomCurve3(pts2.map((p) => p.multiplyScalar(k)), true, 'centripetal');
+      curve.arcLengthDivisions = Math.max(200, pts2.length * 10);
       this.fwd = course.length; this.outback = false; this.scale = 1;
       this.n = Math.round(this.fwd / this.step);
       pts = curve.getSpacedPoints(this.n);

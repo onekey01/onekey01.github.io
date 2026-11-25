@@ -30,7 +30,7 @@ const localData = () => ({ prof, cfg, history: store.get('bike2.history', []) })
 const saveCfg = () => { store.set('bike2.cfg', cfg); cloud?.push(localData()); };
 const prof = Object.assign({ xp: 0, best: {}, done: {} }, store.get('bike2.profile', {}));
 // 코스 자료가 바뀐 코스는 예전 최고 기록을 비교할 수 없으므로 지움 (길이·높이가 달라짐)
-const COURSE_VER = { namsan: 2 }; prof.ver = prof.ver || {};
+const COURSE_VER = { namsan: 2, stelvio: 2, cpark: 2, olympic: 2, jeju1: 2 }; prof.ver = prof.ver || {};
 for (const [id, v] of Object.entries(COURSE_VER)) if ((prof.ver[id] || 1) < v) { delete prof.best[id]; prof.ver[id] = v; }
 const saveProf = () => { store.set('bike2.profile', prof); cloud?.push(localData()); };
 
