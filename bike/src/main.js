@@ -160,6 +160,8 @@ function step(dt) {
   grade = world.path.grade(ride.d);
   rec = recLevel(world.path.grade(ride.d + 25));
   physics(dt);
+  // 반환점 유턴(2026-11-26 무무 님 요청): 왕복 코스는 반환점까지 남은 거리에 맞춰 미리 브레이크 → 유턴은 시속 10 km 남짓
+  if (world.path.outback) { const u = ride.d - world.path.fwd; if (u < TURN.ta) { const left = Math.max(0, -u - TURN.ta), cap = Math.sqrt(TURN.vt * TURN.vt + 2 * TURN.brake * left); if (ride.v > cap) ride.v = Math.max(cap, ride.v - TURN.brake * 2.5 * dt); } }
   const dd = ride.v * dt; ride.d += dd;
   const y = world.path.at(ride.d, P.pos).y;
   if (ride.lastY !== null && y > ride.lastY) { ride.climb += y - ride.lastY; ride.xp += (y - ride.lastY) * 1; }
@@ -203,8 +205,40 @@ function step(dt) {
 
 /* ---------------- 카메라 ---------------- */
 const LANE_OFFSET = 1.6; // 길 가운데에서 오른쪽으로 1.6 m (길 폭 8 m의 오른쪽 차선 가운데쯤)
+// 반환점 유턴 모양: 반지름 r(m) 반원을 그리며 돌고, 앞뒤 pre(m) 동안 차선 가장자리 쪽으로 벌렸다가 돌아옴
+const TURN = { r: 2.6, pre: 14, vt: 2.8, brake: 1.3 }; TURN.ta = Math.PI * TURN.r / 2;
+const smooth01 = (t) => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
+/** 반환점 근처면 진행 거리 d의 [앞쪽 기준 위치, 앞쪽 기준 옆 거리(오른쪽 +)] — 아니면 null */
+function turnShape(d) {
+  const path = world.path; if (!path.outback) return null;
+  const u = d - path.fwd, { r, pre, ta } = TURN, o = LANE_OFFSET; if (Math.abs(u) > pre + ta) return null;
+  if (u < -ta) { const t = smooth01((u + pre + ta) / pre); return [u + (ta - r) * t, o + (r - o) * t]; }
+  if (u > ta) { const t = smooth01((pre + ta - u) / pre); return [-u + (ta - r) * t, -(o + (r - o) * t)]; }
+  const th = ((u + ta) / (2 * ta)) * Math.PI; return [-r + r * Math.sin(th), r * Math.cos(th)];
+}
+const _ta = new THREE.Vector3(), _tb = new THREE.Vector3();
+function turnPoint(d, out) {
+  const sh = turnShape(d); if (!sh) return null; const path = world.path, a = path.fwd + sh[0];
+  const a0 = Math.min(a, path.fwd - 3); path.at(a0, _ta); path.at(a0 + 3, _tb); // 앞쪽(오르는 방향) 기준 옆 방향
+  const dx = _tb.x - _ta.x, dz = _tb.z - _ta.z, l = Math.hypot(dx, dz) || 1;
+  path.at(Math.min(a, path.fwd), out); const lat = sh[1] * laneSign(roadRules(course));
+  out.x += (-dz / l) * lat; out.z += (dx / l) * lat; return out;
+}
 function placeRider() {
   const path = world.path;
+  { const p0 = turnPoint(ride.d, new THREE.Vector3()), p1 = p0 && turnPoint(ride.d + 0.4, new THREE.Vector3());
+    if (p0 && p1) { // 유턴 중: 실제로 그리는 길을 따라 몸 방향·기울기를 정함
+      const dx = p1.x - p0.x, dz = p1.z - p0.z, fl = Math.hypot(dx, dz) || 1, yaw = Math.atan2(dx, dz);
+      // 도는 쪽으로 몸 기울이기: 우측통행은 왼쪽으로 돎(오른쪽 차선 → 반대편 오른쪽 차선). 앞이 +z일 때 rotation.z 음수 = 왼쪽
+      const inArc = Math.abs(ride.d - path.fwd) < TURN.ta;
+      const lean = inArc ? -Math.atan(Math.max(1.2, ride.v) ** 2 / (9.8 * TURN.r)) * laneSign(roadRules(course)) : 0;
+      P.pos.copy(p0); rider.root.position.copy(p0); rider.root.position.y += 0.12;
+      rider.root.rotation.set(0, yaw, 0, 'YXZ'); rider.root.rotation.z = THREE.MathUtils.lerp(rider.root.rotation.z || 0, lean * 0.8, 0.35);
+      rider.body.rotation.x = -Math.atan2(p1.y - p0.y, fl);
+      P.head = new THREE.Vector3(dx / fl, 0, dz / fl); P.inTurn = true;
+      return new THREE.Vector3(-dz / fl, 0, dx / fl);
+    } }
+  P.inTurn = false;
   path.at(ride.d, P.pos); path.at(ride.d + 3, P.ahead);
   const dir = P.ahead.clone().sub(P.pos); const flat = Math.hypot(dir.x, dir.z) || 1;
   // 통행 방향은 나라별 도로 규칙(roads.js). 진행 방향의 오른쪽 = 진행 방향 × 위쪽 = (-dz, 0, dx)
@@ -238,9 +272,14 @@ function updateCamera(dt, menu) {
     camera.position.copy(P.cam); camera.lookAt(rider.root.position.x, rider.root.position.y + 1, rider.root.position.z);
     return;
   }
+  const rp = rider.root.position;
+  if (P.inTurn) { // 유턴 중: 길 기준점이 반환점에서 뒤집히므로 라이더가 향한 쪽 뒤에서 천천히 따라 돎
+    const h = P.head, want = new THREE.Vector3(rp.x - h.x * 7.5, rp.y + 3.0, rp.z - h.z * 7.5), k = Math.min(1, dt * 2.2);
+    P.cam.lerp(want, k); P.look.lerp(new THREE.Vector3(rp.x + h.x * 14, rp.y + 1.2, rp.z + h.z * 14), k);
+    camera.position.copy(P.cam); camera.lookAt(P.look); return;
+  }
   const back = world.path.at(ride.d - 7.5), ahead = world.path.at(ride.d + 14);
   const want = back.clone(); want.y += 3.0;
-  const rp = rider.root.position;
   want.x += rp.x - P.pos.x; want.z += rp.z - P.pos.z;
   const k = P.cam.distanceTo(want) > 40 ? 1 : Math.min(1, dt * 4); // 순간 이동(출발·코스 바꿈)이면 바로 따라붙음
   P.cam.lerp(want, P.cam.lengthSq() === 0 ? 1 : k);

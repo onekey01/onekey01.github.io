@@ -80,7 +80,10 @@ export function makeGrass(path, groundAt, opts, time) {
     last = (last || new THREE.Vector3()).copy(p);
     const R2 = 170 * 170; let k = 0;
     const lim = Math.min(max, api.cap);
+    // 긴 코스(제주 동쪽 49 km = 점 2만 5천 개)는 점을 전부 훑으면 12 m마다 멈칫 → 50 m 묶음 단위로 먼 곳은 건너뜀 (2026-11-26)
+    const BLK = Math.max(1, Math.round(50 / path.step)), FAR = (170 + 60) ** 2;
     for (let i = 0; i <= path.n && k < lim; i++) {
+      if (i % BLK === 0) { const bx = path.x[i] - p.x, bz = path.z[i] - p.z; if (bx * bx + bz * bz > FAR) { i += BLK - 1; continue; } }
       const dx = path.x[i] - p.x, dz = path.z[i] - p.z; if (dx * dx + dz * dz > R2) continue;
       const c = plan(i);
       for (let j = 0; j < c.length && k < lim; j += 9) {
