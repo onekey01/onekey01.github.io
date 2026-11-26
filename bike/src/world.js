@@ -508,12 +508,12 @@ export function buildWorld(scene, course, renderer, sky, terr, hires) {
     const pmat = satMaterial(painter ? painter.tex : terr.sat, { value: new THREE.Vector4(0, 0, 0, 0) }); pmat.polygonOffset = true; pmat.polygonOffsetFactor = -1; pmat.polygonOffsetUnits = -1;
     const pm = new THREE.Mesh(pg, pmat); pm.receiveShadow = true; pm.frustumCulled = false; pm.visible = false; group.add(pm);
     const base = pg.attributes.position.array.slice(), B = terr.box, NV = (NS + 1) ** 2;
-    const nY = new Float32Array(NV), nUV = new Float32Array(NV * 2), nS = new Float32Array(NV * 4);
+    const nY = new Float32Array(NV), nUV = new Float32Array(NV * 2), nS = new Float32Array(NV * 4), nN = new Float32Array(NV * 3), IDX = pg.index.array, NT = IDX.length / 3;
     let at = null, job = null, paintDone = true; // 다시 그리기를 여러 프레임에 나눠 함 (한 번에 하면 태블릿에서 0.15초 넘게 멈칫)
     const finish = (j) => {
       const P = pg.attributes.position;
       for (let i = 0; i < NV; i++) P.setXYZ(i, j.cx + base[i * 3], nY[i], j.cz + base[i * 3 + 2]);
-      pg.computeVertexNormals(); // 삼각형 법선 (이웃 두 칸 차이로 계산하면 잔 굴곡이 뭉개졌음)
+      pg.attributes.normal.array.set(nN); pg.attributes.normal.needsUpdate = true; // 법선은 work()에서 프레임마다 나눠 미리 계산
       pg.attributes.uv.array.set(nUV); pg.attributes.aSplat.array.set(nS);
       P.needsUpdate = pg.attributes.uv.needsUpdate = pg.attributes.aSplat.needsUpdate = true;
       patchU.value.set(j.cx, j.cz, HALF - 1.5, 1); pm.visible = true; at = { x: j.cx, z: j.cz };
@@ -528,6 +528,21 @@ export function buildWorld(scene, course, renderer, sky, terr, hires) {
         else { const [lo, la] = path.lonlat(x, z); nUV[i * 2] = (lo - B.w) / (B.e - B.w); nUV[i * 2 + 1] = (la - B.s) / (B.n - B.s); } nS[i * 4] = g.grass; nS[i * 4 + 1] = 1 - g.grass;
         if ((i & 255) === 0 && performance.now() - t0 > budget) return;
       }
+      // 법선도 나눠서 계산 (재발 방지, 2026-11-26 남산 「오르막·내리막에서 순간순간 걸림」 제보):
+      // 예전엔 다 그린 순간 computeVertexNormals(삼각형 8만 개)를 한 번에 돌려 50 m마다 한 프레임이 멈칫했음.
+      // 같은 방식(삼각형 넓이만큼 가중한 면 법선 합)을 프레임마다 예산 안에서 조금씩 함
+      if (j.t === undefined) { j.t = 0; nN.fill(0); }
+      while (j.t < NT) {
+        const t = j.t++, a = IDX[t * 3], b = IDX[t * 3 + 1], c = IDX[t * 3 + 2];
+        // three.js computeVertexNormals와 똑같이: (C−B) × (A−B)
+        const ux = base[c * 3] - base[b * 3], uy = nY[c] - nY[b], uz = base[c * 3 + 2] - base[b * 3 + 2];
+        const vx = base[a * 3] - base[b * 3], vy = nY[a] - nY[b], vz = base[a * 3 + 2] - base[b * 3 + 2];
+        const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+        for (const v of [a, b, c]) { nN[v * 3] += nx; nN[v * 3 + 1] += ny; nN[v * 3 + 2] += nz; }
+        if ((t & 1023) === 0 && performance.now() - t0 > budget) return;
+      }
+      if (j.k === undefined) j.k = 0;
+      while (j.k < NV) { const k = j.k++, l = Math.hypot(nN[k * 3], nN[k * 3 + 1], nN[k * 3 + 2]) || 1; nN[k * 3] /= l; nN[k * 3 + 1] /= l; nN[k * 3 + 2] /= l; }
       if (!paintDone) return; // 사진 조각이 다 그려질 때까지 기다렸다가 함께 바꿈
       job = null; finish(j); painter?.commit();
     };

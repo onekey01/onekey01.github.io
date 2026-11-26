@@ -4,7 +4,13 @@
 import { REALDATA } from './realpts.js';
 
 /** 실측 고도 표(같은 간격)를 0~1 위치로 읽는 함수 */
-const fromTable = (tab) => (t) => { const f = Math.min(tab.length - 1, Math.max(0, t * (tab.length - 1))), i = Math.floor(f), j = Math.min(tab.length - 1, i + 1); return tab[i] + (tab[j] - tab[i]) * (f - i); };
+// 재발 방지(2026-11-26 남산 「오르막·내리막 같은 지점에서 순간 저항」 제보): 50 m 간격 표를 직선으로 이으면
+// 50 m마다 경사가 툭툭 바뀌어(예: 11% 구간 안에 짧은 14%) 턱처럼 느껴졌음 → 부드러운 곡선(캣멀-롬)으로 이음
+const fromTable = (tab) => (t) => {
+  const L = tab.length - 1, f = Math.min(L, Math.max(0, t * L)), i = Math.min(L - 1, Math.floor(f)), u = f - i;
+  const p0 = tab[Math.max(0, i - 1)], p1 = tab[i], p2 = tab[i + 1], p3 = tab[Math.min(L, i + 2)];
+  return p1 + 0.5 * u * (p2 - p0 + u * (2 * p0 - 5 * p1 + 4 * p2 - p3 + u * (3 * (p1 - p2) + p3 - p0)));
+};
 const R = (id) => ({ pts: REALDATA[id].pts, len: REALDATA[id].len, elev: fromTable(REALDATA[id].elev) });
 export const REAL = [
   // ---------- 해외 ----------
