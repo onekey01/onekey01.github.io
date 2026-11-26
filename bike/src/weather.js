@@ -1,14 +1,28 @@
-// 날씨·바람: 코스 현지의 지금 날씨(Open-Meteo, 무료·키 불필요)를 받아 하늘·빛·안개·비·눈·바람에 반영.
+// 날씨·바람: 코스 현지의 지금 날씨(노르웨이 기상청 MET Norway, CC BY 4.0 — 상업 이용 가능, 출처 표기 필요)를 받아 하늘·빛·안개·비·눈·바람에 반영.
+// 2026-11-26: Open-Meteo 무료판은 비상업 전용이라 바꿈.
 // 설정에서 끄면 늘 맑고 바람 없음.
 import * as THREE from 'three';
 
 export const WIND = { value: 0 }; // 0~1: 나무·풀 흔들림 세기 (바람 6 m/s 쯤이면 0.5)
 const cache = new Map();
 
-/** WMO 날씨 코드 → 종류 */
+/** MET Norway 날씨 기호(symbol_code, 예: partlycloudy_day, lightrainshowers_night) → 종류 */
+export function kindOfSymbol(sym, cloud) {
+  const s = (sym || '').replace(/_(day|night|polartwilight)$/, '');
+  if (/snow/.test(s)) return 'snow';
+  if (/rain|sleet|thunder/.test(s)) return 'rain';
+  if (s === 'fog') return 'fog';
+  if (s === 'cloudy') return 'overcast';
+  if (s === 'partlycloudy') return 'cloudy';
+  if (s === 'fair') return cloud >= 45 ? 'cloudy' : 'clear';
+  if (s === 'clearsky') return 'clear';
+  return cloud >= 85 ? 'overcast' : cloud >= 45 ? 'cloudy' : 'clear';
+}
+/** 날씨 → 종류 (시험용 window.__wx 처럼 kind 없이 WMO code만 있는 값도 받음) */
 export function classify(w) {
   if (!w) return 'clear';
-  const c = w.code;
+  if (w.kind) return w.kind;
+  const c = w.code ?? 0;
   if (c >= 71 && c <= 77 || c === 85 || c === 86) return 'snow';
   if (c >= 51 && c <= 67 || c >= 80 && c <= 82 || c >= 95) return 'rain';
   if (c === 45 || c === 48) return 'fog';
@@ -24,9 +38,12 @@ export async function fetchWeather(lat, lon) {
   if (hit && Date.now() - hit.at < 15 * 60e3) return hit.w;
   try {
     const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 5000);
-    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&current=temperature_2m,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,precipitation&wind_speed_unit=ms`, { signal: ctl.signal });
-    clearTimeout(t); const j = await r.json(), c = j.current;
-    const w = { code: c.weather_code, cloud: c.cloud_cover, temp: c.temperature_2m, wind: c.wind_speed_10m, windFrom: c.wind_direction_10m, precip: c.precipitation, time: c.time };
+    // 좌표는 소수 4자리까지만 받음(더 길면 거절). 브라우저라 User-Agent는 못 정함 → 막히면 null(맑음)로 진행
+    const r = await fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}`, { signal: ctl.signal });
+    clearTimeout(t); if (!r.ok) return null;
+    const j = await r.json(), ts = j.properties.timeseries[0], d = ts.data.instant.details, n1 = ts.data.next_1_hours || ts.data.next_6_hours || {};
+    const cloud = d.cloud_area_fraction ?? 0, sym = n1.summary?.symbol_code;
+    const w = { kind: kindOfSymbol(sym, cloud), symbol: sym, cloud, temp: d.air_temperature, wind: d.wind_speed, windFrom: d.wind_from_direction, precip: n1.details?.precipitation_amount ?? 0, time: ts.time };
     cache.set(key, { at: Date.now(), w }); return w;
   } catch (e) { return null; }
 }

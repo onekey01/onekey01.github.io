@@ -7,7 +7,7 @@ import { VWORLD_KEY } from './keys.js';
 
 export const HIRES_CREDIT = '항공사진: 브이월드(국토교통부) 공공저작물 출처표시';
 // 2026-11-26: 브이월드 약관 제19조(데이터 무단 저장 금지) 때문에 타일을 미리 받아 두지 않고,
-// 달릴 때 라이더 둘레(약 480 m)만 브이월드 WMTS에서 그때그때 불러 그림. 키는 keys.js (등록 주소 onekey01.github.io에서만 동작)
+// 달릴 때 라이더 둘레(약 480 m)만 브이월드 WMTS에서 그때그때 불러 그림. 키는 keys.js (등록한 주소에서만 동작 — 실제 서비스 주소는 tongdol.kr, onekey01.github.io는 그리로 넘어감)
 const LIVE_Z = 18; // 약 0.5 m/픽셀
 const liveUrl = (z, x, y) => `https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_KEY}/Satellite/${z}/${y}/${x}.jpeg`;
 const idxCache = new Map();

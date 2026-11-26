@@ -3,7 +3,8 @@
 import * as THREE from 'three';
 import { TERR_META } from './terrmeta.js';
 
-export const SAT_CREDIT = '위성사진: Sentinel-2 cloudless — s2maps.eu, EOX IT Services GmbH (Copernicus Sentinel 2021 데이터 가공, CC BY-NC-SA 4.0) · 지형: AWS Terrain Tiles';
+// 출처 표기(라이선스 조건, 2026-11-26 상업 배포 검토): 위성사진은 2016년판(CC BY 4.0, EOX가 정한 문구 그대로), 지형은 원자료 기관 표기
+export const SAT_CREDIT = '위성사진: Sentinel-2 cloudless - https://s2maps.eu by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016 & 2017) · 지형: AWS Terrain Tiles (USGS SRTM·3DEP 등)';
 const cache = new Map();
 const img = (src) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
 const pixels = (im, w = im.naturalWidth, h = im.naturalHeight) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(im, 0, 0, w, h); return g.getImageData(0, 0, w, h).data; };

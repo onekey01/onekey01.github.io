@@ -113,7 +113,7 @@ async function loadCourse(i) {
   const hires = terr ? await loadHiresIndex(c) : null; if (hires) hires.size = cfg.quality !== 'low' ? 2048 : 1024;
   world = buildWorld(scene, course, renderer, sky, terr, hires);
   minimap.setCourse(world.path, terr);
-  $('credit').textContent = (hires ? HIRES_CREDIT + ' · ' : '') + (terr ? SAT_CREDIT + ' · ' : '') + (cfg.realWeather && WX ? '날씨: Open-Meteo' : ''); // 출처 표시 (라이선스 조건)
+  $('credit').textContent = (hires ? HIRES_CREDIT + ' · ' : '') + (terr ? SAT_CREDIT + ' · ' : '') + (c.real ? '도로: © OpenStreetMap 기여자 (ODbL) · ' : '') + (cfg.realWeather && WX ? '날씨: MET Norway (CC BY 4.0)' : ''); // 출처 표시 (라이선스 조건)
   applyWeather();
   applyQuality();
 }
