@@ -157,6 +157,15 @@ export class Path {
     let minX = 1e9, maxX = -1e9, minZ = 1e9, maxZ = -1e9;
     for (let i = 0; i <= n; i++) { minX = Math.min(minX, this.x[i]); maxX = Math.max(maxX, this.x[i]); minZ = Math.min(minZ, this.z[i]); maxZ = Math.max(maxZ, this.z[i]); }
     this.box = { minX, maxX, minZ, maxZ };
+    // 순환 코스 속 같은 길로 되돌아 나오는 끝(분원리 등): 자료의 거리 근처 ±100 m에서 앞뒤 점이 가장 겹치는 곳을 실제 끝으로 잡음
+    if (course.turns) this.turns = course.turns.map((T0) => {
+      const N = n + 1, idx = (i) => ((i % N) + N) % N, i0 = Math.round(T0 / this.step), K = Math.round(10 / this.step); let bi = i0, bs = Infinity;
+      for (let i = i0 - Math.round(100 / this.step); i <= i0 + Math.round(100 / this.step); i++) {
+        let sc = 0; for (let k = 1; k <= 3; k++) { const a = idx(i - k * K), b = idx(i + k * K); sc += Math.hypot(this.x[a] - this.x[b], this.z[a] - this.z[b]); }
+        if (sc < bs) { bs = sc; bi = i; }
+      }
+      return idx(bi) * this.step;
+    });
   }
   wrap(d) { return ((d % this.length) + this.length) % this.length; }
   /** 거리 d(m) 위치의 점. 왕복 코스는 정상 뒤로 같은 길을 되돌아옴 */
@@ -487,6 +496,7 @@ export function buildWorld(scene, course, renderer, sky, terr, hires) {
     const d = course.real ? path.fwd - 6 : course.summitAt * path.length;
     group.add(gate(path, d, '⛰ ' + course.summit, 0xd62d50));
   }
+  for (const T of path.turns || []) group.add(gate(path, T - 8, '↩ ' + (course.turnName || '반환점'), 0xd62d50)); // 순환 코스 속 반환점 표지
   if (course.landmark && path.proj) {
     const [lx, lz] = path.ll(...course.landmark.ll), ly = heightAt(lx, lz);
     group.add(landmark(course.landmark.type, lx, ly, lz));

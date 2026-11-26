@@ -1,6 +1,6 @@
 // 무무 라이딩 — 앱 본체
 import * as THREE from 'three';
-import { COURSES, courseStats, drawProfile } from './courses.js';
+import { COURSES, courseStats, drawProfile, withDir, dirLabels } from './courses.js';
 import { buildWorld, skyFor } from './world.js';
 import { loadSky } from './sky.js';
 import { makePost } from './post.js';
@@ -23,14 +23,14 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
 };
-const DEF = { quality: 'high', weight: 70, ratio: 3.5, level: 5, test: false, realWeather: true, view: 'chase', testMode: 'steady', jersey: 'orange', bike: 'white', course: 0, courseId: 'coast', tab: '가상' };
+const DEF = { quality: 'high', weight: 70, ratio: 3.5, level: 5, test: false, realWeather: true, view: 'chase', testMode: 'steady', jersey: 'orange', bike: 'white', course: 0, courseId: 'coast', tab: '가상', dirs: {} };
 const cfg = Object.assign({}, DEF, store.get('bike2.cfg', {}));
 let cloud = null;
 const localData = () => ({ prof, cfg, history: store.get('bike2.history', []) });
 const saveCfg = () => { store.set('bike2.cfg', cfg); cloud?.push(localData()); };
 const prof = Object.assign({ xp: 0, best: {}, done: {} }, store.get('bike2.profile', {}));
 // 코스 자료가 바뀐 코스는 예전 최고 기록을 비교할 수 없으므로 지움 (길이·높이가 달라짐)
-const COURSE_VER = { namsan: 2, stelvio: 2, cpark: 2, olympic: 2, jeju1: 2 }; prof.ver = prof.ver || {};
+const COURSE_VER = { namsan: 2, stelvio: 2, cpark: 2, olympic: 2, jeju1: 2, bunwon: 2 }; prof.ver = prof.ver || {};
 for (const [id, v] of Object.entries(COURSE_VER)) if ((prof.ver[id] || 1) < v) { delete prof.best[id]; prof.ver[id] = v; }
 const saveProf = () => { store.set('bike2.profile', prof); cloud?.push(localData()); };
 
@@ -106,7 +106,8 @@ function wxText() {
 
 async function loadCourse(i) {
   const c0 = COURSES[i]; WX = await getWeather(c0);
-  const c = c0, [sky, terr] = await Promise.all([loadSky(wxSkyName(c, classify(WX)), renderer), loadTerrain(c.id, cfg.quality !== 'low', renderer, !!c.sea || ['coast', 'jeju', 'lake'].includes(c.theme))]);
+  if (!cfg.dirs) cfg.dirs = {};
+  const c = withDir(c0, cfg.dirs[c0.id]), [sky, terr] = await Promise.all([loadSky(wxSkyName(c, classify(WX)), renderer), loadTerrain(c.id, cfg.quality !== 'low', renderer, !!c.sea || ['coast', 'jeju', 'lake'].includes(c.theme))]);
   if (world) world.dispose();
   course = c; cfg.course = i; cfg.courseId = course.id; saveCfg();
   const hires = terr ? await loadHiresIndex(c.id) : null; if (hires) hires.size = cfg.quality !== 'low' ? 2048 : 1024;
@@ -161,7 +162,7 @@ function step(dt) {
   rec = recLevel(world.path.grade(ride.d + 25));
   physics(dt);
   // 반환점 유턴(2026-11-26 무무 님 요청): 왕복 코스는 반환점까지 남은 거리에 맞춰 미리 브레이크 → 유턴은 시속 10 km 남짓
-  if (world.path.outback) { const u = ride.d - world.path.fwd; if (u < TURN.ta) { const left = Math.max(0, -u - TURN.ta), cap = Math.sqrt(TURN.vt * TURN.vt + 2 * TURN.brake * left); if (ride.v > cap) ride.v = Math.max(cap, ride.v - TURN.brake * 2.5 * dt); } }
+  { const cap = turnCap(); if (ride.v > cap) ride.v = Math.max(cap, ride.v - TURN.brake * 2.5 * dt); } // 순환 코스 속 되돌아 나오는 곳(분원리)도 같음
   const dd = ride.v * dt; ride.d += dd;
   const y = world.path.at(ride.d, P.pos).y;
   if (ride.lastY !== null && y > ride.lastY) { ride.climb += y - ride.lastY; ride.xp += (y - ride.lastY) * 1; }
@@ -189,8 +190,9 @@ function step(dt) {
     ride.laps = lap; const lapTime = ride.moving - ride.lapStart; ride.lapStart = ride.moving;
     ride.climbStart = ride.moving;
     let bonus = 30, msg = P0.outback ? `왕복 ${lap}회 완주! ${fmtTime(lapTime)}` : `${lap}바퀴 완주! 기록 ${fmtTime(lapTime)}`;
-    if (!prof.done[course.id]) { bonus += 100; prof.done[course.id] = true; msg += ' · 첫 완주 보너스'; }
-    if (!P0.outback) { const best = prof.best[course.id]; if (!best || lapTime < best) { prof.best[course.id] = Math.round(lapTime); if (best) msg += ' · 최고 기록 갱신!'; } }
+    const rk = course.recId || course.id; // 순환 코스는 방향마다 기록 따로
+    if (!prof.done[rk]) { bonus += 100; prof.done[rk] = true; msg += ' · 첫 완주 보너스'; }
+    if (!P0.outback) { const best = prof.best[rk]; if (!best || lapTime < best) { prof.best[rk] = Math.round(lapTime); if (best) msg += ' · 최고 기록 갱신!'; } }
     ride.xp += bonus; toast(msg + ` · +${bonus} 경험치`, 5000); saveProf();
   }
   // 레벨업 확인
@@ -208,20 +210,30 @@ const LANE_OFFSET = 1.6; // 길 가운데에서 오른쪽으로 1.6 m (길 폭 8
 // 반환점 유턴 모양: 반지름 r(m) 반원을 그리며 돌고, 앞뒤 pre(m) 동안 차선 가장자리 쪽으로 벌렸다가 돌아옴
 const TURN = { r: 2.6, pre: 14, vt: 2.8, brake: 1.3 }; TURN.ta = Math.PI * TURN.r / 2;
 const smooth01 = (t) => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
-/** 반환점 근처면 진행 거리 d의 [앞쪽 기준 위치, 앞쪽 기준 옆 거리(오른쪽 +)] — 아니면 null */
+/** 되돌아 나오는 지점들(길 위 거리): 왕복 코스는 정상, 순환 코스는 path.turns(분원리처럼 막다른 끝) */
+const turnList = () => (world.path.outback ? [world.path.fwd] : world.path.turns || []);
+/** 가장 가까운 되돌아 나오는 지점 T와 거기서 떨어진 거리 u (지나기 전 음수) */
+function nearTurn(d) {
+  const path = world.path, w = path.wrap(d); let best = null;
+  for (const T of turnList()) { let u = w - T; if (!path.outback) { if (u > path.length / 2) u -= path.length; if (u < -path.length / 2) u += path.length; } if (!best || Math.abs(u) < Math.abs(best.u)) best = { T, u }; }
+  return best;
+}
+/** 앞에 되돌아 나오는 곳이 있으면 미리 줄여야 할 최고 속도 */
+function turnCap() { const t = nearTurn(ride.d); if (!t || t.u > TURN.ta) return Infinity; return Math.sqrt(TURN.vt * TURN.vt + 2 * TURN.brake * Math.max(0, -t.u - TURN.ta)); }
+/** 반환점 근처면 진행 거리 d의 [T 기준 위치(≤0), 들어오는 방향 기준 옆 거리(오른쪽 +), T] — 아니면 null */
 function turnShape(d) {
-  const path = world.path; if (!path.outback) return null;
-  const u = d - path.fwd, { r, pre, ta } = TURN, o = LANE_OFFSET; if (Math.abs(u) > pre + ta) return null;
-  if (u < -ta) { const t = smooth01((u + pre + ta) / pre); return [u + (ta - r) * t, o + (r - o) * t]; }
-  if (u > ta) { const t = smooth01((pre + ta - u) / pre); return [-u + (ta - r) * t, -(o + (r - o) * t)]; }
-  const th = ((u + ta) / (2 * ta)) * Math.PI; return [-r + r * Math.sin(th), r * Math.cos(th)];
+  const t = nearTurn(d); if (!t) return null;
+  const u = t.u, { r, pre, ta } = TURN, o = LANE_OFFSET; if (Math.abs(u) > pre + ta) return null;
+  if (u < -ta) { const k = smooth01((u + pre + ta) / pre); return [u + (ta - r) * k, o + (r - o) * k, t.T]; }
+  if (u > ta) { const k = smooth01((pre + ta - u) / pre); return [-u + (ta - r) * k, -(o + (r - o) * k), t.T]; }
+  const th = ((u + ta) / (2 * ta)) * Math.PI; return [-r + r * Math.sin(th), r * Math.cos(th), t.T];
 }
 const _ta = new THREE.Vector3(), _tb = new THREE.Vector3();
 function turnPoint(d, out) {
-  const sh = turnShape(d); if (!sh) return null; const path = world.path, a = path.fwd + sh[0];
-  const a0 = Math.min(a, path.fwd - 3); path.at(a0, _ta); path.at(a0 + 3, _tb); // 앞쪽(오르는 방향) 기준 옆 방향
+  const sh = turnShape(d); if (!sh) return null; const path = world.path, T = sh[2], a = T + sh[0];
+  const a0 = Math.min(a, T - 3); path.at(a0, _ta); path.at(a0 + 3, _tb); // 들어오는 방향 기준 옆 방향
   const dx = _tb.x - _ta.x, dz = _tb.z - _ta.z, l = Math.hypot(dx, dz) || 1;
-  path.at(Math.min(a, path.fwd), out); const lat = sh[1] * laneSign(roadRules(course));
+  path.at(Math.min(a, T), out); const lat = sh[1] * laneSign(roadRules(course));
   out.x += (-dz / l) * lat; out.z += (dx / l) * lat; return out;
 }
 function placeRider() {
@@ -230,7 +242,7 @@ function placeRider() {
     if (p0 && p1) { // 유턴 중: 실제로 그리는 길을 따라 몸 방향·기울기를 정함
       const dx = p1.x - p0.x, dz = p1.z - p0.z, fl = Math.hypot(dx, dz) || 1, yaw = Math.atan2(dx, dz);
       // 도는 쪽으로 몸 기울이기: 우측통행은 왼쪽으로 돎(오른쪽 차선 → 반대편 오른쪽 차선). 앞이 +z일 때 rotation.z 음수 = 왼쪽
-      const inArc = Math.abs(ride.d - path.fwd) < TURN.ta;
+      const nt = nearTurn(ride.d), inArc = nt && Math.abs(nt.u) < TURN.ta;
       const lean = inArc ? -Math.atan(Math.max(1.2, ride.v) ** 2 / (9.8 * TURN.r)) * laneSign(roadRules(course)) : 0;
       P.pos.copy(p0); rider.root.position.copy(p0); rider.root.position.y += 0.12;
       rider.root.rotation.set(0, yaw, 0, 'YXZ'); rider.root.rotation.z = THREE.MathUtils.lerp(rider.root.rotation.z || 0, lean * 0.8, 0.35);
@@ -341,18 +353,50 @@ function renderMenu() {
   const box = $('courses'); box.innerHTML = '';
   COURSES.forEach((c, i) => {
     if (c.tab !== cfg.tab) return;
-    const st = courseStats(c), best = prof.best[c.id];
-    const one = c.kind === 'outback' && c.real;
+    const rev = c.kind === 'loop' && (cfg.dirs || {})[c.id] === 'rev', rk = c.id + (rev ? '@rev' : ''), cd = withDir(c, rev ? 'rev' : 'fwd');
+    const st = courseStats(cd), best = prof.best[rk];
+    const one = c.kind === 'outback' && c.real, dl = c.kind === 'loop' ? dirLabels(c)[rev ? 1 : 0][0] : '';
     const el = document.createElement('div'); el.className = 'course' + (i === cfg.course ? ' sel' : '');
     el.innerHTML = `<div class="cname">${c.flag || ''} ${c.name}</div><div class="csub">${c.sub}</div><canvas width="300" height="64"></canvas>
       <div class="cstat"><span>${one ? '편도 ' + (c.len / 1000).toFixed(1) : (c.length / 1000).toFixed(1)} km</span><span>오르막 ${st.climb} m</span><span>최대 ${st.maxGrade.toFixed(0)}%</span></div>
-      <div class="ctag">${c.real ? (one ? '왕복' : '순환') + ' · 실제 지도' + (c.note ? ' · ' + c.note : '') : '가상 코스'}</div>
-      <div class="cbest">${best ? (one ? '내 최고 오르막 ' : '내 최고 ') + fmtTime(best) : prof.done[c.id] ? '' : '첫 완주 보너스 +100'}</div>`;
-    drawProfile(el.querySelector('canvas'), c);
-    el.onclick = () => { if (cfg.course !== i) { el.classList.add('loading'); setTimeout(async () => { await loadCourse(i); ride.d = 0; renderMenu(); toast(wxText(), 3000); }, 30); } };
+      <div class="ctag">${c.real ? (one ? '왕복' : '순환 · ' + dl) + ' · 실제 지도' + (c.note ? ' · ' + c.note : '') : '가상 코스 · ' + dl}</div>
+      <div class="cbest">${best ? (one ? '내 최고 오르막 ' : '내 최고 ') + fmtTime(best) : prof.done[rk] ? '' : '첫 완주 보너스 +100'}</div>`;
+    drawProfile(el.querySelector('canvas'), cd);
+    el.onclick = () => { if (c.kind === 'loop') { openDir(c, i, el); return; } if (cfg.course !== i) { el.classList.add('loading'); setTimeout(async () => { await loadCourse(i); ride.d = 0; renderMenu(); toast(wxText(), 3000); }, 30); } };
     box.appendChild(el);
   });
   $('btnTest').classList.toggle('on', cfg.test);
+}
+
+/** 프로그램 종료 (2026-11-26 무무 님 요청). 웹앱은 브라우저가 창 닫기를 막을 수 있음 → 막히면 안내 */
+$('btnExit').onclick = () => { $('xInfo').textContent = '기록과 설정은 저장돼 있어요'; $('xYes').style.display = ''; $('mExit').classList.add('show'); };
+$('xNo').onclick = () => $('mExit').classList.remove('show');
+$('xYes').onclick = async () => {
+  saveCfg(); saveProf(); await keepAwake(false);
+  try { if (document.fullscreenElement) await document.exitFullscreen(); } catch (e) { /* 무시 */ }
+  window.close();
+  setTimeout(() => { // 아직 열려 있으면 브라우저가 막은 것
+    $('xYes').style.display = 'none';
+    $('xInfo').innerHTML = '브라우저가 창 닫기를 막았어요.<br>태블릿의 <b>홈(◯) 버튼</b>으로 나가 주세요.<br><small>홈 화면에 앱으로 설치해서 쓰면 이 버튼으로 바로 닫혀요</small>';
+  }, 500);
+};
+
+/** 순환 코스 방향 선택창 */
+function openDir(c, i, el) {
+  const L = dirLabels(c), cur = (cfg.dirs || {})[c.id] === 'rev' ? 1 : 0;
+  $('dTitle').textContent = `🔁 ${c.name} — 어느 방향으로 돌까요?`;
+  $('dSub').textContent = `한 바퀴 ${(c.length / 1000).toFixed(1)} km · 출발점은 같아요`;
+  ['dFwd', 'dRev'].forEach((id, k) => {
+    const b = $(id); b.innerHTML = `${L[k][0]}<small>${L[k][1]}</small>`; b.classList.toggle('sel', cfg.course === i && cur === k);
+    b.onclick = () => {
+      $('mDir').classList.remove('show'); const dir = k ? 'rev' : 'fwd';
+      if (cfg.course === i && cur === k) return;
+      cfg.dirs = cfg.dirs || {}; cfg.dirs[c.id] = dir; saveCfg();
+      el.classList.add('loading'); setTimeout(async () => { await loadCourse(i); ride.d = 0; renderMenu(); toast(`${L[k][0]} · ${wxText()}`, 3000); }, 30);
+    };
+  });
+  $('dCancel').onclick = () => $('mDir').classList.remove('show');
+  $('mDir').classList.add('show');
 }
 
 /* ---------------- 꾸미기 ---------------- */

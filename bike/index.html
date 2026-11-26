@@ -63,6 +63,8 @@ button.on{background:var(--accent);color:#1b1300;border-color:transparent;font-w
 #lvBox{padding:8px 14px;min-width:200px}#lvBox .row{display:flex;justify-content:space-between;font-size:15px}#lvBox b{color:var(--accent)}
 #topR button.big{font-size:20px;padding:12px 18px;font-weight:800}#topR button.stop{background:#e5484d;border-color:transparent;color:#fff}
 #courses{cursor:grab}#courses.dragging{cursor:grabbing;user-select:none}#courses.dragging .course{pointer-events:none}
+#btnExit{background:#5a1f24;border-color:#a33a42}#mExit .sheet{width:min(480px,92%);text-align:center}#mExit .sheet button{display:block;width:100%;margin-top:12px;font-size:20px;padding:16px}#xYes{background:#e5484d;border:none;font-weight:800}
+#mDir .sheet{width:min(560px,92%);text-align:center}#mDir .sheet button{display:block;width:100%;margin-top:12px;font-size:20px;padding:16px;text-align:left}#mDir .sheet button small{display:block;font-size:14px;color:var(--sub);margin-top:4px}#mDir .sheet button.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}#dCancel{text-align:center!important;font-size:17px!important;padding:12px!important}
 #mPause .sheet{width:min(520px,92%);text-align:center}#mPause .sheet button{display:block;width:100%;margin-top:12px;font-size:21px;padding:16px}#pResume{background:var(--accent);color:#1b1300;font-weight:800;border:none}#pSave{background:#2f9e5b;border:none;font-weight:800}
 #testBadge{display:none;align-items:center;gap:6px;background:rgba(255,176,32,.9);color:#231600;font-weight:800;border-radius:999px;padding:5px 12px;font-size:14px}
 #knob{position:absolute;right:16px;top:50%;transform:translateY(-50%);padding:14px;width:230px;text-align:center;pointer-events:auto;transition:border-color .2s}
@@ -147,6 +149,7 @@ td em{font-style:normal;font-size:12px;background:rgba(255,176,32,.25);color:var
     <button id="btnHr">심박 연결</button>
     <button id="btnTest">시험 모드</button>
     <button id="btnFull">전체화면</button>
+    <button id="btnExit">⏻ 종료</button>
   </div>
   <div id="me" class="panel">
     <div class="lv"><span>레벨</span><b id="mLevel">1</b></div>
@@ -229,6 +232,19 @@ td em{font-style:normal;font-size:12px;background:rgba(255,176,32,.25);color:var
   <div class="actions"><button id="btnCsv">엑셀용 파일로 내려받기</button><button class="primary" data-close>닫기</button></div>
 </div></div>
 
+<div class="modal fit" id="mExit"><div class="sheet">
+  <h2>⏻ 무무 라이딩을 끝낼까요?</h2>
+  <div id="xInfo" style="color:var(--sub);font-size:16px">기록과 설정은 저장돼 있어요</div>
+  <button id="xYes">끝내기</button>
+  <button id="xNo">취소</button>
+</div></div>
+<div class="modal fit" id="mDir"><div class="sheet">
+  <h2 id="dTitle">🔁 어느 방향으로 돌까요?</h2>
+  <div id="dSub" style="color:var(--sub);font-size:16px"></div>
+  <button id="dFwd"></button>
+  <button id="dRev"></button>
+  <button id="dCancel">닫기</button>
+</div></div>
 <div class="modal fit" id="mPause"><div class="sheet">
   <h2>⏸ 일시정지</h2>
   <div id="pauseInfo" style="color:var(--sub);font-size:17px"></div>

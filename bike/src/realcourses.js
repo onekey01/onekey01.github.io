@@ -11,7 +11,7 @@ const fromTable = (tab) => (t) => {
   const p0 = tab[Math.max(0, i - 1)], p1 = tab[i], p2 = tab[i + 1], p3 = tab[Math.min(L, i + 2)];
   return p1 + 0.5 * u * (p2 - p0 + u * (2 * p0 - 5 * p1 + 4 * p2 - p3 + u * (3 * (p1 - p2) + p3 - p0)));
 };
-const R = (id) => ({ pts: REALDATA[id].pts, len: REALDATA[id].len, elev: fromTable(REALDATA[id].elev) });
+const R = (id) => ({ pts: REALDATA[id].pts, len: REALDATA[id].len, elev: fromTable(REALDATA[id].elev), ...(REALDATA[id].turns ? { turns: REALDATA[id].turns } : {}) });
 export const REAL = [
   // ---------- 해외 ----------
   { ...R('alpe'), id: 'alpe', country: 'FR', name: '알프 뒤에즈', region: '해외', flag: '🇫🇷', sub: '투르 드 프랑스의 21개 헤어핀', kind: 'outback', theme: 'alps', summit: '알프 뒤에즈 정상', note: '실측 지도·고도' },
@@ -26,7 +26,8 @@ export const REAL = [
   { ...R('hangye'), id: 'hangye', country: 'KR', name: '한계령 (오색)', region: '국내', flag: '🇰🇷', sub: '오색 → 한계령 정상, 설악산 암봉 사이 고갯길', kind: 'outback', theme: 'seorak', summit: '한계령', note: '실측 지도·고도(SRTM 30 m)' },
   { ...R('jeju1'), id: 'jeju1', country: 'KR', name: '제주 애월~협재 해안도로', region: '국내', flag: '🇰🇷', sub: '에메랄드 바다를 따라 달리는 해안길', kind: 'outback', theme: 'jeju', sea: { dir: [-0.7, -0.7], level: 0 }, summit: '협재 해변', note: '실측 지도·고도' },
   // ---------- 순환 ----------
-  { ...R('bunwon'), id: 'bunwon', country: 'KR', name: '분원리 코스', region: '국내', flag: '🇰🇷', sub: '팔당 → 분원리, 수도권 라이더의 성지', kind: 'outback', theme: 'lake', sea: { dir: [0.2, -1], level: 25 }, summit: '분원리 반환점', note: '실제로 왕복하는 코스 · 실측 지도·고도', loopGroup: true },
+  { ...R('bunwon'), id: 'bunwon', country: 'KR', name: '분원리 순환', region: '국내', flag: '🇰🇷', sub: '하남 → 분원리 → 팔당호 강변, 수도권 라이더의 성지', kind: 'loop', theme: 'lake', sea: { dir: [0.2, -1], level: 25 }, turnName: '분원리 반환점', note: '퇴촌~분원리는 같은 길 왕복 · 실측 지도·고도',
+    dirs: [['내륙 → 분원리 → 강변', '43번 하남대로로 가서 45번 태허정로 팔당호 강변으로 돌아와요'], ['강변 → 분원리 → 내륙', '45번 태허정로 팔당호 강변으로 가서 43번 하남대로로 돌아와요']] },
   { ...R('olympic'), id: 'olympic', country: 'KR', name: '올림픽공원 순환', region: '국내', flag: '🇰🇷', sub: '공원 둘레를 도는 평지 순환', kind: 'loop', theme: 'seoulFlat', parkInside: true, note: '실측 지도·고도' },
   { ...R('jeju2'), id: 'jeju2', country: 'KR', name: '제주 동쪽 해안 순환', region: '국내', flag: '🇰🇷', sub: '함덕·김녕·월정리·세화 바다와 중산간', kind: 'loop', theme: 'jeju', sea: { dir: [0, -1], level: 0 }, note: '실측 지도·고도' },
 ];

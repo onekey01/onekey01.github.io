@@ -22,8 +22,8 @@ for (const c of COURSES) {
   if (Math.abs(med) > 15 || spread > 30) errs.push(`지형차 중앙 ${med.toFixed(0)} 폭 ${spread.toFixed(0)}`);
   if (c.kind === 'outback' && p.y[p.n] - p.y[0] > 100) { let down = 0; for (let i = 1; i <= p.n; i++) down += Math.max(0, p.y[i - 1] - p.y[i]); if (down > 30) errs.push(`업힐 중 내리막 ${down.toFixed(0)}m`); }
   const P = c.pts, cum = [0]; for (let i = 1; i < P.length; i++) cum.push(cum[i - 1] + hav(P[i - 1], P[i]));
-  const ALLOW = { jeju2: 1, champs: 1 }; // 제주 동쪽: 세화까지 갔다 되돌아오는 길·함덕 진입로, 샹젤리제: 개선문 돌아 나오기 — 코스 설계상 의도
-  if (!ALLOW[c.id]) for (let i = 0; i < P.length; i += 2) for (let j = i + 1; j < P.length; j++) { const dd = cum[j] - cum[i]; if (dd < 60) continue; if (dd > 700) break; if (hav(P[i], P[j]) < 8 && retrace(P, i, j)) { errs.push(`막다른 갈래 ${(cum[i] / 1000).toFixed(2)}km`); i = P.length; break; } }
+  const ALLOW = { jeju2: 1, champs: 1 }; // 제주 동쪽: 함덕 진입로, 샹젤리제: 개선문 돌아 나오기 — 코스 설계상 의도 (일부러 되돌아 나오는 끝은 코스의 turns에 적어 유턴하게 함)
+  if (!ALLOW[c.id]) for (let i = 0; i < P.length; i += 2) for (let j = i + 1; j < P.length; j++) { const dd = cum[j] - cum[i]; if (dd < 60) continue; if (dd > 700) break; if (hav(P[i], P[j]) < 8 && retrace(P, i, j) && !(c.turns || []).some((T) => Math.abs(cum[i] - T) < 800)) { errs.push(`막다른 갈래 ${(cum[i] / 1000).toFixed(2)}km`); i = P.length; break; } }
   console.log(`${errs.length ? '실패' : '정상'} ${c.id.padEnd(8)} ${errs.join(', ')}`); if (errs.length) bad++;
 }
 console.log(bad ? `${bad}개 코스 실패` : '모두 정상'); process.exit(bad ? 1 : 0);

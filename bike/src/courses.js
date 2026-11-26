@@ -42,6 +42,27 @@ function normalize(c) {
 VIRTUAL.forEach((c) => { c.tab = '가상'; c.kind = 'loop'; c.flag = '🎮'; c.country = 'KR'; /* 가상 코스는 한국 도로 규칙 */ if (typeof c.summit === 'number') { c.summitAt = c.summit; c.summit = '무무 고개 정상'; } });
 export const COURSES = [...VIRTUAL, ...REAL.map(normalize)];
 
+/** 순환 코스 방향 (2026-11-26 무무 님 요청: 순환 코스는 고를 때 방향 선택창)
+ *  'rev'면 출발점은 그대로 두고 반대 방향으로 도는 코스를 만들어 줌. 기록은 recId(id@rev)로 따로 */
+export function withDir(c, dir) {
+  if (c.kind !== 'loop' || dir !== 'rev') return c;
+  const r = Object.create(c); r.dir = 'rev'; r.recId = c.id + '@rev';
+  if (c.pts) r.pts = [c.pts[0], ...c.pts.slice(1).reverse()];
+  else r.shape = [c.shape[0], ...c.shape.slice(1).reverse()];
+  const e = c.elevFwd || c.elev; r.elev = (s) => e(Math.min(1, Math.max(0, 1 - s))); if (c.elevFwd) r.elevFwd = r.elev;
+  if (c.turns) r.turns = c.turns.map((t) => c.len - t);
+  if (c.summitAt !== undefined) r.summitAt = 1 - c.summitAt;
+  return r;
+}
+/** 방향 선택창 글: [[제목, 설명], [제목, 설명]] — 코스에 dirs가 없으면 지도에서 시계·반시계를 계산 */
+export function dirLabels(c) {
+  if (c.dirs) return c.dirs;
+  const P = c.pts ? c.pts.map(([lo, la]) => [lo * Math.cos((la * Math.PI) / 180), la]) : c.shape.map(([x, z]) => [x, -z]);
+  let a = 0; for (let i = 0; i < P.length; i++) { const p = P[i], q = P[(i + 1) % P.length]; a += p[0] * q[1] - q[0] * p[1]; }
+  const ccw = a > 0, cw = ['시계 방향 ↻', '지도에서 오른쪽으로 돌아요'], acw = ['반시계 방향 ↺', '지도에서 왼쪽으로 돌아요'];
+  return ccw ? [acw, cw] : [cw, acw];
+}
+
 /** 코스 전체 높이 정보(상승 고도 등) */
 export function courseStats(c, n = 800) {
   let climb = 0, maxG = 0, prev = c.elev(0), lo = prev, hi = prev;
