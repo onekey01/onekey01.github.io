@@ -93,6 +93,21 @@ def dem(lon, lat, z=14):
     A = TILES[key]; x = min(254.999, max(0, X - tx * 256 - 0.5)); y = min(254.999, max(0, Y - ty * 256 - 0.5)); x0, y0 = int(x), int(y); fx, fy = x - x0, y - y0
     return A[y0, x0] * (1 - fx) * (1 - fy) + A[y0, x0 + 1] * fx * (1 - fy) + A[y0 + 1, x0] * (1 - fx) * fy + A[y0 + 1, x0 + 1] * fx * fy
 
+def soften(e, step=25.0, lim=9.0, win=100, tries=40):
+    """경사 다듬기 (2026-11-27 경주 보불로 13% — 길을 깎아 낸 비탈에서 지형 자료가 길보다 높게 잡힘):
+    100 m 구간 경사가 lim % 를 넘는 곳만 앞뒤 200 m 를 평균으로 눌러 펴기를 되풀이. 넓은 오르막(높이차)은 그대로"""
+    e = list(e); k = max(1, int(win / step)); n = len(e)
+    for _ in range(tries):
+        bad = [j for j in range(n - k) if abs(e[j + k] - e[j]) / (k * step) * 100 > lim]
+        if not bad: break
+        idx = set()
+        for j in bad: idx.update(range(max(0, j - 4), min(n, j + k + 5)))
+        src = e[:]
+        for j in idx:
+            a, b = max(0, j - 4), min(n, j + 5); e[j] = sum(src[a:b]) / (b - a)
+    return [round(v, 1) for v in e]
+
+
 def elevation(samp, step=25, open_m=400, close_m=800, smooth_m=200):
     """높이 다듬기 (2026-11-27 관광지 코스): ① 빈값·튀는 값 거르기(중앙값 200 m) ② 열림 400 m — 강변도로 위 고가·제방·다리 위로 솟은 좁은 봉우리 제거
        ③ 닫힘 800 m — 다리·댐 위에서 물 높이로 꺼진 곳 메움 ④ 평균 200 m. 넓은 진짜 언덕(불국사 오르막)은 그대로 남음"""
@@ -134,6 +149,7 @@ for cid, c in COURSES.items():
         if len(wps) > 2: pts = despur(resample(pts, 6))
     fine = resample(pts, 12); samp = resample(pts, 25)
     el, fill = elevation(samp)
+    el = soften(el)  # 100 m 경사 9% 넘는 지형 자료 튐 펴기
     if wps[0] == wps[-1] or 'turn' in c:  # 순환 코스: 끝 높이를 출발 높이에 맞춤(한 바퀴 이음매에서 경사가 튀지 않게, 2026-11-27 경주 27% 이음매)
         dlt = el[-1] - el[0]; el = [round(v - dlt * t / (len(el) - 1), 1) for t, v in enumerate(el)]
     length = sum(dist(a, b) for a, b in zip(fine, fine[1:]))
