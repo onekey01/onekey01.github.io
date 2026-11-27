@@ -33,7 +33,7 @@ const TAB = { alpe: '해외', ventoux: '해외', stelvio: '해외', champs: '해
 const polyLen = (pts) => { let d = 0; for (let i = 1; i < pts.length; i++) { const [a, b] = [pts[i - 1], pts[i]]; d += Math.hypot((b[0] - a[0]) * 111320 * Math.cos((a[1] * Math.PI) / 180), (b[1] - a[1]) * 110540); } return d; };
 /** 실제 코스를 앱에서 쓰는 모양으로 정리: length = 한 바퀴(왕복이면 오르고 내려오기) 길이, elev(s) = 한 바퀴 높이 */
 function normalize(c) {
-  c.real = true; c.tab = c.region || TAB[c.id] || '수도권'; // 새 코스는 realcourses.js 에 region 을 적음
+  c.real = true; c.tab = c.area || TAB[c.id] || '수도권'; // 새 코스는 realcourses.js 에 area(권역) 를 적음 (region 은 예전부터 '국내'·'해외' 표시용)
   if (!c.len) c.len = Math.round(polyLen(c.pts) / 100) * 100;
   c.elevFwd = c.elev;
   c.length = c.kind === 'outback' ? c.len * 2 : c.len;
