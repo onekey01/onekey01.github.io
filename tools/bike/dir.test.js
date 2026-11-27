@@ -10,7 +10,7 @@ await pg.evaluateOnNewDocument(()=>{localStorage.setItem('bike2.cfg',JSON.string
 await pg.goto('http://localhost:8778/bike/');await pg.waitForFunction(()=>!document.getElementById('loading'),{timeout:120000});
 await pg.screenshot({path:'home.png'});await pg.click('#btnExit');await sleep(300);ok(await pg.evaluate(()=>document.getElementById('mExit').classList.contains('show')),'종료 확인창');
 await pg.click('#xYes');await sleep(900);await pg.screenshot({path:'exit_modal.png'});ok(await pg.evaluate(()=>document.getElementById('xYes').style.display==='none'),'창 닫기 막힘 안내');await pg.click('#xNo');await sleep(200);
-await pg.evaluate(()=>document.querySelector('[data-tab="순환"]').click());await sleep(400);
+await pg.evaluate(()=>document.querySelector('[data-tab="수도권"]').click());await sleep(400);
 const cards=await pg.evaluate(()=>[...document.querySelectorAll('#courses .course .cname')].map(e=>e.textContent));console.log('순환 탭',cards);
 await pg.evaluate(()=>{[...document.querySelectorAll('#courses .course')].find(e=>e.textContent.includes('분원리')).click()});await sleep(500);
 ok(await pg.evaluate(()=>document.getElementById('mDir').classList.contains('show')),'방향 선택창 열림');

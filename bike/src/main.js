@@ -1,6 +1,6 @@
 // 무무 라이딩 — 앱 본체
 import * as THREE from 'three';
-import { COURSES, courseStats, drawProfile, withDir, dirLabels } from './courses.js';
+import { COURSES, courseStats, drawProfile, withDir, dirLabels, REGIONS } from './courses.js';
 import { buildWorld, skyFor } from './world.js';
 import { loadSky } from './sky.js';
 import { makePost } from './post.js';
@@ -347,9 +347,9 @@ function renderMenu() {
   $('mLevel').textContent = lv.level; $('mXpBar').style.width = (lv.into / lv.need) * 100 + '%';
   $('mXp').textContent = `${Math.floor(lv.into)} / ${lv.need} 경험치`;
   const nr = nextReward(lv.level); $('mNext').textContent = nr ? `다음 보상: Lv ${nr.L} ${nr.t}` : '모든 보상을 모았어요!';
-  const tabs = ['가상', '해외', '국내', '순환'].filter((t) => COURSES.some((c) => c.tab === t)); // 코스가 없는 탭(숨긴 해외)은 안 보임
+  const tabs = ['가상', ...REGIONS, '해외'].filter((t) => COURSES.some((c) => c.tab === t)); // 코스가 있는 탭만 보임(숨긴 해외·코스 없는 권역은 안 보임)
   if (!tabs.includes(cfg.tab)) cfg.tab = course.tab;
-  $('tabs').innerHTML = tabs.map((t) => `<button class="${t === cfg.tab ? 'sel' : ''}" data-tab="${t}">${{ 가상: '🎮 가상 코스', 해외: '🌍 해외 명소', 국내: '🇰🇷 국내 명소', 순환: '🔁 순환 코스' }[t]}</button>`).join('');
+  $('tabs').innerHTML = tabs.map((t) => `<button class="${t === cfg.tab ? 'sel' : ''}" data-tab="${t}">${{ 가상: '🎮 가상 코스', 해외: '🌍 해외', 수도권: '🏙️ 수도권', 강원: '⛰️ 강원', 충청: '🌾 충청', 전라: '🍃 전라', 경상: '🏯 경상', 제주: '🍊 제주' }[t] || t}</button>`).join('');
   const box = $('courses'); box.innerHTML = '';
   COURSES.forEach((c, i) => {
     if (c.tab !== cfg.tab) return;

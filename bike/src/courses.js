@@ -27,11 +27,13 @@ const VIRTUAL = [
   },
 ];
 
-const TAB = { alpe: '해외', ventoux: '해외', stelvio: '해외', champs: '해외', bukak: '국내', namsan: '국내', hangye: '국내', jeju1: '국내', bunwon: '순환', olympic: '순환', cpark: '순환', jeju2: '순환' };
+// 2026-11-27 무무 님 결정: 국내 코스는 권역별 탭(순환·왕복 구분 탭은 없앰 — 카드에 표시로 남김)
+export const REGIONS = ['수도권', '강원', '충청', '전라', '경상', '제주'];
+const TAB = { alpe: '해외', ventoux: '해외', stelvio: '해외', champs: '해외', cpark: '해외', bukak: '수도권', namsan: '수도권', olympic: '수도권', bunwon: '수도권', hangye: '강원', jeju1: '제주', jeju2: '제주' };
 const polyLen = (pts) => { let d = 0; for (let i = 1; i < pts.length; i++) { const [a, b] = [pts[i - 1], pts[i]]; d += Math.hypot((b[0] - a[0]) * 111320 * Math.cos((a[1] * Math.PI) / 180), (b[1] - a[1]) * 110540); } return d; };
 /** 실제 코스를 앱에서 쓰는 모양으로 정리: length = 한 바퀴(왕복이면 오르고 내려오기) 길이, elev(s) = 한 바퀴 높이 */
 function normalize(c) {
-  c.real = true; c.tab = TAB[c.id] || '국내';
+  c.real = true; c.tab = c.region || TAB[c.id] || '수도권'; // 새 코스는 realcourses.js 에 region 을 적음
   if (!c.len) c.len = Math.round(polyLen(c.pts) / 100) * 100;
   c.elevFwd = c.elev;
   c.length = c.kind === 'outback' ? c.len * 2 : c.len;
