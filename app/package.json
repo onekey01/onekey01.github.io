@@ -1,5 +1,5 @@
 {
-  "name": "muride-app",
+  "name": "mumuride-app",
   "private": true,
   "version": "0.1.0",
   "description": "무무 라이딩 안드로이드 앱 (Capacitor로 bike/ 웹앱을 감쌈)",

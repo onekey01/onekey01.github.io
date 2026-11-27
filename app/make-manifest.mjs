@@ -17,6 +17,6 @@ const files = [];
   }
 })(bike, '');
 const web = crypto.createHash('sha256').update(files.map((f) => f.file_name + f.file_hash).join('|')).digest('hex').slice(0, 12);
-const out = { web, shell: SHELL, minShell: 1, apk: 'https://tongdol.kr/download/muride.apk', base: BASE, files };
+const out = { web, shell: SHELL, minShell: 1, apk: 'https://tongdol.kr/download/mumuride.apk', base: BASE, files };
 fs.writeFileSync(path.join(bike, 'app-update.json'), JSON.stringify(out));
 console.log(`앱 업데이트 목록: web ${web}, 파일 ${files.length}개`);

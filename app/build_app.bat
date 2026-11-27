@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
 rem 무무 라이딩 안드로이드 앱(APK) 만들기 — 두 번 눌러 실행
-rem 결과: app\muride-debug.apk  (태블릿이 USB로 연결돼 있으면 바로 설치까지)
+rem 결과: app\mumuride-debug.apk  (태블릿이 USB로 연결돼 있으면 바로 설치까지)
 cd /d "%~dp0"
 set "JAVA_HOME=C:\Program Files\Java\jdk-19"
 set "ANDROID_HOME=%LOCALAPPDATA%\Android\Sdk"
@@ -22,9 +22,9 @@ cd android
 if not exist local.properties powershell -NoProfile -Command "\"sdk.dir=$($env:ANDROID_HOME -replace '\\','\\')\" | Set-Content local.properties -Encoding ASCII"
 call gradlew.bat assembleDebug --no-daemon -q || goto :err
 cd ..
-copy /y android\app\build\outputs\apk\debug\app-debug.apk muride-debug.apk >nul
-echo 완료: %cd%\muride-debug.apk
-adb devices | find "device" | find /v "List" >nul && (echo 태블릿에 설치 중... & adb install -r muride-debug.apk)
+copy /y android\app\build\outputs\apk\debug\app-debug.apk mumuride-debug.apk >nul
+echo 완료: %cd%\mumuride-debug.apk
+adb devices | find "device" | find /v "List" >nul && (echo 태블릿에 설치 중... & adb install -r mumuride-debug.apk)
 pause
 exit /b 0
 :err

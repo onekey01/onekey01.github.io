@@ -7,7 +7,7 @@ import json, math, os, sys, io, time, urllib.request, urllib.parse
 import numpy as np
 from PIL import Image
 BASE = r'C:\Users\Bak Byeongseob\Documents\muride'; CACHE = os.path.join(BASE, 'terrain', 'cache'); os.makedirs(CACHE, exist_ok=True)
-UA = {'User-Agent': 'muride/1.0 (moomooissue@gmail.com)'}
+UA = {'User-Agent': 'mumuride/1.0 (moomooissue@gmail.com)'}
 BIKE = 'https://routing.openstreetmap.de/routed-bike/route/v1/driving/'
 
 def get(url, data=None, tries=5):
