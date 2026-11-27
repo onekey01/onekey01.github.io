@@ -6,7 +6,7 @@ import truststore; truststore.inject_into_ssl()
 import json, math, os, sys, io, time, urllib.request, urllib.parse
 import numpy as np
 from PIL import Image
-BASE = r'C:\Users\Bak Byeongseob\Documents\muride'; CACHE = os.path.join(BASE, 'terrain', 'cache'); os.makedirs(CACHE, exist_ok=True)
+BASE = r'C:\Users\Bak Byeongseob\Documents\mumuride'; CACHE = os.path.join(BASE, 'terrain', 'cache'); os.makedirs(CACHE, exist_ok=True)
 UA = {'User-Agent': 'mumuride/1.0 (moomooissue@gmail.com)'}
 BIKE = 'https://routing.openstreetmap.de/routed-bike/route/v1/driving/'
 
