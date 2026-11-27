@@ -159,6 +159,7 @@ export class Rider {
     aim(bottle, BB.clone().lerp(HB, 0.22).add(V(0, 0.035, -0.02)), BB.clone().lerp(HB, 0.62).add(V(0, 0.035, -0.02))); add(bottle);
 
     // ---------- 사람 ----------
+    const human0 = this.body.children.length; // 여기부터 붙는 것은 「도형 사람」 — 아바타를 쓰면 숨김
     const HIPC = V(0, 1.035, -0.195), SHC = V(0, 1.335, 0.2);
     this.hipL = V(-0.092, HIPC.y - 0.01, HIPC.z + 0.02); this.hipR = V(0.092, HIPC.y - 0.01, HIPC.z + 0.02);
     // 몸통 (사이클복): [t, 반폭, 배 쪽 두께, 등 쪽 두께]
@@ -211,6 +212,7 @@ export class Rider {
       for (const s of [thigh, knee, shin, sock, shoe]) add(s);
       return { hip, thigh, knee, shin, sock, shoe, phase: k * Math.PI, sx: k ? 1 : -1 };
     });
+    this.humanParts = this.body.children.slice(human0);
     this.updateLegs();
     // 나중에 경험치로 열 부속을 갈아 끼우기 쉽게 부위별 참조를 모아 둠
     this.parts = { helmet, goggles: gl, saddle: [sad, nose], wheels: this.spins, bottle, shoes: this.legs.map((g) => g.shoe), materials: { bike: this.bikeMat, jersey: this.jerseyMat, trim: this.trimMat, helmet: this.helmetMat, shorts, skin } };
@@ -218,6 +220,18 @@ export class Rider {
     // 바닥 그림자 (품질 「보통」에서 그림자 대신)
     const blob = new THREE.Mesh(new THREE.CircleGeometry(0.75, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25, depthWrite: false }));
     blob.rotation.x = -Math.PI / 2; blob.scale.set(0.6, 1.4, 1); blob.position.y = 0.02; this.root.add(blob);
+  }
+  /** 아바타(VRoid 모델)로 바꾸기: 도형 사람을 숨기고 모델을 자전거에 앉힘. null 이면 도형 사람으로 되돌림 */
+  setAvatar(av) {
+    if (this.avatar) this.body.remove(this.avatar.box);
+    this.avatar = av || null; for (const m of this.humanParts) m.visible = !av;
+    if (av) { this.body.add(av.box); av.fit({ legLen: this.L1 + this.L2, hipMid: V(0, 1.03, -0.185), hood: HOOD, BB, CRANK, pedX: 0.115, lean: [36, 44, 50, 54, 22, 6] }); }
+    this.fp = undefined; this.updateLegs();
+  }
+  /** 바이커 시선(1인칭)이면 머리·윗몸을 숨김 (카메라가 머리 자리에 있음) */
+  setFP(fp) {
+    if (this.avatar) { this.avatar.setFP(fp); return; }
+    this.headG.visible = this.upperG.visible = !fp;
   }
   setLook(jersey, bike) {
     this.jerseyMat.color.setHex(jersey.color);
@@ -228,7 +242,7 @@ export class Rider {
   }
   updateLegs() {
     const t = new THREE.Vector3(), up = V(0, 1, 0);
-    for (const g of this.legs) {
+    for (const g of this.avatar ? [] : this.legs) {
       const a = this.crank + g.phase;
       const pedal = V(g.sx * 0.115, BB.y - Math.cos(a) * CRANK, BB.z + Math.sin(a) * CRANK);
       // 발목: 페달 축 위·뒤. 아래쪽에서는 뒤꿈치가 살짝 내려가고 위쪽에서는 발끝이 내려감
@@ -246,11 +260,12 @@ export class Rider {
     }
     this.crankG.rotation.x = -this.crank;
     for (const p of this.pedals) p.rotation.x = this.crank; // 페달은 수평 유지
+    if (this.avatar) this.avatar.pose(this.crank);
   }
   /** dt 초, cadence rpm, speed m/s */
   animate(dt, cadence, speed) {
     this.crank += (cadence / 60) * Math.PI * 2 * dt;
-    this.updateLegs();
+    this.updateLegs(); if (this.avatar) this.avatar.tick(dt);
     for (const s of this.spins) s.rotation.z -= (speed / WR) * dt;
     this.body.rotation.z = Math.sin(this.crank) * Math.min(cadence / 500, 0.03); // 페달 밟을 때 살짝 흔들림
   }

@@ -187,9 +187,19 @@ export function buildVelodrome(scene, course, renderer) {
   followSun(path.at(0));
   scene.add(group);
   return {
-    path, group, sun, followSun, grass: null, patch: null, indoor: true, bankAt, sideAt, inside,
+    path, group, sun, followSun, grass: null, patch: null, indoor: true, bankAt, sideAt, inside, veloR: VELO.R,
     heightAt: () => floorY, groundAt: () => ({ y: floorY, grass: 0, forest: 0 }),
     setWeather() {},
     dispose() { scene.remove(group); envTex.dispose(); scene.environment = null; group.traverse((o) => { o.geometry?.dispose(); o.material?.map?.dispose(); o.material?.dispose?.(); }); },
   };
+}
+
+/** 벨로드롬 몸 기울기(라디안, 양수): 코너 정도 × 그 자리 바닥 경사. 코너 정도 = 곡률 × 코너 반지름 (직선 0, 코너 1). 앞뒤 6 m 로 재서 코너 들어가고 나올 때 부드럽게 변함 */
+export function veloLean(path, d, world) {
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  path.at(d - 6, a); path.at(d, b); path.at(d + 6, c);
+  const h1 = Math.atan2(b.x - a.x, b.z - a.z), h2 = Math.atan2(c.x - b.x, c.z - b.z);
+  let dh = h2 - h1; dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+  const k = Math.min(1, (Math.abs(dh) / 6) * (world.veloR || 25));
+  return k * world.bankAt(d);
 }

@@ -2,7 +2,8 @@
 import * as THREE from 'three';
 import { COURSES, courseStats, drawProfile, withDir, dirLabels, REGIONS } from './courses.js';
 import { buildWorld, skyFor } from './world.js';
-import { buildVelodrome } from './velodrome.js';
+import { buildVelodrome, veloLean } from './velodrome.js';
+import { loadAvatar } from './avatar.js';
 import { loadSky } from './sky.js';
 import { makePost } from './post.js';
 import { loadImpostors, TIME } from './impostor.js';
@@ -24,7 +25,7 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
 };
-const DEF = { quality: 'high', weight: 70, ratio: 3.5, level: 5, test: false, realWeather: true, view: 'chase', testMode: 'steady', jersey: 'orange', bike: 'white', course: 0, courseId: 'coast', tab: '가상', dirs: {} };
+const DEF = { quality: 'high', weight: 70, ratio: 3.5, level: 5, test: false, realWeather: true, view: 'chase', testMode: 'steady', jersey: 'orange', bike: 'white', avatar: 'm1', course: 0, courseId: 'coast', tab: '가상', dirs: {} };
 const cfg = Object.assign({}, DEF, store.get('bike2.cfg', {}));
 let cloud = null;
 const localData = () => ({ prof, cfg, history: store.get('bike2.history', []) });
@@ -77,6 +78,9 @@ addEventListener('resize', () => { resize(); fitUI(); }); resize(); fitUI();
 addEventListener('orientationchange', () => setTimeout(() => { resize(); fitUI(); }, 300));
 
 const rider = new Rider(); scene.add(rider.root);
+// 아바타(VRoid CC0 모델) — 2026-11-28 무무 님이 올리기로 정해 기본으로 켬(DEF.avatar = 'm1'). 캐릭터 만들기 화면(2단계)이 생기면 그 선택을 따름
+function applyAvatar() { const id = cfg.avatar; if (!id) { rider.setAvatar(null); return; } loadAvatar(`avatar/${id}.glb`).then((a) => rider.setAvatar(a)).catch((e) => console.warn('[avatar]', e)); }
+applyAvatar();
 rider.root.traverse((o) => { if (o.isMesh) o.castShadow = true; });
 rider.blob = rider.root.children[rider.root.children.length - 1]; rider.blob.castShadow = false;
 let world = null, course = null;
@@ -261,28 +265,31 @@ function placeRider() {
   // ※ 예전엔 이 벡터에 -1.6을 곱해 왼쪽 차선을 달렸음 (2026-11-26 무무 님 지적). 아래 laneCheck 가 매 코스마다 확인
   const side = new THREE.Vector3(-dir.z / flat, 0, dir.x / flat);
   rider.root.position.copy(P.pos).addScaledVector(side, (course.lane ?? LANE_OFFSET) * laneSign(roadRules(course))); rider.root.position.y += 0.12; // 좌측통행 나라면 왼쪽 차선 (벨로드롬은 lane 0: 경기선 위)
-  // 벨로드롬: 뱅크 경사면에 맞춰 몸·자전거를 안쪽으로 기울임 (inside +1 = 진행 방향 오른쪽이 안쪽, rotation.z 양수 = 오른쪽)
-  rider.root.rotation.set(0, Math.atan2(dir.x, dir.z), world.bankAt ? world.inside * world.bankAt(ride.d) : 0, 'YXZ');
+  // 벨로드롬: 코너에서만 안쪽으로 기울임 (inside +1 = 진행 방향 오른쪽이 안쪽, rotation.z 양수 = 오른쪽)
+  // ※ 2026-11-27 무무 님 지적: 예전엔 바닥 경사(직선도 약 12°)를 그대로 따라 직선에서도 넘어질 듯 기울었음.
+  //   지금은 「얼마나 꺾이는가(곡률)」로 코너 정도(0~1)를 구해 경사에 곱함 → 직선 0°, 코너 = 바닥 경사. tools/bike/velodrome.test.mjs 가 확인
+  rider.root.rotation.set(0, Math.atan2(dir.x, dir.z), world.bankAt ? world.inside * veloLean(path, ride.d, world) : 0, 'YXZ');
   rider.body.rotation.x = -Math.atan2(dir.y, flat);
   return side;
 }
 // 1인칭 시선 방향: 몸 앞쪽(+z)을 보도록 뒤로 돌리고 28° 숙임 (손이 아래 수치 칸에 가리지 않게)
 const FP_LOOK = new THREE.Quaternion().setFromEuler(new THREE.Euler(-THREE.MathUtils.degToRad(28), Math.PI, 0, 'YXZ'));
 function updateCamera(dt, menu) {
-  const fp = !menu && cfg.view === 'fp'; rider.headG.visible = rider.upperG.visible = !fp;
+  const fp = !menu && cfg.view === 'fp'; rider.setFP(fp);
   if (fp) { // 바이커 시선: 헬멧 카메라 위치에서 달리는 쪽을 보고, 고개를 살짝 숙여 손·핸들이 화면 아래에 보이게
     rider.body.updateWorldMatrix(true, false);
-    const e = rider.eye.clone(); e.y += Math.sin(rider.crank * 2) * 0.006; // 페달 밟을 때 살짝 흔들림
+    const e = (rider.avatar ? rider.avatar.eye() : rider.eye).clone(); e.y += Math.sin(rider.crank * 2) * 0.006; // 페달 밟을 때 살짝 흔들림
     camera.position.copy(rider.body.localToWorld(e));
     const q = new THREE.Quaternion(); rider.body.getWorldQuaternion(q);
-    camera.quaternion.copy(q).multiply(FP_LOOK);
+    camera.quaternion.copy(q).multiply(rider.avatar ? rider.avatar.fpLook() : FP_LOOK);
     if (camera.fov !== 84) { camera.fov = 84; camera.updateProjectionMatrix(); }
     P.cam.copy(camera.position); return;
   }
   if (camera.fov !== 60) { camera.fov = 60; camera.updateProjectionMatrix(); }
   const sc = window.__shotCam; // 시험용: 라이더를 정해진 각도에서 가까이 찍기
   if (sc) { if (sc.cr !== null) { rider.crank = sc.cr; rider.updateLegs(); } const a = THREE.MathUtils.degToRad(sc.ang) + rider.root.rotation.y, rp = rider.root.position;
-    camera.position.set(rp.x + Math.sin(a) * sc.dist, rp.y + sc.hgt, rp.z + Math.cos(a) * sc.dist); camera.lookAt(rp.x, rp.y + 0.75, rp.z); return; }
+    const at = new THREE.Vector3(...(sc.at || [0, 0.75, 0])).applyAxisAngle(new THREE.Vector3(0, 1, 0), rider.root.rotation.y).add(rp); // at: 자전거 기준 바라볼 점
+    camera.position.set(at.x + Math.sin(a) * sc.dist, rp.y + sc.hgt, at.z + Math.cos(a) * sc.dist); camera.lookAt(at); return; }
   if (menu) {
     const t = performance.now() / 1000 * 0.15, r = 9;
     P.cam.set(rider.root.position.x + Math.sin(t) * r, rider.root.position.y + 3.2, rider.root.position.z + Math.cos(t) * r);
