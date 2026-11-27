@@ -1,5 +1,5 @@
 {
-  "appId": "kr.tongdol.muride",
+  "appId": "kr.mumuride.app",
   "appName": "무무 라이딩",
   "webDir": "www",
   "android": {
@@ -18,6 +18,12 @@
       "appReadyTimeout": 15000,
       "autoDeleteFailed": true,
       "autoDeletePrevious": true
+    },
+    "FirebaseAuthentication": {
+      "skipNativeAuth": true,
+      "providers": [
+        "google.com"
+      ]
     }
   }
 }

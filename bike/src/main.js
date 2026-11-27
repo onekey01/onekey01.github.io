@@ -379,9 +379,8 @@ const NP = NATIVE ? window.Capacitor.Plugins : {};
 function setupNative() {
   document.body.classList.add('native');
   $('btnFull').style.display = 'none'; // 앱은 늘 전체화면·가로 고정(네이티브 설정)
-  // 구글 로그인: 앱 안 웹뷰에서는 구글이 로그인 창을 막음 → 네이티브 로그인을 붙이기 전까지 안내만
-  $('btnLogin').onclick = () => toast('앱에서는 구글 로그인을 준비 중이에요. 기록은 이 태블릿에 저장돼요', 4500);
-  $('acctTxt').textContent = '앱 로그인 준비 중 — 기록은 이 기기에 저장돼요';
+  // 구글 로그인: 껍데기 2번부터 네이티브 로그인(FirebaseAuthentication). 껍데기 1번은 안내만 (새 버전 받기 창이 따로 뜸)
+  if (!NP.FirebaseAuthentication) { $('btnLogin').onclick = () => toast('구글 로그인은 앱 새 버전에서 돼요. 기록은 이 태블릿에 저장돼요', 4500); $('acctTxt').textContent = '앱 새 버전에서 로그인할 수 있어요 — 기록은 이 기기에 저장돼요'; }
   // 뒤로 버튼: 주행 중이면 일시정지, 창이 열려 있으면 닫기, 홈이면 종료 확인
   appUpdate();
   NP.App?.addListener('backButton', () => {
@@ -676,13 +675,13 @@ function boot() {
       store.set('bike2.history', m.history);
       applyLook(); if (q !== cfg.quality) applyQuality(); if (mode === 'menu') renderMenu();
     },
-    onStatus(text, st) { if (NATIVE) return; $('acctTxt').textContent = text; $('acctDot').className = 'dot ' + st; }, // 앱은 로그인 준비 중 안내 유지
+    onStatus(text, st) { if (NATIVE && !NP.FirebaseAuthentication) return; $('acctTxt').textContent = text; $('acctDot').className = 'dot ' + st; }, // 옛 껍데기(1번)는 새 버전 안내 유지
     onUser(u) {
       $('btnLogin').textContent = u ? '로그아웃' : '구글로 로그인';
       $('acctName').textContent = u ? (u.displayName || u.email || '로그인됨') + ' 님' : '로그인 안 됨';
     },
   });
-  $('btnLogin').onclick = async () => {
+  if (!NATIVE || NP.FirebaseAuthentication) $('btnLogin').onclick = async () => { // 옛 껍데기는 setupNative 의 안내를 그대로 둠
     if (!cloud) return toast('로그인 기능을 불러오지 못했어요');
     try { if (cloud.user) { await cloud.logout(); toast('로그아웃했어요. 이 기기 기록은 그대로 남아요'); } else await cloud.login(); }
     catch (e) { toast('로그인 실패: ' + (e.code || e.message), 5000); }

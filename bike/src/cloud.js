@@ -1,7 +1,7 @@
 // 구글 로그인 + 기록 함께 쓰기 (Firebase). PC·태블릿에서 같은 계정이면 레벨·보상·기록이 같아짐
 // 저장 구조: users/{uid} = 레벨·보상·최고기록·꾸미기,  users/{uid}/rides/{id} = 운동 기록 한 건씩
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged, getRedirectResult } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signInWithCredential, signOut, onAuthStateChanged, getRedirectResult } from 'firebase/auth';
 import { initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, deleteDoc, collection, getDocs, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { FIREBASE } from './firebaseConfig.js';
 
@@ -29,6 +29,15 @@ export function initCloud(hooks) {
   });
   return {
     async login() {
+      // 앱(안드로이드): 웹뷰 안에서는 구글이 로그인 창을 막음 → 기기 기본 구글 계정 고르기 창(네이티브)으로 받은 토큰으로 로그인 (2026-11-27)
+      if (window.Capacitor?.isNativePlatform?.()) {
+        const FA = window.Capacitor.Plugins?.FirebaseAuthentication;
+        if (!FA) throw Object.assign(new Error('이 앱 버전은 구글 로그인을 지원하지 않아요. 새 버전을 설치해 주세요'), { code: 'app/old-shell' });
+        const r = await FA.signInWithGoogle(); // skipNativeAuth: 토큰만 받고 로그인은 아래 웹 쪽에서
+        const idToken = r?.credential?.idToken; if (!idToken) return; // 사용자가 창을 닫음
+        await signInWithCredential(auth, GoogleAuthProvider.credential(idToken, r.credential.accessToken));
+        return;
+      }
       const p = new GoogleAuthProvider(); p.setCustomParameters({ prompt: 'select_account' });
       try { await signInWithPopup(auth, p); }
       catch (e) {
@@ -36,7 +45,7 @@ export function initCloud(hooks) {
         else if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') throw e;
       }
     },
-    logout: () => signOut(auth),
+    logout: async () => { try { await window.Capacitor?.Plugins?.FirebaseAuthentication?.signOut(); } catch (e) { /* 앱 아님 */ } await signOut(auth); }, // 앱은 기기 쪽 구글 선택도 풀어야 다음에 계정을 다시 고를 수 있음
     get user() { return user; },
     removeRide(id) { if (user) deleteDoc(doc(db, 'users', user.uid, 'rides', String(id))).catch((e) => console.warn('[del]', e)); },
     /** 기기에서 바뀐 내용을 올림 (잦은 저장을 3초 단위로 묶음) */

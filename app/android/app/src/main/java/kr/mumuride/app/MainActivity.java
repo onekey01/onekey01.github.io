@@ -1,4 +1,4 @@
-package kr.tongdol.muride;
+package kr.mumuride.app;
 
 import android.os.Bundle;
 import android.view.View;

@@ -16,6 +16,7 @@ echo [2/4] 앱 부품 설치
 call npm install --no-audit --no-fund || goto :err
 echo [3/4] 웹앱 파일을 앱으로 복사
 call npm run sync || goto :err
+if not exist android\app\google-services.json (echo google-services.json 이 없어요 - 구글 로그인이 안 되는 APK가 만들어져요. Firebase 콘솔 mumuride 프로젝트 안드로이드 앱 kr.mumuride.app 에서 받아 android\app 에 넣어 주세요 & goto :err)
 echo [4/4] APK 만들기 (처음엔 10분 넘게 걸릴 수 있어요)
 cd android
 if not exist local.properties powershell -NoProfile -Command "\"sdk.dir=$($env:ANDROID_HOME -replace '\\','\\')\" | Set-Content local.properties -Encoding ASCII"
