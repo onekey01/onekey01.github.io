@@ -5,7 +5,7 @@
 import fs from 'fs'; import path from 'path'; import crypto from 'crypto'; import { fileURLToPath } from 'url';
 import { skip } from './www-rules.mjs';
 const here = path.dirname(fileURLToPath(import.meta.url)), bike = path.join(here, '..', 'bike');
-const SHELL = 1; // 앱 껍데기 번호 = android/app/build.gradle 의 versionCode 와 같게 (올릴 때 둘 다)
+const SHELL = 2; // 앱 껍데기 번호 = android/app/build.gradle 의 versionCode 와 같게 (올릴 때 둘 다)
 const BASE = 'https://tongdol.kr/bike/';
 const files = [];
 (function walk(dir, rel) {
