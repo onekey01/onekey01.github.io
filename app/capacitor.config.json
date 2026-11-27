@@ -1,0 +1,7 @@
+{
+  "appId": "kr.tongdol.muride",
+  "appName": "무무 라이딩",
+  "webDir": "www",
+  "android": { "allowMixedContent": false, "backgroundColor": "#0b1220" },
+  "server": { "androidScheme": "https" }
+}

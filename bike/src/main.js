@@ -368,11 +368,30 @@ function renderMenu() {
   $('btnTest').classList.toggle('on', cfg.test);
 }
 
+/* ---------------- 안드로이드 앱(Capacitor)으로 실행될 때 ---------------- */
+const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const NP = NATIVE ? window.Capacitor.Plugins : {};
+function setupNative() {
+  document.body.classList.add('native');
+  $('btnFull').style.display = 'none'; // 앱은 늘 전체화면·가로 고정(네이티브 설정)
+  // 구글 로그인: 앱 안 웹뷰에서는 구글이 로그인 창을 막음 → 네이티브 로그인을 붙이기 전까지 안내만
+  $('btnLogin').onclick = () => toast('앱에서는 구글 로그인을 준비 중이에요. 기록은 이 태블릿에 저장돼요', 4500);
+  $('acctTxt').textContent = '앱 로그인 준비 중 — 기록은 이 기기에 저장돼요';
+  // 뒤로 버튼: 주행 중이면 일시정지, 창이 열려 있으면 닫기, 홈이면 종료 확인
+  NP.App?.addListener('backButton', () => {
+    const open = [...document.querySelectorAll('.modal.show')];
+    if (open.length) { open.forEach((m) => m.classList.remove('show')); if (mode === 'ride' && open.some((m) => m.id === 'mPause')) pause(false); return; }
+    if (mode === 'ride') { pause(true); return; }
+    $('btnExit').click();
+  });
+}
+
 /** 프로그램 종료 (2026-11-26 무무 님 요청). 웹앱은 브라우저가 창 닫기를 막을 수 있음 → 막히면 안내 */
 $('btnExit').onclick = () => { $('xInfo').textContent = '기록과 설정은 저장돼 있어요'; $('xYes').style.display = ''; $('mExit').classList.add('show'); };
 $('xNo').onclick = () => $('mExit').classList.remove('show');
 $('xYes').onclick = async () => {
   saveCfg(); saveProf(); await keepAwake(false);
+  if (NATIVE && NP.App) { await NP.App.exitApp(); return; } // 앱은 확실히 닫힘
   try { if (document.fullscreenElement) await document.exitFullscreen(); } catch (e) { /* 무시 */ }
   window.close();
   setTimeout(() => { // 아직 열려 있으면 브라우저가 막은 것
@@ -640,7 +659,8 @@ function boot() {
   applyLook(); setLevel(cfg.level, true); applyTest(); renderMenu();
 document.body.dataset.screen = 'menu';
 if (!navigator.bluetooth) { $('txtSensor').textContent = '블루투스 미지원 브라우저'; }
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator && !NATIVE) navigator.serviceWorker.register('sw.js').catch(() => {}); // 앱은 파일이 앱 안에 있어 필요 없음
+if (NATIVE) setupNative();
 $('loading').remove();
 requestAnimationFrame(loop);
 }

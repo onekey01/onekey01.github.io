@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">무무 라이딩</string>
+    <string name="title_activity_main">무무 라이딩</string>
+    <string name="package_name">kr.tongdol.muride</string>
+    <string name="custom_url_scheme">kr.tongdol.muride</string>
+</resources>

@@ -1,0 +1,20 @@
+{
+  "name": "muride-app",
+  "private": true,
+  "version": "0.1.0",
+  "description": "무무 라이딩 안드로이드 앱 (Capacitor로 bike/ 웹앱을 감쌈)",
+  "scripts": {
+    "www": "node prepare-www.mjs",
+    "sync": "node prepare-www.mjs && npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/app": "^6.0.2",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor-community/keep-awake": "^5.0.1",
+    "@capacitor-community/bluetooth-le": "^6.1.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  }
+}
