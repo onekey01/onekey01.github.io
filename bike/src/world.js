@@ -245,8 +245,27 @@ export function buildWorld(scene, course, renderer, sky, terr, hires) {
     demOff = new Float32Array(path.n + 1); const Wn = 150; let acc = 0, cnt = 0;
     for (let i = -Wn; i <= path.n + Wn; i++) { const a = i + Wn, b2 = i - Wn - 1; if (a >= 0 && a <= path.n) { acc += raw[a]; cnt++; } if (b2 >= 0 && b2 <= path.n) { acc -= raw[b2]; cnt--; } if (i >= 0 && i <= path.n) demOff[i] = acc / Math.max(1, cnt); }
   }
+  // 호수 물 (2026-11-27 의암호·보문호): 위성사진만으로는 호수가 땅처럼 보였음 → OSM 물 모양(course.lakes: { level(지형 자료 기준 m), rings: [[[경도,위도]...]] })으로
+  // 물 아래 땅은 수면 1.2 m 아래로 내리고, 수면은 판으로 덮음. 넓은 바다판(sea)과 달리 모양대로만 덮어 댐 아래 낮은 땅이 잠기지 않음
+  const lakes = (terr && course.lakes ? course.lakes : []).map((lk) => {
+    const toXZ = (r) => r.map(([lo, la]) => { const [x, z] = path.proj.fwd(lo, la); return [x * path.scale, z * path.scale]; });
+    const rings = lk.rings.map(toXZ), holes = (lk.holes || []).map(toXZ); // holes: 호수 안 섬
+    const all = rings.flat(), bx = { x0: Math.min(...all.map((p) => p[0])), x1: Math.max(...all.map((p) => p[0])), z0: Math.min(...all.map((p) => p[1])), z1: Math.max(...all.map((p) => p[1])) };
+    const cxz = [(bx.x0 + bx.x1) / 2, (bx.z0 + bx.z1) / 2], nr = path.nearest(cxz[0], cxz[1]);
+    return { rings, holes, bx, level: lk.level + (demOff ? demOff[nr.i] * Math.exp(-nr.dist / 1500) : 0) };
+  });
+  // 빠른 판정: 호수마다 8 m 칸 지도를 한 번 그려 둠 (풀·나무를 심을 때 매번 다각형 수천 점을 도는 대신) — 줄마다 변과 만나는 점을 찾아 짝수-홀수 규칙으로 칠함(섬은 자동으로 빠짐)
+  for (const L of lakes) {
+    const C = 8, nx = Math.ceil((L.bx.x1 - L.bx.x0) / C) + 1, nz = Math.ceil((L.bx.z1 - L.bx.z0) / C) + 1, m = new Uint8Array(nx * nz), xs = [];
+    for (let k = 0; k < nz; k++) { const zc = L.bx.z0 + (k + 0.5) * C; xs.length = 0;
+      for (const r of [...L.rings, ...L.holes]) for (let i = 0, j = r.length - 1; i < r.length; j = i++) { const [xi, zi] = r[i], [xj, zj] = r[j]; if ((zi > zc) !== (zj > zc)) xs.push(xi + ((xj - xi) * (zc - zi)) / (zj - zi)); }
+      xs.sort((p, q) => p - q);
+      for (let t = 0; t + 1 < xs.length; t += 2) { const a = Math.max(0, Math.ceil((xs[t] - L.bx.x0) / C - 0.5)), e = Math.min(nx - 1, Math.floor((xs[t + 1] - L.bx.x0) / C - 0.5)); for (let q = a; q <= e; q++) m[k * nx + q] = 1; } }
+    Object.assign(L, { C, nx, nz, m });
+  }
+  const lakeAt = (x, z) => { for (const L of lakes) { const q = Math.floor((x - L.bx.x0) / L.C), k = Math.floor((z - L.bx.z0) / L.C); if (q >= 0 && k >= 0 && q < L.nx && k < L.nz && L.m[k * L.nx + q]) return L; } return null; };
   const natural = (x, z, near) => {
-    if (terr) { const [lo, la] = path.lonlat(x, z); return demAt(terr, lo, la) + demOff[near.i] * Math.exp(-near.dist / 1500); }
+    if (terr) { const [lo, la] = path.lonlat(x, z), h = demAt(terr, lo, la) + demOff[near.i] * Math.exp(-near.dist / 1500), L = lakes.length ? lakeAt(x, z) : null; return L ? Math.min(h, L.level - 1.2) : h; }
     const n = noise(x, z), nearY = near.sy;
     if (thName === 'coast') { const inn = path.inside(x, z); return inn ? 8 + n * th.amp + Math.max(0, near.dist - 60) * 0.05 : 4 + n * 6 - Math.max(0, near.dist - 70) * 0.09; }
     if (thName === 'hills') return 45 + n * th.amp;
@@ -271,7 +290,10 @@ export function buildWorld(scene, course, renderer, sky, terr, hires) {
     const h = roadY + (natural(x, z, near) - roadY) * t + (farY - roadY) * Math.min(1, t * 2) * (1 - t);
     // 실제 지형 재발 방지: 길가 땅이 길보다 급하게 솟지 않게 (도시 지형 자료엔 건물 높이가 섞여 길이 묻혔음)
     const e = Math.max(0, near.dist - blend0); // 길가 상한을 매끈한 곡선으로 (꺾인 직선이면 비탈에 일직선 주름이 생겼음)
-    return terr ? Math.min(h, roadY + e * 0.3 + e * e * 0.025) : h;
+    const hT = terr ? Math.min(h, roadY + e * 0.3 + e * e * 0.025) : h;
+    // 호숫가 길: 길가 높이 맞춤 구간도 물 안에서는 수면 아래로 (길 옆 6 m 까지만 둑처럼 남김) — 의암호 서쪽 길이 물에서 80 m 떨어져 보였음 (2026-11-27)
+    if (lakes.length && near.dist > 6) { const L = lakeAt(x, z); if (L) return Math.min(hT, L.level - 1.2 + Math.max(0, 12 - near.dist) * 0.35); }
+    return hT;
   };
 
   // 지형 메쉬 + 색
@@ -341,6 +363,12 @@ export function buildWorld(scene, course, renderer, sky, terr, hires) {
     water.rotation.x = -Math.PI / 2; water.position.set((b.minX + b.maxX) / 2, lvl + 0.6, (b.minZ + b.maxZ) / 2); group.add(water);
   }
 
+  for (const L of lakes) { // 호수 수면: 물 모양 그대로
+    const wm = new THREE.MeshStandardMaterial({ color: th.seaColor ?? 0x3f7f9f, roughness: 0.12, metalness: 0.1, transparent: true, opacity: 0.93, normalMap: TEX.water || null, normalScale: new THREE.Vector2(0.35, 0.35) });
+    if (wm.normalMap) { wm.normalMap = wm.normalMap.clone(); wm.normalMap.repeat.set(1 / 40, 1 / 40); wm.normalMap.needsUpdate = true; }
+    for (const r of L.rings) { const sh = new THREE.Shape(r.map(([x, z]) => new THREE.Vector2(x, -z))); sh.holes = L.holes.map((h) => new THREE.Path(h.map(([x, z]) => new THREE.Vector2(x, -z)))); const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), wm); m.rotation.x = -Math.PI / 2; m.position.y = L.level + 0.25; m.userData.flow = true; group.add(m); }
+  }
+
   // 길 (한 방향 표본으로 한 번만 그림)
   const tex = roadTextureFor(roadRules(course)); const n = path.n, half = 4; // 나라별 차선 색
   const rp = new Float32Array((n + 1) * 6), uv = new Float32Array((n + 1) * 4), idx = [];
@@ -407,6 +435,7 @@ export function buildWorld(scene, course, renderer, sky, terr, hires) {
     if (th.flat && !parkInside && near.dist > 60) continue;
     const h = heightAt(x, z);
     if (sea && h < sea.level + 2) continue;
+    if (lakes.length && lakeAt(x, z)) continue; // 호수 위에 나무가 떠 있지 않게
     if (thName === 'coast' && h < 3) continue;
     if (th.treeLine && h > th.treeLine && !terr) continue;
     if (terr) { const g = groundAt(x, z); if (g.grass < 0.5 || rand() > 0.12 + g.forest * 0.88) continue; } // 위성사진의 숲에 빽빽이, 풀밭엔 드문드문
@@ -422,6 +451,7 @@ export function buildWorld(scene, course, renderer, sky, terr, hires) {
       let sx = path.z[i1] - path.z[i0], sz = -(path.x[i1] - path.x[i0]); const l = Math.hypot(sx, sz) || 1;
       const lat = 6.5 + Math.pow(rand(), 1.6) * 35, x = path.x[i] + (sx / l) * lat * sg, z = path.z[i] + (sz / l) * lat * sg;
       const gr = groundAt(x, z); if (gr.grass < 0.5 || path.nearest(x, z).dist < 6) continue;
+      if (lakes.length && lakeAt(x, z)) continue;
       if (th.flat && parkInside && !path.inside(x, z)) continue;
       if (th.treeLine && gr.y > th.treeLine + 150) continue;
       const k = SHR[Math.floor(rand() * SHR.length)], f = (0.8 + rand() * 1.1) / IMP[k].H; quat.setFromAxisAngle(up, rand() * 6.28);
@@ -447,6 +477,7 @@ export function buildWorld(scene, course, renderer, sky, terr, hires) {
       const x = path.x[i] + sx * lat * sg, z = path.z[i] + sz * lat * sg;
       if (path.nearest(x, z).dist < 5.5) continue;
       const gr = groundAt(x, z); if (sea && gr.y < sea.level + 0.5 && thName !== 'jeju') continue;
+      if (lakes.length && lakeAt(x, z)) continue;
       if (th.flat && parkInside && !path.inside(x, z)) continue;
       const big = far && mtn ? 2.5 + rand() * 5 : 0.35 + Math.pow(rand(), 2.2) * (mtn ? 2.6 : 1.4);
       quat.setFromEuler(new THREE.Euler((rand() - 0.5) * 0.4, rand() * 6.28, (rand() - 0.5) * 0.4));
@@ -460,7 +491,7 @@ export function buildWorld(scene, course, renderer, sky, terr, hires) {
 
   // 길가 풀숲 (라이더 주변만)
   const satCol = terr ? (x, z) => { const [lo, la] = path.lonlat(x, z), c = satAt(terr, lo, la); return new THREE.Color().setRGB(c[0], c[1], c[2], THREE.SRGBColorSpace); } : null;
-  const gc = new THREE.Color(th.grass), grass = makeGrass(path, terr ? groundFine : groundAt, { colorAt: satCol,
+  const gc = new THREE.Color(th.grass), grass = makeGrass(path, terr ? (lakes.length ? (x, z) => { const g = groundFine(x, z); return lakeAt(x, z) ? { ...g, grass: 0 } : g; } : groundFine) : groundAt, { colorAt: satCol,
     base: gc.clone().multiplyScalar(0.62).getHex(), tip: gc.clone().offsetHSL(-0.015, 0.06, 0.0).getHex(), max: 7000,
     avoid: (x, z) => (sea && groundAt(x, z).y < sea.level + 1.2) || (th.flat && parkInside && !path.inside(x, z)),
   }, TIME);
@@ -478,6 +509,7 @@ export function buildWorld(scene, course, renderer, sky, terr, hires) {
       if (parkInside && path.inside(x, z)) continue;
       const h0 = terr ? groundAt(x, z).y : heightAt(x, z);
       if (sea && h0 < sea.level + 3) continue;
+      if (lakes.length && lakeAt(x, z)) continue;
       if (terr) { const g = groundAt(x, z); if (g.grass > 0.35) continue; } // 위성사진에서 시가지(초록 아닌 곳)에만
       else if (th.city && h0 > th.cityBase + 10) continue;
       const far = smoothstep(40, 500, near.dist);

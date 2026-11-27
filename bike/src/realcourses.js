@@ -2,6 +2,7 @@
 // kind: 'outback' = 정상까지 갔다가 같은 길로 내려옴, 'loop' = 순환
 // 길 모양·거리·높이는 realpts.js 의 실측 자료(OSRM 경로 + Open-Meteo 고도)에서 가져옴
 import { REALDATA } from './realpts.js';
+import { LAKES } from './lakes.js';
 
 /** 실측 고도 표(같은 간격)를 0~1 위치로 읽는 함수 */
 // 재발 방지(2026-11-26 남산 「오르막·내리막 같은 지점에서 순간 저항」 제보): 50 m 간격 표를 직선으로 이으면
@@ -29,5 +30,11 @@ export const REAL = [
   { ...R('bunwon'), id: 'bunwon', country: 'KR', name: '분원리 순환', region: '국내', flag: '🇰🇷', sub: '하남 → 분원리 → 팔당호 강변, 수도권 라이더의 성지', kind: 'loop', theme: 'lake', sea: { dir: [0.2, -1], level: 25 }, turnName: '분원리 반환점', note: '퇴촌~분원리는 같은 길 왕복 · 실측 지도·고도',
     dirs: [['내륙 → 분원리 → 강변', '43번 하남대로로 가서 45번 태허정로 팔당호 강변으로 돌아와요'], ['강변 → 분원리 → 내륙', '45번 태허정로 팔당호 강변으로 가서 43번 하남대로로 돌아와요']] },
   { ...R('olympic'), id: 'olympic', country: 'KR', name: '올림픽공원 순환', region: '국내', flag: '🇰🇷', sub: '공원 둘레를 도는 평지 순환', kind: 'loop', theme: 'seoulFlat', parkInside: true, note: '실측 지도·고도' },
+  // ---------- 관광지 (2026-11-27 무무 님 요청: 경주·춘천·강릉·한강) ----------
+  { ...R('gyeongju'), id: 'gyeongju', country: 'KR', area: '경상', name: '경주 보문호·불국사', region: '국내', flag: '🇰🇷', sub: '보문호 한 바퀴 뒤 보불로 따라 불국사까지', kind: 'loop', theme: 'lake', lakes: LAKES.gyeongju, turnName: '불국사 반환점', note: '보문관광단지~불국사는 같은 길 왕복 · 실측 지도·고도',
+    dirs: [['보문호 한 바퀴 → 불국사', '보문호를 먼저 돌고 불국사에 다녀와요'], ['불국사 → 보문호 한 바퀴', '불국사에 먼저 다녀온 뒤 보문호를 반대로 돌아요']] },
+  { ...R('chuncheon'), id: 'chuncheon', country: 'KR', area: '강원', name: '춘천 의암호 순환', region: '국내', flag: '🇰🇷', sub: '공지천·의암댐·신매대교, 호반 도시 한 바퀴', kind: 'loop', theme: 'lake', lakes: LAKES.chuncheon, note: '실측 지도·고도' },
+  { ...R('gangneung'), id: 'gangneung', country: 'KR', area: '강원', name: '강릉 경포호·해변', region: '국내', flag: '🇰🇷', sub: '경포대에서 호수를 돌고 경포해변 바닷길로', kind: 'loop', theme: 'lake', sea: { dir: [1, 0.3], level: 0 }, note: '실측 지도·고도' },
+  { ...R('hangang'), id: 'hangang', country: 'KR', area: '수도권', name: '한강 여의도~반포', region: '국내', flag: '🇰🇷', sub: '한강 남쪽 자전거길, 여의도에서 세빛섬까지', kind: 'outback', theme: 'seoulFlat', summit: '반포 세빛섬', note: '실측 지도·고도' },
   { ...R('jeju2'), id: 'jeju2', country: 'KR', name: '제주 동쪽 해안 순환', region: '국내', flag: '🇰🇷', sub: '함덕·김녕·월정리·세화 바다와 중산간', kind: 'loop', theme: 'jeju', sea: { dir: [0, -1], level: 0 }, note: '실측 지도·고도' },
 ];
