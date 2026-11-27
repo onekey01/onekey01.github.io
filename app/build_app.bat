@@ -11,6 +11,8 @@ if not exist C:\gtmp mkdir C:\gtmp
 set "GRADLE_OPTS=-Djdk.net.unixdomain.tmpdir=C:\gtmp -Djava.net.preferIPv4Stack=true"
 set "JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=C:\gtmp"
 echo [1/4] 최신 코드 받기
+rem 재발 방지(2026-11-27): npm install 이 바꿔 둔 package-lock.json 때문에 최신 코드 받기가 멈췄음 → 받기 전에 되돌림
+git -C .. checkout -- app/package-lock.json
 git -C .. pull --ff-only
 echo [2/4] 앱 부품 설치
 call npm install --no-audit --no-fund || goto :err
