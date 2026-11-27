@@ -347,7 +347,7 @@ function renderMenu() {
   $('mLevel').textContent = lv.level; $('mXpBar').style.width = (lv.into / lv.need) * 100 + '%';
   $('mXp').textContent = `${Math.floor(lv.into)} / ${lv.need} 경험치`;
   const nr = nextReward(lv.level); $('mNext').textContent = nr ? `다음 보상: Lv ${nr.L} ${nr.t}` : '모든 보상을 모았어요!';
-  const tabs = ['가상', '해외', '국내', '순환'];
+  const tabs = ['가상', '해외', '국내', '순환'].filter((t) => COURSES.some((c) => c.tab === t)); // 코스가 없는 탭(숨긴 해외)은 안 보임
   if (!tabs.includes(cfg.tab)) cfg.tab = course.tab;
   $('tabs').innerHTML = tabs.map((t) => `<button class="${t === cfg.tab ? 'sel' : ''}" data-tab="${t}">${{ 가상: '🎮 가상 코스', 해외: '🌍 해외 명소', 국내: '🇰🇷 국내 명소', 순환: '🔁 순환 코스' }[t]}</button>`).join('');
   const box = $('courses'); box.innerHTML = '';
@@ -645,7 +645,7 @@ function boot() {
       store.set('bike2.history', m.history);
       applyLook(); if (q !== cfg.quality) applyQuality(); if (mode === 'menu') renderMenu();
     },
-    onStatus(text, st) { $('acctTxt').textContent = text; $('acctDot').className = 'dot ' + st; },
+    onStatus(text, st) { if (NATIVE) return; $('acctTxt').textContent = text; $('acctDot').className = 'dot ' + st; }, // 앱은 로그인 준비 중 안내 유지
     onUser(u) {
       $('btnLogin').textContent = u ? '로그아웃' : '구글로 로그인';
       $('acctName').textContent = u ? (u.displayName || u.email || '로그인됨') + ' 님' : '로그인 안 됨';
@@ -658,7 +658,7 @@ function boot() {
   };
   applyLook(); setLevel(cfg.level, true); applyTest(); renderMenu();
 document.body.dataset.screen = 'menu';
-if (!navigator.bluetooth) { $('txtSensor').textContent = '블루투스 미지원 브라우저'; }
+if (!navigator.bluetooth) { $('txtSensor').textContent = NATIVE ? '센서 연결 준비 중' : '블루투스 미지원 브라우저'; }
 if ('serviceWorker' in navigator && !NATIVE) navigator.serviceWorker.register('sw.js').catch(() => {}); // 앱은 파일이 앱 안에 있어 필요 없음
 if (NATIVE) setupNative();
 $('loading').remove();

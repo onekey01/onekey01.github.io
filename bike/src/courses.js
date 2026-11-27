@@ -40,7 +40,9 @@ function normalize(c) {
   return c;
 }
 VIRTUAL.forEach((c) => { c.tab = '가상'; c.kind = 'loop'; c.flag = '🎮'; c.country = 'KR'; /* 가상 코스는 한국 도로 규칙 */ if (typeof c.summit === 'number') { c.summitAt = c.summit; c.summit = '무무 고개 정상'; } });
-export const COURSES = [...VIRTUAL, ...REAL.map(normalize)];
+// 2026-11-27 무무 님 결정: 코스를 한국으로 제한(해외 코스는 지우지 않고 숨김). 다시 열려면 SHOW_ABROAD = true
+export const SHOW_ABROAD = false;
+export const COURSES = [...VIRTUAL, ...REAL.map(normalize)].filter((c) => SHOW_ABROAD || c.country === 'KR');
 
 /** 순환 코스 방향 (2026-11-26 무무 님 요청: 순환 코스는 고를 때 방향 선택창)
  *  'rev'면 출발점은 그대로 두고 반대 방향으로 도는 코스를 만들어 줌. 기록은 recId(id@rev)로 따로 */
