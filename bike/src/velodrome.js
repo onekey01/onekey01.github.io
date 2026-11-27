@@ -85,6 +85,10 @@ export function buildVelodrome(scene, course, renderer) {
   // 광고판 글자 방향: 띠의 무늬는 진행 방향으로 깔려서, 도는 방향이 바뀌면 글자가 좌우로 뒤집힘 (2026-11-27 반시계로 바꾼 뒤 무무 님 지적)
   // → 고정값이 아니라 안쪽 방향(inside)으로 정함: 반시계(-1)면 가로로 뒤집기. 어느 방향 코스를 만들어도 글자가 바로 읽힘
   fence.material.map.repeat.set(inside, 1);
+  // 광고판 뒷면에 글자가 거꾸로 비치지 않게 (2026-11-27 태블릿 메뉴 화면에서 관중석 쪽으로 돈 카메라에 뒤집힌 글자가 보였음):
+  // 앞면만 트랙 쪽으로 그리고(면 방향은 도는 방향에 따라 바뀌므로 법선으로 판단), 뒤쪽엔 무늬 없는 판을 한 겹 더 댐
+  { const nA = fence.geometry.attributes.normal, o0 = outV(0); fence.material.side = (nA.getX(0) * -o0[0] + nA.getZ(0) * -o0[1]) > 0 ? THREE.FrontSide : THREE.BackSide;
+    strip((i) => { const e = onTrack(i, top), o = outV(i); return [[e[0] + o[0] * 0.05, e[1], e[2] + o[1] * 0.05], [e[0] + o[0] * 0.05, e[1] + 1.1, e[2] + o[1] * 0.05]]; }, new THREE.MeshStandardMaterial({ color: 0x2a2e36, roughness: 0.8 })); }
   strip((i) => { const e = onTrack(i, top), o = outV(i); return [[e[0], e[1] + 1.1, e[2]], [e[0] + o[0] * 0.25, e[1] + 1.12, e[2] + o[1] * 0.25]]; }, new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.6, roughness: 0.3 }));
   // 결승선: 트랙 위에 흰 띠(가운데 검정)
   { const pts = [], k = 0; for (let c = 0; c <= LAT; c++) { const s = VELO.inner + ((VELO.outer - VELO.inner) * c) / LAT, a = onTrack(k, s), b = onTrack(k + 1, s); pts.push(a, b); }
