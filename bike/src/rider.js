@@ -160,6 +160,7 @@ export class Rider {
 
     // ---------- 사람 ----------
     const human0 = this.body.children.length; // 여기부터 붙는 것은 「도형 사람」 — 아바타를 쓰면 숨김
+    this.bikeParts = this.body.children.slice(0, human0); // 자전거 (캐릭터 만들기 화면에서는 숨김)
     const HIPC = V(0, 1.035, -0.195), SHC = V(0, 1.335, 0.2);
     this.hipL = V(-0.092, HIPC.y - 0.01, HIPC.z + 0.02); this.hipR = V(0.092, HIPC.y - 0.01, HIPC.z + 0.02);
     // 몸통 (사이클복): [t, 반폭, 배 쪽 두께, 등 쪽 두께]
@@ -225,9 +226,17 @@ export class Rider {
   setAvatar(av) {
     if (this.avatar) this.body.remove(this.avatar.box);
     this.avatar = av || null; for (const m of this.humanParts) m.visible = !av;
-    if (av) { this.body.add(av.box); av.fit({ legLen: this.L1 + this.L2, hipMid: V(0, 1.03, -0.185), hood: HOOD, BB, CRANK, pedX: 0.115, lean: [36, 44, 50, 54, 22, 6] }); }
+    if (av) { this.body.add(av.box); this.standing = false; av.box.position.set(0, 0, 0); av.box.rotation.y = 0; /* 전에 서 있던 자리가 남지 않게 */ av.fit({ legLen: this.L1 + this.L2, hipMid: V(0, 1.03, -0.185), hood: HOOD, BB, CRANK, pedX: 0.115, lean: [36, 44, 50, 54, 22, 6] }); }
     this.fp = undefined; this.updateLegs();
   }
+  /** 메뉴·캐릭터 만들기에서는 자전거 옆에 자연스럽게 서 있음 */
+  setStand(on) { // 2026-11-28 무무 님: 첫 화면은 자전거 옆에 서 있다가, 코스를 고르고 달리기를 누르면 자전거에 탐
+    this.standing = !!on; const b = this.avatar?.box;
+    if (b) { b.position.set(on ? 0.62 : 0, 0, on ? 0.12 : 0); b.rotation.y = on ? 0.35 : 0; } // 자전거 왼쪽 옆, 몸을 살짝 바깥으로 틀어 섬
+    this.updateLegs();
+  }
+  /** 키: 자전거까지 통째로 키움·줄임 (무무 님 결정: 「자전거도 키에 맞춰 크기 조절」). 몸 원점이 바닥(바퀴 닿는 곳)이라 바퀴는 땅에 그대로 붙음 */
+  setHeight(h = 1) { this.body.scale.setScalar(h); this.height = h; }
   /** 바이커 시선(1인칭)이면 머리·윗몸을 숨김 (카메라가 머리 자리에 있음) */
   setFP(fp) {
     if (this.avatar) { this.avatar.setFP(fp); return; }
@@ -260,7 +269,7 @@ export class Rider {
     }
     this.crankG.rotation.x = -this.crank;
     for (const p of this.pedals) p.rotation.x = this.crank; // 페달은 수평 유지
-    if (this.avatar) this.avatar.pose(this.crank);
+    if (this.avatar) { if (this.standing) this.avatar.poseStand(); else this.avatar.pose(this.crank); }
   }
   /** dt 초, cadence rpm, speed m/s */
   animate(dt, cadence, speed) {

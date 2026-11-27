@@ -99,6 +99,11 @@ body.testing #testPanel{display:flex}
 #levelUp.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
 #levelUp .big{font-size:22px;font-weight:800}#levelUp .num{font-size:80px;font-weight:900;line-height:1}#levelUp .un{font-size:17px;margin-top:8px}
 /* 창 */
+.sheet .lead{color:var(--sub);font-size:15px;line-height:1.6;margin:0 0 6px}.seg{display:flex;gap:8px}.seg button{min-width:64px}.seg button.sel{background:var(--accent);color:#1b1300;border-color:transparent;font-weight:800}#mBody .sheet{width:min(620px,94%)}
+body.av #menu{display:none}.modal.side{justify-content:flex-end;background:linear-gradient(90deg,transparent 38%,rgba(0,0,0,.55))}.modal.side .sheet{width:min(560px,50%);max-height:96%;margin-right:1.5%;padding:18px 20px}.modal.side h3{margin:12px 0 6px}
+.pal{display:flex;flex-wrap:wrap;gap:8px}.pal button{width:44px;height:44px;border-radius:50%;padding:0;border:3px solid rgba(255,255,255,.22);position:relative}.pal button span{position:absolute;left:50%;top:100%;transform:translateX(-50%);font-size:11px;color:var(--sub);white-space:nowrap;display:none}.pal button.sel{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,176,32,.4)}.pal button.sel span{display:block}.pal{padding-bottom:14px}
+#avShape .sl{display:grid;grid-template-columns:88px 40px 1fr 40px;align-items:center;gap:6px;margin:4px 0}#avShape .sl small{color:var(--sub);font-size:13px;text-align:center}#avShape input{width:100%;accent-color:var(--accent);height:28px}
+#avNick{width:100%;font-size:18px;padding:10px 12px;border-radius:12px;background:#0f1720;color:#fff;border:1px solid var(--line)}
 .modal{position:fixed;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:30}
 .modal.show{display:flex}
 .sheet{background:#16212d;border:1px solid var(--line);border-radius:20px;width:min(860px,94%);max-height:92%;overflow:auto;padding:22px}
@@ -202,17 +207,45 @@ td em{font-style:normal;font-size:12px;background:rgba(255,176,32,.25);color:var
 <div id="levelUp"><div class="big">레벨 업!</div><div class="num" id="lvNum">2</div><div class="un" id="lvUnlock"></div></div>
 </div><!-- /ui -->
 
+<div class="modal fit side" id="mAvatar"><div class="sheet">
+  <h2 id="avTitle">내 캐릭터 만들기</h2>
+  <p class="lead">고르면 왼쪽 캐릭터가 바로 바뀌어요. 나중에 「꾸미기」에서 다시 바꿀 수 있어요.</p>
+  <h3>별명</h3><input id="avNick" maxlength="12" placeholder="예: 무무 (비워 두면 구글 이름)">
+  <h3>성별</h3><div class="seg" id="avModel"></div>
+  <h3>체형</h3><div id="avShape"></div>
+  <h3>피부</h3><div class="pal" id="avSkin"></div>
+  <h3>머리 색</h3><div class="pal" id="avHair"></div>
+  <h3>눈 색</h3><div class="pal" id="avEye"></div>
+  <h3>반팔티</h3><div class="pal" id="avShirt"></div>
+  <h3>반바지</h3><div class="pal" id="avShorts"></div>
+  <p class="lead" style="margin-top:12px">🥣 헬멧은 처음엔 박 바가지예요. 진짜 헬멧과 다른 옷은 레벨 보상으로 받아요.</p>
+  <div class="actions"><button id="avCancel">취소</button><button class="primary" id="avSave">저장</button></div>
+</div></div>
+
 <div class="modal fit" id="mLocker"><div class="sheet">
-  <h2 style="display:flex;justify-content:space-between;align-items:center">꾸미기 <button class="primary" data-close>닫기</button></h2>
+  <h2 style="display:flex;justify-content:space-between;align-items:center;gap:10px">꾸미기 <span style="display:flex;gap:8px"><button id="btnAvatar">🧑 캐릭터 바꾸기</button><button class="primary" data-close>닫기</button></span></h2>
   <h3>저지 (옷 색)</h3><div class="grid" id="jerseys"></div>
   <h3>자전거 색</h3><div class="grid" id="bikes"></div>
+</div></div>
+
+<div class="modal fit" id="mBody"><div class="sheet">
+  <h2>내 몸 정보</h2>
+  <p class="lead">소모 칼로리를 계산하는 데 쓰여요. 심박이 들어오면 체중·나이·성별로, 심박이 없을 때는 키·체중으로 계산해요.<br>캐릭터(아바타)와는 관계없어요. 입력하지 않아도 되고, 그러면 평균값으로 계산해 칼로리에 「추정」이 붙어요. 설정에서 언제든 고칠 수 있어요.</p>
+  <div class="row"><div class="d">체중 (kg)<small>오르막 가상 속도에도 쓰여요</small></div><input type="number" id="bWeight" step="0.1" min="30" max="200" inputmode="decimal"></div>
+  <div class="row"><div class="d">키 (cm)</div><input type="number" id="bHeight" step="1" min="100" max="230" inputmode="numeric"></div>
+  <div class="row"><div class="d">태어난 해</div><input type="number" id="bBirth" step="1" min="1920" max="2025" inputmode="numeric" placeholder="예: 1988"></div>
+  <div class="row"><div class="d">성별</div><div class="seg" id="bSex"><button data-v="m">남</button><button data-v="f">여</button></div></div>
+  <div class="actions"><button id="bSkip">건너뛰기</button><button class="primary" id="bSave">저장</button></div>
 </div></div>
 
 <div class="modal fit" id="mSettings"><div class="sheet">
   <h2>설정</h2>
   <div class="row"><div class="d">실제 날씨 연동<small>코스 현지의 지금 날씨(비·눈·안개·구름)와 바람을 그대로 가져옵니다. 맞바람이면 느려지고 뒷바람이면 빨라져요. 끄면 늘 맑고 바람이 없어요.</small></div><input type="checkbox" id="sWeather" style="width:34px;height:34px"></div>
   <div class="row"><div class="d">그래픽 품질<small>「높음」은 그림자와 선명한 화면, 「보통」은 그림자를 끄고 가볍게 돌아갑니다. 태블릿이 버벅이면 자동으로 「보통」으로 바뀌어요.</small></div><select id="sQuality" style="font-size:18px;padding:8px;border-radius:10px;background:#0f1720;color:#fff;border:1px solid var(--line)"><option value="high">높음</option><option value="low">보통</option></select></div>
-  <div class="row"><div class="d">몸무게 (kg)<small>오르막에서 가상 속도를 계산할 때 씁니다. 무거울수록 오르막에서 느려져요.</small></div><input type="number" id="sWeight" step="1" min="30" max="200"></div>
+  <div class="row"><div class="d">몸무게 (kg)<small>소모 칼로리 계산과 오르막 가상 속도에 씁니다. 무거울수록 오르막에서 느려져요.</small></div><input type="number" id="sWeight" step="0.1" min="30" max="200"></div>
+  <div class="row"><div class="d">키 (cm)<small>심박이 없을 때 칼로리 계산(기초대사량)에 씁니다. 비워 두면 평균값으로 계산해요.</small></div><input type="number" id="sHeight" step="1" min="100" max="230" placeholder="비어 있음"></div>
+  <div class="row"><div class="d">태어난 해<small>심박으로 칼로리를 계산할 때 나이로 씁니다.</small></div><input type="number" id="sBirth" step="1" min="1920" max="2025" placeholder="비어 있음"></div>
+  <div class="row"><div class="d">성별<small>칼로리 계산식이 남녀가 달라요. 캐릭터 성별과는 관계없어요.</small></div><div class="seg" id="sSex"><button data-v="m">남</button><button data-v="f">여</button><button data-v="">비움</button></div></div>
   <div class="row"><div class="d">플라이휠 ÷ 페달 회전 비율<small>센서를 플라이휠 축(스피드 모드)에 달았을 때만 씁니다. 크랭크에 달았다면 무시해도 돼요. 모르면 「비율 맞추기」를 누르세요.</small></div><input type="number" id="sRatio" step="0.01" min="1" max="10"></div>
   <div class="row"><div class="d">레벨·보상 처음으로<small>시험 모드로 쌓인 경험치까지 지우고 레벨 1부터 다시 시작합니다. 운동 기록 목록은 남아요.</small></div><button id="btnReset">처음으로</button></div>
   <div class="actions"><button id="btnCalib">비율 맞추기</button><button data-close>닫기</button><button class="primary" id="btnSaveSettings">저장</button></div>

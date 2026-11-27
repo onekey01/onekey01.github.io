@@ -4,6 +4,7 @@ import { COURSES, courseStats, drawProfile, withDir, dirLabels, REGIONS } from '
 import { buildWorld, skyFor } from './world.js';
 import { buildVelodrome, veloLean } from './velodrome.js';
 import { loadAvatar } from './avatar.js';
+import { MODELS, SKINS, HAIRS, EYES, SHIRTS, SHORTS, SHAPES, DEFAULT_LOOK } from './looks.js';
 import { loadSky } from './sky.js';
 import { makePost } from './post.js';
 import { loadImpostors, TIME } from './impostor.js';
@@ -79,7 +80,16 @@ addEventListener('orientationchange', () => setTimeout(() => { resize(); fitUI()
 
 const rider = new Rider(); scene.add(rider.root);
 // 아바타(VRoid CC0 모델) — 2026-11-28 무무 님이 올리기로 정해 기본으로 켬(DEF.avatar = 'm1'). 캐릭터 만들기 화면(2단계)이 생기면 그 선택을 따름
-function applyAvatar() { const id = cfg.avatar; if (!id) { rider.setAvatar(null); return; } loadAvatar(`avatar/${id}.glb`).then((a) => rider.setAvatar(a)).catch((e) => console.warn('[avatar]', e)); }
+// 모습은 cfg.look (캐릭터 만들기에서 고름, 없으면 DEFAULT_LOOK). 모델은 한 번 불러오면 담아 두고 다시 씀(성별을 바꿔도 다시 받지 않음)
+const avCache = {}, lookOf = () => ({ ...DEFAULT_LOOK, ...(cfg.look || {}) });
+function applyAvatar(look = lookOf()) {
+  const id = look.model || cfg.avatar; if (!id) { rider.setAvatar(null); return; }
+  const put = (a) => { a.applyLook(look); if (rider.avatar !== a) rider.setAvatar(a); rider.setHeight(look.shape?.height ?? 1); rider.updateLegs(); };
+  if (avCache[id]) return put(avCache[id]);
+  if (avDraft) toast('캐릭터 불러오는 중…', 2500);
+  avLoad(id).then((a) => { if ((avDraft || lookOf()).model === id) put(a); }).catch((e) => console.warn('[avatar]', e));
+}
+const avLoad = (id) => (avCache['_' + id] ||= loadAvatar(`avatar/${id}.glb`).then((a) => (avCache[id] = a)));
 applyAvatar();
 rider.root.traverse((o) => { if (o.isMesh) o.castShadow = true; });
 rider.blob = rider.root.children[rider.root.children.length - 1]; rider.blob.castShadow = false;
@@ -290,6 +300,12 @@ function updateCamera(dt, menu) {
   if (sc) { if (sc.cr !== null) { rider.crank = sc.cr; rider.updateLegs(); } const a = THREE.MathUtils.degToRad(sc.ang) + rider.root.rotation.y, rp = rider.root.position;
     const at = new THREE.Vector3(...(sc.at || [0, 0.75, 0])).applyAxisAngle(new THREE.Vector3(0, 1, 0), rider.root.rotation.y).add(rp); // at: 자전거 기준 바라볼 점
     camera.position.set(at.x + Math.sin(a) * sc.dist, rp.y + sc.hgt, at.z + Math.cos(a) * sc.dist); camera.lookAt(at); return; }
+  setAvatarView(menu && avCam);
+  if (menu && avCam) { // 캐릭터 만들기: 캐릭터를 가까이, 오른쪽 선택 창을 피해 화면 왼쪽에 보이게 천천히 돎
+    const t = performance.now() / 1000 * 0.25, a = rider.root.rotation.y + 0.7 + Math.sin(t) * 0.45, rp = rider.avatar ? rider.avatar.box.getWorldPosition(new THREE.Vector3()) : rider.root.position; // 자전거 옆에 선 캐릭터를 가운데로
+    camera.position.set(rp.x + Math.sin(a) * 2.5, rp.y + 1.3, rp.z + Math.cos(a) * 2.5); camera.lookAt(rp.x, rp.y + 0.98, rp.z);
+    return; // 카메라는 키와 상관없이 고정 — 키 막대를 움직이면 크기 차이가 그대로 보이게 (2026-11-28: 키에 맞춰 움직였더니 차이가 안 보였음)
+  }
   if (menu) {
     const t = performance.now() / 1000 * 0.15, r = 9;
     P.cam.set(rider.root.position.x + Math.sin(t) * r, rider.root.position.y + 3.2, rider.root.position.z + Math.cos(t) * r);
@@ -455,6 +471,41 @@ function openDir(c, i, el) {
   $('mDir').classList.add('show');
 }
 
+/* ---------------- 캐릭터 만들기 (2026-11-28, 결정 사항: tools/bike/PLAN-profile.md) ----------------
+   첫 로그인 때 신체정보 다음에 한 번 뜨고, 「꾸미기」에서 다시 열 수 있음. 고르면 바로 캐릭터에 입혀 보여 주고, 저장해야 cfg.look·cfg.nick 에 남음 */
+let avDraft = null, avCam = false, avFirst = false, avViewOn = false;
+function setAvatarView(on) { // 화면을 왼쪽으로 밀어 캐릭터가 선택 창에 가리지 않게
+  if (on === avViewOn) return; avViewOn = on; const w = innerWidth, h = innerHeight;
+  if (on) camera.setViewOffset(w, h, w * 0.22, 0, w, h); else camera.clearViewOffset();
+}
+const hex6 = (c) => '#' + c.toString(16).padStart(6, '0');
+function renderAvatarUI() {
+  $('avModel').innerHTML = MODELS.map((m) => `<button data-v="${m.id}" class="${avDraft.model === m.id ? 'sel' : ''}">${m.name}</button>`).join('');
+  const pal = (id, list, key) => ($(id).innerHTML = list.map((it) => `<button data-k="${key}" data-c="${it.c}" title="${it.name}" class="${avDraft[key] === it.c ? 'sel' : ''}" style="background:${hex6(it.c)}"><span>${it.name}</span></button>`).join(''));
+  $('avShape').innerHTML = SHAPES.map((x) => `<div class="sl"><b>${x.name}</b><small>${x.left}</small><input type="range" data-s="${x.k}" min="${x.lo}" max="${x.hi}" step="0.01" value="${avDraft.shape?.[x.k] ?? 1}"><small>${x.right}</small></div>`).join('');
+  pal('avSkin', SKINS, 'skin'); pal('avHair', HAIRS, 'hair'); pal('avEye', EYES, 'eye'); pal('avShirt', SHIRTS, 'shirt'); pal('avShorts', SHORTS, 'shorts');
+}
+function openAvatar(first) {
+  avFirst = !!first; avDraft = { ...lookOf() }; avDraft.shape = { ...DEFAULT_LOOK.shape, ...(avDraft.shape || {}) }; for (const m of MODELS) avLoad(m.id).catch(() => {}); // 다른 성별 모델도 미리 불러 둠 → 누르면 바로 바뀜 $('avNick').value = cfg.nick || '';
+  $('avCancel').textContent = first ? '기본 모습으로 시작' : '취소'; $('avTitle').textContent = first ? '내 캐릭터 만들기' : '캐릭터 바꾸기';
+  renderAvatarUI(); avCam = true; $('mLocker').classList.remove('show'); $('mAvatar').classList.add('show'); document.body.classList.add('av'); // 메뉴를 숨겨 캐릭터가 가리지 않게 (data-screen 을 바꾸면 달리기 화면이 보임)
+}
+function closeAvatar(save) {
+  if (save) { cfg.look = JSON.parse(JSON.stringify(avDraft)); cfg.nick = $('avNick').value.trim().slice(0, 12); } // JSON: 계정 저장소는 빈 값(undefined)을 못 받음
+  if (save || avFirst) cfg.avatarDone = true;
+  saveCfg(); avDraft = null; avCam = false; $('mAvatar').classList.remove('show'); document.body.classList.remove('av'); applyAvatar(); showName();
+  toast(save ? '캐릭터를 저장했어요. 「꾸미기」에서 다시 바꿀 수 있어요' : avFirst ? '기본 모습으로 시작해요. 「꾸미기」에서 언제든 바꿀 수 있어요' : '바꾸지 않았어요', 3500);
+}
+$('mAvatar').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b || !avDraft) return;
+  if (b.parentElement.id === 'avModel') avDraft.model = b.dataset.v; else if (b.dataset.k) avDraft[b.dataset.k] = +b.dataset.c; else return;
+  renderAvatarUI(); applyAvatar(avDraft);
+});
+$('avShape').addEventListener('input', (e) => { const k = e.target.dataset.s; if (!k || !avDraft) return; avDraft.shape = { ...avDraft.shape, [k]: +e.target.value }; applyAvatar(avDraft); }); // 막대: 그리기만 다시 함(목록은 그대로)
+$('avSave').onclick = () => closeAvatar(true); $('avCancel').onclick = () => closeAvatar(false);
+$('btnAvatar').onclick = () => openAvatar(false);
+function showName() { const u = cloud?.user; $('acctName').textContent = u ? (cfg.nick || u.displayName || u.email || '로그인됨') + ' 님' : '로그인 안 됨'; }
+
 /* ---------------- 꾸미기 ---------------- */
 function renderLocker() {
   const L = levelOf(prof.xp).level;
@@ -548,12 +599,43 @@ $('btnCsv').onclick = () => {
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = '무무라이딩_기록.csv'; a.click();
 };
 
+/* ---------------- 신체정보 (2026-11-27 무무 님 결정: tools/bike/PLAN-profile.md) ----------------
+   첫 구글 로그인 직후, 캐릭터 만들기보다 먼저 한 번 물음. 건너뛸 수 있고 설정에서 언제든 고침. 아바타와는 관계없음.
+   값: cfg.weight(kg) · cfg.height(cm) · cfg.birthYear · cfg.sex('m'|'f') — 비우면 null. 물어봤는지는 cfg.bodyAsked (계정에 저장 → 다른 기기에서 다시 묻지 않음) */
+const setSeg = (id, v) => $(id).querySelectorAll('button').forEach((b) => b.classList.toggle('sel', b.dataset.v === v));
+document.querySelectorAll('.seg').forEach((g) => g.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setSeg(g.id, b.dataset.v); }));
+/** 입력 칸 읽기 (p = 'b' 신체정보 창 / 's' 설정). 범위를 벗어나거나 비우면 null (체중은 비우면 그대로 둠) */
+function readBody(p) {
+  const n = (id, lo, hi) => { const v = parseFloat($(id).value); return isFinite(v) && v >= lo && v <= hi ? v : null; };
+  const w = n(p + 'Weight', 30, 200), out = { height: n(p + 'Height', 100, 230), birthYear: n(p + 'Birth', 1920, new Date().getFullYear() - 5) };
+  if (w !== null) { out.weight = w; out.weightSet = true; }
+  const sx = $(p + 'Sex').querySelector('.sel')?.dataset.v; out.sex = sx || null;
+  return out;
+}
+function openBody() { $('bWeight').value = cfg.weightSet ? cfg.weight : ''; // 직접 넣은 적 없으면 비움 — 앱 기본값 70 이 실제 체중처럼 저장되지 않게 (2026-11-28)
+   $('bHeight').value = cfg.height ?? ''; $('bBirth').value = cfg.birthYear ?? ''; setSeg('bSex', cfg.sex ?? ''); $('mBody').classList.add('show'); }
+function closeBody(save) {
+  if (save) Object.assign(cfg, readBody('b'));
+  cfg.bodyAsked = true; saveCfg(); $('mBody').classList.remove('show');
+  toast(save ? '저장했어요. 설정에서 언제든 고칠 수 있어요' : '건너뛰었어요. 설정에서 언제든 넣을 수 있어요', 3500);
+  maybeOnboard();
+}
+$('bSave').onclick = () => closeBody(true); $('bSkip').onclick = () => closeBody(false);
+/** 처음 로그인했을 때 차례대로: 신체정보 → (2단계) 캐릭터 만들기. 달리는 중에는 끝난 뒤로 미룸 */
+function maybeOnboard() {
+  if (!cloud?.user || mode === 'ride' || document.querySelector('.modal.show')) return;
+  if (!cfg.bodyAsked) return openBody();
+  if (!cfg.avatarDone) return openAvatar(true);
+}
+
 /* ---------------- 설정 ---------------- */
-function openSettings() { $('sWeather').checked = cfg.realWeather !== false; $('sQuality').value = cfg.quality; $('sWeight').value = cfg.weight; $('sRatio').value = cfg.ratio; $('mSettings').classList.add('show'); }
+function openSettings() { $('sWeather').checked = cfg.realWeather !== false; $('sQuality').value = cfg.quality; $('sWeight').value = cfg.weightSet ? cfg.weight : ''; $('sWeight').placeholder = '비어 있음 (계산은 ' + cfg.weight + ')'; $('sRatio').value = cfg.ratio;
+  $('sHeight').value = cfg.height ?? ''; $('sBirth').value = cfg.birthYear ?? ''; setSeg('sSex', cfg.sex ?? ''); $('mSettings').classList.add('show'); }
 $('btnSaveSettings').onclick = () => {
   const num = (id, d, lo, hi) => { const v = parseFloat($(id).value); return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
   if ($('sQuality').value !== cfg.quality) { cfg.quality = $('sQuality').value; autoDone = true; applyQuality(); }
-  cfg.weight = num('sWeight', DEF.weight, 30, 200); cfg.ratio = num('sRatio', DEF.ratio, 1, 10);
+  cfg.ratio = num('sRatio', DEF.ratio, 1, 10); // 몸무게는 아래 readBody 가 읽음 (비우면 그대로)
+  Object.assign(cfg, readBody('s'));
   const rw = $('sWeather').checked; if (rw !== cfg.realWeather) { cfg.realWeather = rw; saveCfg(); loadCourse(cfg.course).then(() => { if (mode === 'menu') renderMenu(); toast(wxText(), 4000); }); }
   saveCfg();
   $('mSettings').classList.remove('show'); toast('설정을 저장했어요');
@@ -639,7 +721,7 @@ $('btnLocker').onclick = () => { renderLocker(); $('mLocker').classList.add('sho
 $('btnHistory').onclick = showHistory;
 $('btnSettings').onclick = openSettings;
 $('btnFull').onclick = goLandscape;
-document.querySelectorAll('[data-close]').forEach((b) => (b.onclick = () => b.closest('.modal').classList.remove('show')));
+document.querySelectorAll('[data-close]').forEach((b) => (b.onclick = () => { b.closest('.modal').classList.remove('show'); maybeOnboard(); })); // 달린 뒤 결과 창을 닫으면 미뤄 둔 첫 로그인 질문을 이어서
 document.querySelectorAll('.modal').forEach((m) => m.addEventListener('click', (e) => { if (e.target !== m) return; if (m.id === 'mPause') pause(false); else m.classList.remove('show'); })); // 일시정지 창 바깥을 누르면 이어 타기
 addEventListener('beforeunload', (e) => { if (mode === 'ride' && ride.moving > 10) { e.preventDefault(); e.returnValue = ''; } });
 // 처음 화면을 누르면 가로·전체화면 시도 (안드로이드 크롬)
@@ -661,6 +743,7 @@ function loop() {
   else { cadence = 0; grade = world.path.grade(ride.d); }
   placeRider();
   rider.animate(dt, mode === 'ride' ? cadence : 0, mode === 'ride' ? ride.v : 0);
+  if (rider.avatar && rider.standing !== (mode !== 'ride')) rider.setStand(mode !== 'ride'); // 메뉴에서는 자전거 옆에 서 있고, 달릴 때만 탐
   updateCamera(dt, mode === 'menu');
   world.followSun(rider.root.position);
   autoQuality(dt);
@@ -681,11 +764,13 @@ function boot() {
       const q = cfg.quality; Object.assign(cfg, m.cfg); store.set('bike2.cfg', cfg);
       store.set('bike2.history', m.history);
       applyLook(); if (q !== cfg.quality) applyQuality(); if (mode === 'menu') renderMenu();
+      applyAvatar(); showName();
+      maybeOnboard(); // 계정 자료를 맞춘 뒤에 물음 (다른 기기에서 이미 답했으면 묻지 않음)
     },
     onStatus(text, st) { if (NATIVE && !NP.FirebaseAuthentication) return; $('acctTxt').textContent = text; $('acctDot').className = 'dot ' + st; }, // 옛 껍데기(1번)는 새 버전 안내 유지
     onUser(u) {
       $('btnLogin').textContent = u ? '로그아웃' : '구글로 로그인';
-      $('acctName').textContent = u ? (u.displayName || u.email || '로그인됨') + ' 님' : '로그인 안 됨';
+      showName();
     },
   });
   if (!NATIVE || NP.FirebaseAuthentication) $('btnLogin').onclick = async () => { // 옛 껍데기는 setupNative 의 안내를 그대로 둠
@@ -701,4 +786,4 @@ if (NATIVE) setupNative();
 $('loading').remove();
 requestAnimationFrame(loop);
 }
-window.__bike = { ride, cfg, COURSES, roadRules, get course() { return course; }, get rider() { return rider; }, get post() { return post; }, get world() { return world; } }; // 시험용
+window.__bike = { ride, cfg, COURSES, roadRules, openBody, openSettings, openAvatar, avCache, get course() { return course; }, get rider() { return rider; }, get post() { return post; }, get world() { return world; } }; // 시험용

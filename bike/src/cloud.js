@@ -58,7 +58,7 @@ export function initCloud(hooks) {
   };
 }
 
-const LOOK = ['jersey', 'bike', 'weight', 'ratio', 'quality'];
+const LOOK = ['jersey', 'bike', 'weight', 'ratio', 'quality', 'height', 'birthYear', 'sex', 'bodyAsked', 'weightSet', 'look', 'nick', 'avatarDone']; // 신체정보(2026-11-27)도 계정에 저장해 기기끼리 같게
 const profileDoc = (local) => ({ xp: local.prof.xp, best: local.prof.best, done: local.prof.done, look: Object.fromEntries(LOOK.map((k) => [k, local.cfg[k]])), updatedAt: serverTimestamp() });
 
 /** 이 기기 자료와 계정 자료를 합침: 경험치는 큰 쪽, 최고 기록은 빠른 쪽, 완주 표시는 둘 다, 운동 기록은 합집합 */
