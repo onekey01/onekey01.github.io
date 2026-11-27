@@ -378,6 +378,7 @@ function setupNative() {
   $('btnLogin').onclick = () => toast('앱에서는 구글 로그인을 준비 중이에요. 기록은 이 태블릿에 저장돼요', 4500);
   $('acctTxt').textContent = '앱 로그인 준비 중 — 기록은 이 기기에 저장돼요';
   // 뒤로 버튼: 주행 중이면 일시정지, 창이 열려 있으면 닫기, 홈이면 종료 확인
+  appUpdate();
   NP.App?.addListener('backButton', () => {
     const open = [...document.querySelectorAll('.modal.show')];
     if (open.length) { open.forEach((m) => m.classList.remove('show')); if (mode === 'ride' && open.some((m) => m.id === 'mPause')) pause(false); return; }
@@ -386,10 +387,35 @@ function setupNative() {
   });
 }
 
+/** 앱 자동 업데이트 (2026-11-27 무무 님 결정 ①: 화면·코스는 자동, 앱 껍데기만 가끔 설치)
+ *  tongdol.kr/bike/app-update.json 의 web 값이 지금과 다르면 바뀐 파일만 받아 바꿈. shell 값이 더 크면 새 APK 설치 안내 */
+async function appUpdate() {
+  const UP = NP.CapacitorUpdater; if (!UP) return;
+  try { await UP.notifyAppReady(); } catch (e) { /* 무시 */ } // 이 호출이 없으면 새 내용이 고장 난 것으로 보고 이전으로 되돌림
+  try {
+    const remote = await (await fetch('https://tongdol.kr/bike/app-update.json', { cache: 'no-store' })).json();
+    const info = await NP.App.getInfo(), shell = +info.build || 1;
+    if (remote.shell > shell) { showShellUpdate(remote.apk); return; }
+    if (remote.minShell > shell) return;
+    const cur = (await UP.current()).bundle;
+    const mine = cur && cur.version !== 'builtin' ? cur.version : (await (await fetch('app-update.json', { cache: 'no-store' })).json()).web;
+    if (remote.web === mine) return;
+    const b = await UP.download({ url: remote.base, version: remote.web, manifest: remote.files });
+    if (mode === 'menu') { toast('새 업데이트를 적용해요', 2000); setTimeout(() => UP.set({ id: b.id }), 1500); }
+    else { await UP.next({ id: b.id }); toast('업데이트를 받아 두었어요. 다음에 켤 때 바뀌어요', 4000); }
+  } catch (e) { /* 인터넷이 없거나 서버 문제면 지금 내용 그대로 씀 */ }
+}
+function showShellUpdate(url) {
+  $('xInfo').innerHTML = '새 버전 앱이 나왔어요.<br><small>설치 파일을 받은 뒤 열어서 「업데이트」를 눌러 주세요. 기록은 그대로 남아요</small>';
+  $('xYes').textContent = '새 버전 받기'; $('xYes').style.display = '';
+  $('xYes').onclick = () => { window.open(url, '_system'); $('mExit').classList.remove('show'); };
+  $('mExit').querySelector('h2').textContent = '앱 업데이트'; $('mExit').classList.add('show');
+}
+
 /** 프로그램 종료 (2026-11-26 무무 님 요청). 웹앱은 브라우저가 창 닫기를 막을 수 있음 → 막히면 안내 */
-$('btnExit').onclick = () => { $('xInfo').textContent = '기록과 설정은 저장돼 있어요'; $('xYes').style.display = ''; $('mExit').classList.add('show'); };
+$('btnExit').onclick = () => { $('mExit').querySelector('h2').textContent = '무무 라이딩을 끝낼까요?'; $('xYes').textContent = '끝내기'; $('xYes').onclick = exitApp; $('xInfo').textContent = '기록과 설정은 저장돼 있어요'; $('xYes').style.display = ''; $('mExit').classList.add('show'); };
 $('xNo').onclick = () => $('mExit').classList.remove('show');
-$('xYes').onclick = async () => {
+const exitApp = async () => {
   saveCfg(); saveProf(); await keepAwake(false);
   if (NATIVE && NP.App) { await NP.App.exitApp(); return; } // 앱은 확실히 닫힘
   try { if (document.fullscreenElement) await document.exitFullscreen(); } catch (e) { /* 무시 */ }
