@@ -18,7 +18,7 @@ echo [3/4] 웹앱 파일을 앱으로 복사
 call npm run sync || goto :err
 echo [4/4] APK 만들기 (처음엔 10분 넘게 걸릴 수 있어요)
 cd android
-if not exist local.properties powershell -NoProfile -Command "\"sdk.dir=$($env:ANDROID_HOME -replace '\\\\','\\\\')\" | Set-Content local.properties -Encoding ASCII"
+if not exist local.properties powershell -NoProfile -Command "\"sdk.dir=$($env:ANDROID_HOME -replace '\\','\\')\" | Set-Content local.properties -Encoding ASCII"
 call gradlew.bat assembleDebug --no-daemon -q || goto :err
 cd ..
 copy /y android\app\build\outputs\apk\debug\app-debug.apk muride-debug.apk >nul
