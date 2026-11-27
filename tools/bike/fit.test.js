@@ -7,7 +7,8 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const sizes=[[1280,800],[1280,680],[1024,600],[962,601],[1138,712],[1920,1080],[1848,1155],[915,412],[800,500],[1366,1024],[2000,1200]];
 const check=(sel,groups)=>{const out=[];const W=innerWidth,H=innerHeight;
  for(const b of document.querySelectorAll(sel)){const r=b.getBoundingClientRect();if(!r.width||!b.offsetParent)continue;
-  if(r.left<-1||r.top<-1||r.right>W+1||r.bottom>H+1)out.push('밖: '+(b.id||b.textContent.trim().slice(0,10)));}
+  const sc=b.closest('#courses'); // 코스 카드 줄은 옆으로 넘겨 보는 칸(overflow-x:auto) — 가로로 넘친 카드는 정상, 세로만 검사 (2026-11-27 가상 코스 4개)
+  if((!sc&&(r.left<-1||r.right>W+1))||r.top<-1||r.bottom>H+1)out.push('밖: '+(b.id||b.textContent.trim().slice(0,10)));}
  const rs=groups.map(id=>[id,document.getElementById(id).getBoundingClientRect()]);
  for(let i=0;i<rs.length;i++)for(let j=i+1;j<rs.length;j++){const a=rs[i][1],c=rs[j][1];
   if(a.left<c.right-2&&c.left<a.right-2&&a.top<c.bottom-2&&c.top<a.bottom-2)out.push('겹침: '+rs[i][0]+'↔'+rs[j][0]);}

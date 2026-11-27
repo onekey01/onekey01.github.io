@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { COURSES, courseStats, drawProfile, withDir, dirLabels, REGIONS } from './courses.js';
 import { buildWorld, skyFor } from './world.js';
+import { buildVelodrome } from './velodrome.js';
 import { loadSky } from './sky.js';
 import { makePost } from './post.js';
 import { loadImpostors, TIME } from './impostor.js';
@@ -86,12 +87,13 @@ function applyLook() {
 /* 날씨: 실제 날씨 연동(기본) 또는 늘 맑음. 가상 코스는 실제 장소가 없어 서울 날씨를 씀 */
 let WX = null, wxKind = 'clear', windV = new THREE.Vector2(), precip = null;
 async function getWeather(c) {
-  if (!cfg.realWeather) return null;
+  if (!cfg.realWeather || c.indoor) return null; // 실내 코스(벨로드롬)는 날씨 없음
   if (window.__wx) return window.__wx; // 시험용: 날씨 흉내
   const [lon, lat] = c.pts ? c.pts[0] : [126.978, 37.5665];
   return fetchWeather(lat, lon);
 }
 function applyWeather() {
+  if (course.indoor) { wxKind = 'clear'; windV = new THREE.Vector2(); WIND.value = 0; if (precip) { scene.remove(precip.obj); precip.dispose(); precip = null; } return; } // 실내: 날씨·바람 끔
   wxKind = classify(WX); windV = cfg.realWeather ? windVec(WX) : new THREE.Vector2(); WIND.value = Math.min(1, windV.length() / 12);
   world.setWeather(wxKind);
   if (precip) { scene.remove(precip.obj); precip.dispose(); precip = null; }
@@ -99,6 +101,7 @@ function applyWeather() {
 }
 const wxSkyName = (c, kind) => (kind === 'clear' ? skyFor(c) : kind === 'cloudy' ? 'cloudy' : 'overcast');
 function wxText() {
+  if (course?.indoor) return '🏟️ 실내 · 날씨·바람 없음';
   if (!cfg.realWeather) return '☀️ 맑음 (실제 날씨 꺼짐)';
   if (!WX) return '☀️ 맑음 (날씨를 못 받아옴)';
   const [ic, ko] = KIND_KO[wxKind]; return `${ic} ${ko} ${Math.round(WX.temp)}°C · 바람 ${WX.wind.toFixed(1)} m/s`;
@@ -107,11 +110,11 @@ function wxText() {
 async function loadCourse(i) {
   const c0 = COURSES[i]; WX = await getWeather(c0);
   if (!cfg.dirs) cfg.dirs = {};
-  const c = withDir(c0, cfg.dirs[c0.id]), [sky, terr] = await Promise.all([loadSky(wxSkyName(c, classify(WX)), renderer), loadTerrain(c.id, cfg.quality !== 'low', renderer, !!c.sea || ['coast', 'jeju', 'lake'].includes(c.theme))]);
+  const c = withDir(c0, cfg.dirs[c0.id]), [sky, terr] = c0.indoor ? [null, null] : await Promise.all([loadSky(wxSkyName(c, classify(WX)), renderer), loadTerrain(c.id, cfg.quality !== 'low', renderer, !!c.sea || ['coast', 'jeju', 'lake'].includes(c.theme))]);
   if (world) world.dispose();
   course = c; cfg.course = i; cfg.courseId = course.id; saveCfg();
   const hires = terr ? await loadHiresIndex(c) : null; if (hires) hires.size = cfg.quality !== 'low' ? 2048 : 1024;
-  world = buildWorld(scene, course, renderer, sky, terr, hires);
+  world = course.indoor ? buildVelodrome(scene, course, renderer) : buildWorld(scene, course, renderer, sky, terr, hires);
   minimap.setCourse(world.path, terr);
   $('credit').textContent = (hires ? HIRES_CREDIT + ' · ' : '') + (terr ? SAT_CREDIT + ' · ' : '') + (c.real ? '도로: © OpenStreetMap 기여자 (ODbL) · ' : '') + (cfg.realWeather && WX ? '날씨: MET Norway (CC BY 4.0)' : ''); // 출처 표시 (라이선스 조건)
   applyWeather();
@@ -189,7 +192,8 @@ function step(dt) {
   if (lap > ride.laps) {
     ride.laps = lap; const lapTime = ride.moving - ride.lapStart; ride.lapStart = ride.moving;
     ride.climbStart = ride.moving;
-    let bonus = 30, msg = P0.outback ? `왕복 ${lap}회 완주! ${fmtTime(lapTime)}` : `${lap}바퀴 완주! 기록 ${fmtTime(lapTime)}`;
+    // 짧은 바퀴(벨로드롬 250 m)는 바퀴 보너스를 길이에 비례해 줄임 — 20초마다 30 경험치가 쌓이지 않게 (2 km 미만만)
+    let bonus = world.path.length < 2000 ? Math.max(1, Math.round((30 * world.path.length) / 2000)) : 30, msg = P0.outback ? `왕복 ${lap}회 완주! ${fmtTime(lapTime)}` : `${lap}바퀴 완주! 기록 ${fmtTime(lapTime)}`;
     const rk = course.recId || course.id; // 순환 코스는 방향마다 기록 따로
     if (!prof.done[rk]) { bonus += 100; prof.done[rk] = true; msg += ' · 첫 완주 보너스'; }
     if (!P0.outback) { const best = prof.best[rk]; if (!best || lapTime < best) { prof.best[rk] = Math.round(lapTime); if (best) msg += ' · 최고 기록 갱신!'; } }
@@ -256,8 +260,9 @@ function placeRider() {
   // 통행 방향은 나라별 도로 규칙(roads.js). 진행 방향의 오른쪽 = 진행 방향 × 위쪽 = (-dz, 0, dx)
   // ※ 예전엔 이 벡터에 -1.6을 곱해 왼쪽 차선을 달렸음 (2026-11-26 무무 님 지적). 아래 laneCheck 가 매 코스마다 확인
   const side = new THREE.Vector3(-dir.z / flat, 0, dir.x / flat);
-  rider.root.position.copy(P.pos).addScaledVector(side, LANE_OFFSET * laneSign(roadRules(course))); rider.root.position.y += 0.12; // 좌측통행 나라면 왼쪽 차선
-  rider.root.rotation.set(0, Math.atan2(dir.x, dir.z), 0);
+  rider.root.position.copy(P.pos).addScaledVector(side, (course.lane ?? LANE_OFFSET) * laneSign(roadRules(course))); rider.root.position.y += 0.12; // 좌측통행 나라면 왼쪽 차선 (벨로드롬은 lane 0: 경기선 위)
+  // 벨로드롬: 뱅크 경사면에 맞춰 몸·자전거를 안쪽으로 기울임 (inside +1 = 진행 방향 오른쪽이 안쪽, rotation.z 양수 = 오른쪽)
+  rider.root.rotation.set(0, Math.atan2(dir.x, dir.z), world.bankAt ? world.inside * world.bankAt(ride.d) : 0, 'YXZ');
   rider.body.rotation.x = -Math.atan2(dir.y, flat);
   return side;
 }
@@ -355,14 +360,14 @@ function renderMenu() {
     if (c.tab !== cfg.tab) return;
     const rev = c.kind === 'loop' && (cfg.dirs || {})[c.id] === 'rev', rk = c.id + (rev ? '@rev' : ''), cd = withDir(c, rev ? 'rev' : 'fwd');
     const st = courseStats(cd), best = prof.best[rk];
-    const one = c.kind === 'outback' && c.real, dl = c.kind === 'loop' ? dirLabels(c)[rev ? 1 : 0][0] : '';
+    const one = c.kind === 'outback' && c.real, dl = c.oneway ? '실내 · 한 방향' : c.kind === 'loop' ? dirLabels(c)[rev ? 1 : 0][0] : '';
     const el = document.createElement('div'); el.className = 'course' + (i === cfg.course ? ' sel' : '');
     el.innerHTML = `<div class="cname">${c.flag || ''} ${c.name}</div><div class="csub">${c.sub}</div><canvas width="300" height="64"></canvas>
       <div class="cstat"><span>${one ? '편도 ' + (c.len / 1000).toFixed(1) : (c.length / 1000).toFixed(1)} km</span><span>오르막 ${st.climb} m</span><span>최대 ${st.maxGrade.toFixed(0)}%</span></div>
       <div class="ctag">${c.real ? (one ? '왕복' : '순환 · ' + dl) + ' · 실제 지도' + (c.note ? ' · ' + c.note : '') : '가상 코스 · ' + dl}</div>
       <div class="cbest">${best ? (one ? '내 최고 오르막 ' : '내 최고 ') + fmtTime(best) : prof.done[rk] ? '' : '첫 완주 보너스 +100'}</div>`;
     drawProfile(el.querySelector('canvas'), cd);
-    el.onclick = () => { if (c.kind === 'loop') { openDir(c, i, el); return; } if (cfg.course !== i) { el.classList.add('loading'); setTimeout(async () => { await loadCourse(i); ride.d = 0; renderMenu(); toast(wxText(), 3000); }, 30); } };
+    el.onclick = () => { if (c.kind === 'loop' && !c.oneway) { openDir(c, i, el); return; } if (cfg.course !== i) { el.classList.add('loading'); setTimeout(async () => { await loadCourse(i); ride.d = 0; renderMenu(); toast(wxText(), 3000); }, 30); } };
     box.appendChild(el);
   });
   $('btnTest').classList.toggle('on', cfg.test);

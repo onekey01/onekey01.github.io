@@ -1,6 +1,10 @@
 // 코스 정의: 가상 코스(평면 모양 + 높이 함수) + 실제 코스(realcourses.js)
 import { REAL } from './realcourses.js';
 const TAU = Math.PI * 2;
+/** 육상 트랙 모양(직선 둘 + 반원 둘). 직선 한가운데에서 출발. 반원 반지름 R, 직선 길이 S, 점 n개 */
+const stadium = (R, S, n) => { const L = 2 * S + 2 * Math.PI * R; return Array.from({ length: n }, (_, i) => { let t = ((i / n) * L + S / 2) % L;
+  if (t < S) return [t - S / 2, -R]; t -= S; if (t < Math.PI * R) { const a = -Math.PI / 2 + t / R; return [S / 2 + R * Math.cos(a), R * Math.sin(a)]; } t -= Math.PI * R;
+  if (t < S) return [S / 2 - t, R]; t -= S; const a = Math.PI / 2 + t / R; return [-S / 2 + R * Math.cos(a), R * Math.sin(a)]; }); };
 const ring = (n, f) => Array.from({ length: n }, (_, i) => f((i / n) * TAU));
 
 const VIRTUAL = [
@@ -24,6 +28,13 @@ const VIRTUAL = [
       const sp = s < 0.55 ? (0.5 * s) / 0.55 : 0.5 + (0.5 * (s - 0.55)) / 0.45;
       return 40 + 220 * (1 - Math.cos(TAU * sp)) / 2;
     },
+  },
+  {
+    // 2026-11-27 무무 님 요청: 실내 벨로드롬 — 250 m 나무 트랙(커브 뱅크 42°), 지붕·조명·관중석. 실내라서 날씨·바람 없음
+    id: 'velodrome', name: '실내 벨로드롬', sub: '250 m 나무 트랙 · 뱅크 커브 · 날씨·바람 없음', length: 250,
+    theme: 'indoor', indoor: true, oneway: true, lane: 0,
+    shape: stadium(25, 46.5, 240),
+    elev: () => 0,
   },
 ];
 
