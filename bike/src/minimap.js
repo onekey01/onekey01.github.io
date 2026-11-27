@@ -3,12 +3,13 @@
 export function makeMinimap(mapCv, cmpCv) {
   const mg = mapCv.getContext('2d'), cg = cmpCv.getContext('2d');
   let path = null, route = null, done = null, img = null, aff = null, lastDraw = 0;
-  const RANGE = 420; // 미니맵 반지름이 보여 주는 거리 (m)
+  let RANGE = 420; // 미니맵 반지름이 보여 주는 거리 (m) — 작은 코스(벨로드롬 250 m)는 코스 크기에 맞춰 확대 (2026-11-27 「미니맵에 아주 작게 보임」)
 
   return {
     /** 코스가 바뀔 때: 길 모양을 미리 그려 두고, 위성사진이 있으면 세계 좌표 → 사진 좌표 변환을 구해 둠 */
     setCourse(p, terr) {
       path = p; route = new Path2D(); const st = 4;
+      const bx = p.box; RANGE = bx ? Math.min(420, Math.max(70, 0.75 * Math.max(bx.maxX - bx.minX, bx.maxZ - bx.minZ))) : 420;
       for (let i = 0; i <= p.n; i += st) (i ? route.lineTo(p.x[i], p.z[i]) : route.moveTo(p.x[i], p.z[i]));
       img = null; aff = null;
       if (terr && terr.sat?.image) {

@@ -3,13 +3,14 @@
 // buildWorld 와 같은 모양의 값을 돌려줌: { path, group, heightAt, groundAt, sun, followSun, grass, setWeather, patch, dispose, bankAt }
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Path } from './world.js';
 
 const DEG = Math.PI / 180;
-export const VELO = { inner: -1.0, outer: 6.0, bankMax: 42, bankMin: 12, R: 25 }; // 라이더 선(0)에서 안쪽 1 m · 바깥 6 m (트랙 폭 7 m)
+export const VELO0 = { inner: -1.0, outer: 6.0, bankMax: 42, bankMin: 12, R: 25 }; // 라이더 선(0)에서 안쪽 1 m · 바깥 6 m (트랙 폭 7 m)
 
 /** 나무 판재 + 경기선(검정 측정선·빨강 스프린터선·파랑 스테이어선) 무늬. 가로 = 트랙 폭, 세로 = 진행 방향 */
-function trackTexture() {
+function trackTexture(VELO) {
   const W = 512, H = 512, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d');
   const span = VELO.outer - VELO.inner, X = (s) => ((s - VELO.inner) / span) * W;
   let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -35,13 +36,20 @@ function boardTexture() {
   const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; return t;
 }
 
-export function buildVelodrome(scene, course, renderer) {
-  const path = new Path(course), n = path.n, group = new THREE.Group();
-  // 안쪽이 진행 방향의 오른쪽(+1)인지 왼쪽(-1)인지: 트랙 가운데가 어느 쪽에 있나
-  let cx = 0, cz = 0; for (let i = 0; i < n; i++) { cx += path.x[i]; cz += path.z[i]; } cx /= n; cz /= n;
+/** 길의 접선 T·오른쪽 R 과, 안쪽이 진행 방향의 오른쪽(+1)인지 왼쪽(-1)인지 (트랙 가운데가 어느 쪽에 있나)
+ *  실제 벨로드롬은 반시계(안쪽 = 왼쪽, -1). tools/bike/velodrome.test.mjs 가 모든 실내 코스에서 -1 인지 확인 */
+export function trackFrame(path) {
+  const n = path.n; let cx = 0, cz = 0; for (let i = 0; i < n; i++) { cx += path.x[i]; cz += path.z[i]; } cx /= n; cz /= n;
   const T = [], R = [];
   for (let i = 0; i <= n; i++) { const a = (i - 1 + n) % n, b = (i + 1) % n; const tx = path.x[b] - path.x[a], tz = path.z[b] - path.z[a], l = Math.hypot(tx, tz) || 1; T.push([tx / l, tz / l]); R.push([-tz / l, tx / l]); }
   const inside = Math.sign((cx - path.x[0]) * R[0][0] + (cz - path.z[0]) * R[0][1]) || 1;
+  return { T, R, inside, cx, cz };
+}
+
+export function buildVelodrome(scene, course, renderer) {
+  const path = new Path(course), n = path.n, group = new THREE.Group();
+  const VELO = { ...VELO0, ...(course.velo || {}) }; // 코스마다 반지름·뱅크 (250 m: 반지름 25·42°, 400 m: 36·32°)
+  const { T, R, inside, cx, cz } = trackFrame(path);
   // 뱅크 각: 굽은 정도(곡률)로 커브 42° · 직선 12°, 앞뒤 ±12 m 를 부드럽게 이음(실제 트랙의 완화곡선처럼)
   const raw = new Float32Array(n);
   for (let i = 0; i < n; i++) { const a = T[(i - 1 + n) % n], b = T[(i + 1) % n]; const k = Math.abs(a[0] * b[1] - a[1] * b[0]) / (2 * path.step); raw[i] = Math.min(1, k * VELO.R); }
@@ -65,7 +73,7 @@ export function buildVelodrome(scene, course, renderer) {
     mat.side = THREE.DoubleSide; const m = new THREE.Mesh(geo, mat); m.receiveShadow = opts.recv !== false; m.castShadow = !!opts.cast; group.add(m); return m;
   }
   // 1) 나무 트랙
-  const wood = trackTexture();
+  const wood = trackTexture(VELO);
   const LAT = 14; // 가로 나눔 (경사면이 매끈하게)
   strip((i) => Array.from({ length: LAT + 1 }, (_, c) => onTrack(i, VELO.inner + ((VELO.outer - VELO.inner) * c) / LAT)), new THREE.MeshStandardMaterial({ map: wood, roughness: 0.42, metalness: 0 }), 4);
   // 2) 안쪽 파란 띠(코트 다쥐르) → 안쪽 바닥까지 내려가는 경사
@@ -74,7 +82,9 @@ export function buildVelodrome(scene, course, renderer) {
   // 3) 바깥 펜스(광고판) + 위 난간
   const top = VELO.outer;
   const fence = strip((i) => { const e = onTrack(i, top); return [e, [e[0], e[1] + 1.1, e[2]]]; }, new THREE.MeshStandardMaterial({ map: boardTexture(), roughness: 0.5 }), 30, { swap: true });
-  fence.material.map.repeat.set(1, 1);
+  // 광고판 글자 방향: 띠의 무늬는 진행 방향으로 깔려서, 도는 방향이 바뀌면 글자가 좌우로 뒤집힘 (2026-11-27 반시계로 바꾼 뒤 무무 님 지적)
+  // → 고정값이 아니라 안쪽 방향(inside)으로 정함: 반시계(-1)면 가로로 뒤집기. 어느 방향 코스를 만들어도 글자가 바로 읽힘
+  fence.material.map.repeat.set(inside, 1);
   strip((i) => { const e = onTrack(i, top), o = outV(i); return [[e[0], e[1] + 1.1, e[2]], [e[0] + o[0] * 0.25, e[1] + 1.12, e[2] + o[1] * 0.25]]; }, new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.6, roughness: 0.3 }));
   // 결승선: 트랙 위에 흰 띠(가운데 검정)
   { const pts = [], k = 0; for (let c = 0; c <= LAT; c++) { const s = VELO.inner + ((VELO.outer - VELO.inner) * c) / LAT, a = onTrack(k, s), b = onTrack(k + 1, s); pts.push(a, b); }
@@ -92,17 +102,34 @@ export function buildVelodrome(scene, course, renderer) {
   const ROWS = 12, rowH = 0.42, rowD = 0.85, base = Math.max(...Array.from({ length: n }, (_, i) => onTrack(i, top)[1])) + 1.1;
   const standPos = (i, r) => { const e = onTrack(i, top), o = outV(i); const k = 1.2 + r * rowD; return [e[0] + o[0] * k, base + r * rowH, e[2] + o[1] * k]; };
   strip((i) => { const P = []; for (let r = 0; r <= ROWS; r++) { const a = standPos(i, r); P.push([a[0], a[1] - rowH, a[2]], a); } return P; }, new THREE.MeshStandardMaterial({ color: 0x3a3f4a, roughness: 0.8 }), 4);
-  { // 좌석 색: 줄마다 파랑·진파랑, 관중은 듬성듬성
+  { // 관중석: 줄마다 파란 좌석 + 앉은 사람(몸통·머리·팔) — 상자 관중이 단순해 보인다는 평가로 바꿈 (2026-11-27)
     let seed = 3; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-    const box = new THREE.BoxGeometry(0.42, 0.75, 0.32), mat = new THREE.MeshStandardMaterial({ roughness: 0.8 }), list = [];
-    for (let i = 0; i < n; i += 1) for (let r = 0; r < ROWS; r++) for (let k = 0; k < 3; k++) if (rnd() < 0.55) list.push([i, r, k]);
-    const im = new THREE.InstancedMesh(box, mat, list.length), M = new THREE.Matrix4(), Q = new THREE.Quaternion(), col = new THREE.Color();
-    const shirt = [0xe63946, 0x1d3557, 0xf1faee, 0x2a9d8f, 0xf4a261, 0x222222, 0xffd166, 0x8d99ae];
-    list.forEach(([i, r, k], m) => { const a = standPos(i, r + 0.5), t = T[i], o = outV(i); const off = (k - 1) * 0.66;
-      Q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(-o[0], -o[1]));
-      M.compose(new THREE.Vector3(a[0] + t[0] * off, a[1] + 0.2, a[2] + t[1] * off), Q, new THREE.Vector3(1, 0.85 + rnd() * 0.3, 1)); im.setMatrixAt(m, M);
-      im.setColorAt(m, col.setHex(shirt[Math.floor(rnd() * shirt.length)])); });
-    im.castShadow = false; im.receiveShadow = true; group.add(im);
+    const seats = [], people = [];
+    for (let i = 0; i < n; i++) for (let r = 0; r < ROWS; r++) for (let k = 0; k < 3; k++) { seats.push([i, r, k]); if (rnd() < 0.62) people.push([i, r, k]); }
+    const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), col = new THREE.Color(), UPY = new THREE.Vector3(0, 1, 0), S1 = new THREE.Vector3(1, 1, 1), V = new THREE.Vector3();
+    const at = (i, r, k, dy, fwd = 0) => { const a = standPos(i, r), t = T[i], o = outV(i), off = (k - 1) * 0.66; return V.set(a[0] + t[0] * off - o[0] * fwd, a[1] + dy, a[2] + t[1] * off - o[1] * fwd); };
+    const face = (i) => { const o = outV(i); return Q.setFromAxisAngle(UPY, Math.atan2(-o[0], -o[1])); };
+    // 좌석: 앉는 판 + 등받이
+    const seatG = new THREE.BoxGeometry(0.5, 0.08, 0.42); seatG.translate(0, 0.36, 0.05);
+    const backG = new THREE.BoxGeometry(0.5, 0.4, 0.06); backG.translate(0, 0.56, -0.17);
+    const seatGeo = mergeGeometries([seatG, backG]);
+    const seatM = new THREE.InstancedMesh(seatGeo, new THREE.MeshStandardMaterial({ color: 0x2456a6, roughness: 0.6 }), seats.length);
+    seats.forEach(([i, r, k], m) => { M.compose(at(i, r, k, 0), face(i), S1); seatM.setMatrixAt(m, M); }); seatM.receiveShadow = true; group.add(seatM);
+    // 사람: 몸통(둥근 원통)·머리(공)·팔(어깨~무릎으로 내린 막대)·다리(앞으로 뻗은 막대)
+    const torso = new THREE.CylinderGeometry(0.16, 0.19, 0.55, 6); torso.translate(0, 0.72, -0.04);
+    const armL = new THREE.CylinderGeometry(0.045, 0.045, 0.42, 4); armL.rotateX(0.5); armL.translate(-0.21, 0.66, 0.06);
+    const armR = armL.clone(); armR.translate(0.42, 0, 0);
+    const legs = new THREE.BoxGeometry(0.34, 0.14, 0.42); legs.translate(0, 0.45, 0.22);
+    const shins = new THREE.BoxGeometry(0.3, 0.42, 0.12); shins.translate(0, 0.22, 0.42);
+    const bodyGeo = mergeGeometries([torso, armL, armR]), legGeo = mergeGeometries([legs, shins]);
+    const head = new THREE.SphereGeometry(0.13, 7, 5); head.translate(0, 1.12, -0.04);
+    const hair = new THREE.SphereGeometry(0.135, 7, 3, 0, Math.PI * 2, 0, Math.PI * 0.55); hair.translate(0, 1.13, -0.06);
+    const mk = (g) => { const im = new THREE.InstancedMesh(g, new THREE.MeshStandardMaterial({ roughness: 0.75 }), people.length); group.add(im); return im; };
+    const bodyM = mk(bodyGeo), legM = mk(legGeo), headM = mk(head), hairM = mk(hair);
+    const shirt = [0xe63946, 0x1d3557, 0xf1faee, 0x2a9d8f, 0xf4a261, 0x222222, 0xffd166, 0x8d99ae, 0xff7b00, 0x6a4c93], pants = [0x22252b, 0x2f3e5c, 0x4a4a4a, 0x5c4033], skin = [0xf1c27d, 0xe0ac69, 0xc68642, 0xffdbac], hairC = [0x1b1b1b, 0x3b2a1a, 0x5a3825, 0x8a8a8a];
+    const pick = (a) => a[Math.floor(rnd() * a.length)];
+    people.forEach(([i, r, k], m) => { const sc = 0.92 + rnd() * 0.16; M.compose(at(i, r, k, 0), face(i), V.clone().setScalar(sc)); [bodyM, legM, headM, hairM].forEach((im) => im.setMatrixAt(m, M));
+      bodyM.setColorAt(m, col.setHex(pick(shirt))); legM.setColorAt(m, col.setHex(pick(pants))); headM.setColorAt(m, col.setHex(pick(skin))); hairM.setColorAt(m, col.setHex(pick(hairC))); });
   }
   // 5) 건물 벽·지붕 (관중석 뒤로 둘러싼 타원 건물)
   const wallK = 1.2 + ROWS * rowD + 4, wallH = 22;
@@ -123,9 +150,27 @@ export function buildVelodrome(scene, course, renderer) {
     const b = path.box, sx = b.maxX - b.minX, sz = b.maxZ - b.minZ, long = sx > sz;
     for (let k = -3; k <= 3; k++) { const g = new THREE.BoxGeometry(long ? sx + 40 : 0.4, 0.6, long ? 0.4 : sz + 40), m = new THREE.Mesh(g, truss); m.position.set(cx + (long ? 0 : k * 9), wallH - 1.8, cz + (long ? k * 9 : 0)); group.add(m); }
   }
-  // 6) 안쪽 무대: 결승선 앞 심판석과 팀 구역(색 상자 몇 개)
-  { const mats = [0xe63946, 0x1d3557, 0x2a9d8f, 0xf4a261].map((c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 }));
-    for (let k = 0; k < 4; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(6, 1.2, 3), mats[k]); const i = Math.round((n * (k + 0.5)) / 8) % n, o = outV(i); m.position.set(path.x[i] - o[0] * 9, floorY + 0.6, path.z[i] - o[1] * 9); m.rotation.y = Math.atan2(T[i][0], T[i][1]); m.castShadow = m.receiveShadow = true; group.add(m); } }
+  // 6) 안쪽 팀 피트: 팀 색 천막 + 벤치 + 롤러 위 자전거 2대 + 장비 상자 (상자만 있던 것을 바꿈, 2026-11-27)
+  { const team = [0xe63946, 0x1d3557, 0x2a9d8f, 0xf4a261];
+    const metal = new THREE.MeshStandardMaterial({ color: 0xb8bec6, metalness: 0.7, roughness: 0.35 }), dark = new THREE.MeshStandardMaterial({ color: 0x1e2228, roughness: 0.6 }), white = new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.5 });
+    const pit = (color) => { const g = new THREE.Group(), cm = new THREE.MeshStandardMaterial({ color, roughness: 0.7, side: THREE.DoubleSide });
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(3.2, 1.1, 4, 1, true), cm); roof.rotation.y = Math.PI / 4; roof.position.y = 3.05; g.add(roof);
+      const val = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.35, 4.5), cm); val.position.y = 2.33; g.add(val);
+      for (const [x, z] of [[-2.2, -2.2], [2.2, -2.2], [-2.2, 2.2], [2.2, 2.2]]) { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.3, 6), metal); l.position.set(x, 1.15, z); g.add(l); }
+      const bench = new THREE.Mesh(new THREE.BoxGeometry(3, 0.08, 0.45), white); bench.position.set(0, 0.45, -1.7); g.add(bench);
+      for (const x of [-1.3, 1.3]) { const lg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.45, 0.4), metal); lg.position.set(x, 0.22, -1.7); g.add(lg); }
+      const box = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.6), dark); box.position.set(1.6, 0.3, -1.2); g.add(box);
+      for (const x of [-0.9, 0.9]) { const b = new THREE.Group(); // 롤러 위 트랙 자전거
+        const wheel = new THREE.TorusGeometry(0.33, 0.022, 6, 24); wheel.rotateY(Math.PI / 2);
+        for (const z of [-0.5, 0.5]) { const w = new THREE.Mesh(wheel, dark); w.position.set(0, 0.47, z); b.add(w); }
+        const bar = (a, c, mat = white) => { const A = new THREE.Vector3(...a), C = new THREE.Vector3(...c), d = C.clone().sub(A), m = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, d.length(), 5), mat); m.position.copy(A).add(C).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); b.add(m); };
+        const bb = [0, 0.45, 0], seat = [0, 0.95, -0.14], head = [0, 0.95, 0.38];
+        bar([0, 0.47, -0.5], bb); bar(bb, seat); bar(bb, head); bar(seat, head); bar([0, 0.47, -0.5], seat); bar(head, [0, 0.47, 0.5]); bar(head, [0, 1.0, 0.48], dark);
+        const roll = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 1.4), metal); roll.position.y = 0.06; b.add(roll);
+        b.position.set(x, 0, 0.6); g.add(b); }
+      g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); return g; };
+    for (let k = 0; k < 4; k++) { const i = Math.round((n * (k * 2 + 1)) / 8) % n, o = outV(i), p = pit(team[k]);
+      p.position.set(path.x[i] - o[0] * 11, floorY, path.z[i] - o[1] * 11); p.rotation.y = Math.atan2(o[0], o[1]); group.add(p); } }
 
   // 빛: 실내 반사(방 환경맵) + 위에서 내리쬐는 조명(그림자) + 은은한 전체 빛
   const pm = new THREE.PMREMGenerator(renderer), envTex = pm.fromScene(new RoomEnvironment(), 0.04).texture; pm.dispose();

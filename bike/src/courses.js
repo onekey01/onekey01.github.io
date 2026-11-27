@@ -31,9 +31,17 @@ const VIRTUAL = [
   },
   {
     // 2026-11-27 무무 님 요청: 실내 벨로드롬 — 250 m 나무 트랙(커브 뱅크 42°), 지붕·조명·관중석. 실내라서 날씨·바람 없음
-    id: 'velodrome', name: '실내 벨로드롬', sub: '250 m 나무 트랙 · 뱅크 커브 · 날씨·바람 없음', length: 250,
-    theme: 'indoor', indoor: true, oneway: true, lane: 0,
-    shape: stadium(25, 46.5, 240),
+    id: 'velodrome', name: '실내 벨로드롬 250', sub: '국제 경기 규격 · 급한 뱅크 커브 42° · 날씨·바람 없음', length: 250,
+    theme: 'indoor', indoor: true, oneway: true, lane: 0, velo: { R: 25, bankMax: 42, bankMin: 12 },
+    // 실제 벨로드롬처럼 반시계 방향(왼쪽으로 돎, 안쪽이 왼쪽) — 점 순서를 뒤집어 맞춤 (2026-11-27 무무 님 지적: 처음엔 시계 방향이었음). tools/bike/velodrome.test.mjs 가 확인
+    shape: ((s) => [s[0], ...s.slice(1).reverse()])(stadium(25, 46.5, 240)),
+    elev: () => 0,
+  },
+  {
+    // 2026-11-27 무무 님 결정: 250 m 와 함께 400 m 도 (커브가 완만해 꾸준히 오래 타기 좋음). 반지름 36 m · 직선 87 m · 뱅크 최대 32°
+    id: 'velodrome400', name: '실내 벨로드롬 400', sub: '완만한 커브 32° · 긴 직선 · 날씨·바람 없음', length: 400,
+    theme: 'indoor', indoor: true, oneway: true, lane: 0, velo: { R: 36, bankMax: 32, bankMin: 10 },
+    shape: ((s) => [s[0], ...s.slice(1).reverse()])(stadium(36, 86.9, 300)),
     elev: () => 0,
   },
 ];
