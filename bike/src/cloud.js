@@ -16,7 +16,7 @@ export function initCloud(hooks) {
   try {
     app = initializeApp(FIREBASE);
     auth = getAuth(app);
-    db = initializeFirestore(app, { localCache: persistentLocalCache() }); // 인터넷이 끊겨도 저장해 두었다가 다시 연결되면 올림
+    db = initializeFirestore(app, { localCache: persistentLocalCache(), ignoreUndefinedProperties: true }); /* 빈 값(undefined)이 섞여도 저장이 통째로 실패하지 않게 (2026-11-28) */ // 인터넷이 끊겨도 저장해 두었다가 다시 연결되면 올림
   } catch (e) { hooks.onStatus('로그인 기능을 불러오지 못했어요', ''); return null; }
   getRedirectResult(auth).catch(() => {});
   onAuthStateChanged(auth, async (u) => {
@@ -51,15 +51,15 @@ export function initCloud(hooks) {
     /** 기기에서 바뀐 내용을 올림 (잦은 저장을 3초 단위로 묶음) */
     push(local, newRide) {
       if (!user) return;
-      if (newRide) setDoc(doc(db, 'users', user.uid, 'rides', String(newRide.id)), newRide).catch((e) => console.warn('[push ride]', e));
+      if (newRide) setDoc(doc(db, 'users', user.uid, 'rides', String(newRide.id)), clean(newRide)).catch((e) => console.warn('[push ride]', e));
       clearTimeout(pushTimer);
       pushTimer = setTimeout(() => setDoc(doc(db, 'users', user.uid), profileDoc(local), { merge: true }).catch((e) => console.warn('[push]', e)), 3000);
     },
   };
 }
 
-const LOOK = ['jersey', 'bike', 'weight', 'ratio', 'quality', 'height', 'birthYear', 'sex', 'bodyAsked', 'weightSet', 'look', 'nick', 'avatarDone']; // 신체정보(2026-11-27)도 계정에 저장해 기기끼리 같게
-const profileDoc = (local) => ({ xp: local.prof.xp, best: local.prof.best, done: local.prof.done, look: Object.fromEntries(LOOK.map((k) => [k, local.cfg[k]])), updatedAt: serverTimestamp() });
+import { LOOK, clean, lookDoc } from './clouddoc.js';
+const profileDoc = (local) => ({ xp: local.prof.xp ?? 0, best: clean(local.prof.best ?? {}), done: clean(local.prof.done ?? {}), look: lookDoc(local.cfg), updatedAt: serverTimestamp() });
 
 /** 이 기기 자료와 계정 자료를 합침: 경험치는 큰 쪽, 최고 기록은 빠른 쪽, 완주 표시는 둘 다, 운동 기록은 합집합 */
 async function sync(hooks) {
