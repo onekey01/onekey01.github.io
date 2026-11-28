@@ -22,8 +22,30 @@ export const SHORTS = [
 ];
 // 캐릭터를 만들기 전·건너뛴 사람의 모습. eye 는 모델 원래 눈 색을 쓰도록 비워 둠
 // 체형 막대 (1 = 모델 원래). 범위는 Claude가 우선 정한 값 — 너무 크면 옷·팔다리가 어색해짐
+// 헤어스타일: VRoid 공식 모델 8종에서 떼어 낸 머리 (tools/avatar/extract_hair.py). 남녀 구분 없이 고름. 이름은 Claude가 모양을 보고 붙인 임시 이름
+export const HAIRSTYLES = [['hair1', '삐죽 짧은 머리'], ['hair2', '가르마 머리'], ['hair7', '숏컷'], ['hair5', '짧은 단발'], ['hair6', '보브 단발'], ['hair3', '양갈래'], ['hair4', '긴 생머리'], ['hair8', '긴 옆머리'], ['pony', '포니테일'], ['bun', '똥머리'], ['buzz', '스포츠 머리'], ['bald', '민머리']].map(([id, name]) => ({ id, name })); // 뒤 네 가지는 코드로 만듦(avatar.js procHair)
+// 눈·입 모양: 얼굴 표정 조절 값을 생김새로 고정 (이름·세기는 Claude가 우선 정한 값). 코: 크기(s)와 오뚝함(h)
+export const EYESHAPES = [
+  { id: 'base', name: '기본', m: {} }, { id: 'soft', name: '순한 눈', m: { EYE_Sorrow: 0.7 } }, { id: 'sharp', name: '날카로운 눈', m: { EYE_Angry: 0.7 } },
+  { id: 'smile', name: '웃는 눈', m: { EYE_Fun: 0.8 } }, { id: 'big', name: '큰 눈', m: { EYE_Spread: 0.8 } }, { id: 'sleepy', name: '졸린 눈', m: { EYE_Close: 0.38 } },
+];
+export const NOSES = [{ id: 'small', name: '작게', s: 0.65, h: 0 }, { id: 'base', name: '보통', s: 1, h: 0 }, { id: 'big', name: '크게', s: 1.22, h: 0 }, { id: 'high', name: '오뚝하게', s: 1.08, h: 0.7 }]; // 1.5 는 피노키오처럼 길어졌음(2026-11-28) → 1.22
+export const MOUTHS = [
+  { id: 'base', name: '기본', m: {} }, { id: 'smile', name: '미소', m: { MTH_Fun: 0.85 } }, { id: 'up', name: '입꼬리 올림', m: { MTH_Up: 1 } },
+  { id: 'grin', name: '활짝', m: { MTH_Joy: 0.45 } }, { id: 'down', name: '시무룩', m: { MTH_Down: 1 } }, { id: 'pout', name: '뾰로통', m: { MTH_Angry: 0.8 } },
+];
+/** 고른 이름표(look.eyeShape·nose·mouth)를 아바타가 쓰는 값으로 풀어 줌 */
+export const faceOf = (look) => { const n = NOSES.find((x) => x.id === look.nose) || NOSES[1];
+  return { eyeM: (EYESHAPES.find((x) => x.id === look.eyeShape) || EYESHAPES[0]).m, mouthM: (MOUTHS.find((x) => x.id === look.mouth) || MOUTHS[0]).m, noseS: n.s, noseH: n.h }; };
 export const SHAPES = [ // 무무 님 결정(2026-11-28): 키·체격만
   { k: 'height', name: '키', lo: 0.88, hi: 1.12, left: '작게', right: '크게' }, // 자전거도 같이 커짐·작아짐
   { k: 'fat', name: '체격', lo: 0.8, hi: 1.3, left: '마름', right: '통통' },
 ];
 export const DEFAULT_LOOK = { model: 'm1', skin: 0xffffff, hair: undefined, eye: undefined, shirt: 0xf2f2f2, shorts: 0x2b3a55, shape: { height: 1, fat: 1 } };
+
+/** 처음 받는 옷 색 (2026-11-28 무무 님 결정: 처음 한 번 무작위, 고를 수 없음 — 마비노기처럼). 티는 밝고 선명한 쪽, 바지는 어두운 쪽, 가끔 흰색·회색·검정 */
+export function randomClothes() {
+  const hsl = (h, s, l) => { const a = s * Math.min(l, 1 - l), f = (n) => { const k = (n + h * 12) % 12; return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))); }; return (f(0) << 16) | (f(8) << 8) | f(4); };
+  const r = Math.random, plain = [0xf2f2f2, 0x9aa3ad, 0x2b2f36];
+  return { shirt: r() < 0.18 ? plain[Math.floor(r() * 3)] : hsl(r(), 0.4 + r() * 0.45, 0.42 + r() * 0.3), shorts: r() < 0.25 ? plain[Math.floor(r() * 3)] : hsl(r(), 0.25 + r() * 0.4, 0.2 + r() * 0.25), rolled: true };
+}

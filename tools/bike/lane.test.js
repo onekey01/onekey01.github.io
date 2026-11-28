@@ -9,6 +9,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const pg=await b.newPage();await pg.setViewport({width:640,height:400});
 await pg.evaluateOnNewDocument((id,cc)=>{localStorage.setItem('bike2.cfg',JSON.stringify({quality:'low',courseId:id}));if(cc)window.__countryOverride=cc;},id,process.argv[3]||'');
 await pg.goto('http://localhost:8774/bike/');await pg.waitForFunction(()=>!document.getElementById('loading'),{timeout:180000});
+await pg.evaluate(()=>document.getElementById('btnRide').click());await sleep(2500); /* 2026-11-28: 메뉴에서는 쉼터 광장에 서 있으므로 달리기를 누른 뒤 차선을 잼 */
 let bad=0;const L=await pg.evaluate(()=>__bike.world.path.length);
 for(const fr of [0.1,0.3,0.45,0.6,0.8,0.95]){
  await pg.evaluate((d)=>{__bike.ride.d=d},L*fr);await sleep(1500);

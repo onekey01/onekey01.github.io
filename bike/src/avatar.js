@@ -17,10 +17,21 @@ function ik(a, c, l1, l2, pole) {
 }
 const bn = (part, side) => `J_Bip_${side || 'C'}_${part}`;
 
+// 얼굴 조절 값(모프) 이름 → 번호. 모델마다 순서가 달라 원본 VRM 의 targetNames 에서 옮김 (가볍게 줄인 .glb 에는 이름이 안 남음)
+const MORPH_NAMES = {
+  m1: 'ALL_Neutral ALL_Fun ALL_Sorrow ALL_Angry ALL_Joy ALL_Surprised BRW_Fun BRW_Sorrow BRW_Angry BRW_Joy BRW_Surprised EYE_Close EYE_Close_R EYE_Close_L EYE_Fun EYE_Joy EYE_Joy_R EYE_Joy_L EYE_Angry EYE_Sorrow EYE_Surprised EYE_Spread EYE_Iris_Hide EYE_Highlight_Hide MTH_Natural MTH_Close MTH_Up MTH_Down MTH_A MTH_I MTH_U MTH_E MTH_O MTH_Angry MTH_Fun MTH_Joy MTH_Sorrow MTH_Surprised',
+  f1: 'ALL_Neutral ALL_Angry ALL_Fun ALL_Joy ALL_Sorrow ALL_Surprised BRW_Angry BRW_Fun BRW_Joy BRW_Sorrow BRW_Surprised EYE_Natural EYE_Angry EYE_Close EYE_Close_R EYE_Close_L EYE_Fun EYE_Joy EYE_Joy_R EYE_Joy_L EYE_Sorrow EYE_Surprised EYE_Spread EYE_Iris_Hide EYE_Highlight_Hide EYE_Extra MTH_Up MTH_Down MTH_Angry MTH_Neutral MTH_Fun MTH_Joy MTH_Sorrow MTH_Surprised MTH_SkinFung MTH_SkinFung_R MTH_SkinFung_L MTH_A MTH_I MTH_U MTH_E MTH_O',
+};
+const PROC_HAIR = ['buzz', 'bald', 'pony', 'bun']; // 코드로 만드는 머리 모양 (파일 없음)
+const hairCache = {};
+/** 헤어스타일 파일 불러오기 (한 번 받은 것은 담아 둠) */
+export function loadHair(id) {
+  return (hairCache[id] ||= new Promise((ok, no) => new GLTFLoader().load(`avatar/${id}.glb`, (g) => { g.scene.userData.face = g.parser.json.extras.face; ok(g.scene); }, undefined, no)));
+}
 export function loadAvatar(url) {
   const L = new GLTFLoader(); L.register((p) => new VRMLoaderPlugin(p));
   const t0 = performance.now();
-  return new Promise((ok, no) => L.load(url, (g) => { try { const t1 = performance.now(), a = new Avatar(g.userData.vrm); a.loadMs = [Math.round(t1 - t0), Math.round(performance.now() - t1)]; ok(a); } catch (e) { no(e); } }, undefined, no)); // loadMs: [받기·읽기, 몸 맞추기·옷·헬멧] (느린 기기 점검용)
+  return new Promise((ok, no) => L.load(url, (g) => { try { const t1 = performance.now(), a = new Avatar(g.userData.vrm); a.modelId = url.match(/(\w+)\.glb/)?.[1]; a.ownHair = { m1: 'hair1', f1: 'hair3' }[a.modelId]; /* 이 모델의 원래 머리와 같은 헤어스타일 번호 */ a.loadMs = [Math.round(t1 - t0), Math.round(performance.now() - t1)]; ok(a); } catch (e) { no(e); } }, undefined, no)); // loadMs: [받기·읽기, 몸 맞추기·옷·헬멧] (느린 기기 점검용)
 }
 
 export class Avatar {
@@ -143,12 +154,15 @@ export class Avatar {
     // 머리카락 눌러 넣기: 헬멧 좌표(기울기 되돌림)에서 바가지 잘린 면보다 위이고 껍데기(0.93배) 밖이면 안쪽으로 당김
     // ※ 테두리 높이를 실제 잘린 면으로 씀 — 고정 높이로 하면 바가지가 깊어졌을 때 그 사이 머리카락이 뚫고 나옴(2026-11-27)
     C.y -= 0.02; // 바가지가 놓이는 중심 — 머리카락 눌러 넣기와 바가지 위치가 같은 점을 써야 함 (2026-11-28: 2cm 어긋나 머리카락이 뚫고 나옴)
-    { const v = new THREE.Vector3(), done = new Set();
-      for (const h of hairs) { const P = h.geometry.attributes.position; if (done.has(P)) continue; done.add(P);
-        for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i).sub(C).applyQuaternion(qi);
-          if (v.y / (Rm * sy) < cutY((v.z * BACK) / Rm) - 0.02) continue; const e = Math.hypot(v.x / Rm, v.y / (Rm * sy), v.z / Rm); if (e < 0.88) continue; // 바가지 껍데기(두께 포함) 안쪽으로
-          v.multiplyScalar(0.88 / e).applyQuaternion(q).add(C); P.setXYZ(i, v.x, v.y, v.z); }
-        P.needsUpdate = true; h.geometry.computeBoundingBox(); } }
+    // 눌러 넣기 함수로 묶어 둠 — 다른 모델에서 가져온 헤어스타일(setHair)에도 같은 것을 씀
+    this.squash = (P) => { const v = new THREE.Vector3();
+      for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i).sub(C).applyQuaternion(qi);
+        if (v.y / (Rm * sy) < cutY((v.z * BACK) / Rm) - 0.02) continue; const e = Math.hypot(v.x / Rm, v.y / (Rm * sy), v.z / Rm); if (e < 0.88) continue; // 바가지 껍데기(두께 포함) 안쪽으로
+        v.multiplyScalar(0.88 / e).applyQuaternion(q).add(C); P.setXYZ(i, v.x, v.y, v.z); }
+      P.needsUpdate = true; };
+    { const done = new Set(); for (const h of hairs) { const P = h.geometry.attributes.position; if (done.has(P)) continue; done.add(P); this.squash(P); h.geometry.computeBoundingBox(); } }
+    this.helm = { C: C.clone(), Rm, sy }; // 바가지 중심·반지름 — 코드로 만드는 머리 모양(procHair)이 머리 크기의 기준으로 씀
+    this.hairs = hairs; this.headBind = hp.clone(); this.faceW = fw; this.frontZ = front; // 모델 원래 좌표에서 앞 방향의 z 부호
     const NS = 60, NF = 96, pos = [], idx = [], cols = [];
     const edge = (f, a0, b0) => { for (let k = 0; k < 30; k++) { const m = (a0 + b0) / 2; if ((above(a0, f) > 0) === (above(m, f) > 0)) a0 = m; else b0 = m; } return (a0 + b0) / 2; };
     const span = (f) => { let first = null, last = null; for (let k = 0; k <= 400; k++) { const sb = -1 + (SB + 1) * (k / 400); if (above(sb, f) > 0) { if (first === null) first = k; last = k; } }
@@ -183,9 +197,110 @@ export class Avatar {
     g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
     head.add(g); this.helmet = { group: g, mats: [] }; // 박 바가지는 색을 바꾸지 않음 (진짜 헬멧부터 색 고르기)
   }
+  /** 헤어스타일 바꾸기 (2026-11-28): 다른 VRoid 모델에서 떼어 낸 머리(avatar/hairN.glb, tools/avatar/extract_hair.py)를 이 캐릭터 머리에 맞춰 씌움
+   *  맞추기: 원래 모델의 머리뼈 자리를 이 모델의 머리뼈 자리에 겹치고, 얼굴 반폭 비율만큼 크기를 맞춤 (모델 8종에서 (얼굴 꼭대기-머리뼈)/반폭이 2.15~2.21 로 거의 같음을 확인)
+   *  바가지 안쪽 머리카락은 같은 방식(squash)으로 눌러 넣음. id 가 없거나 이 모델의 원래 머리(ownHair)면 원래 머리를 보임 */
+  async setHair(id) {
+    if (!this.hairs) return; const own = !id || id === this.ownHair; if ((this.hairId || null) === (own ? null : id)) return;
+    this.hairId = own ? null : id;
+    let g = null;
+    if (!own && PROC_HAIR.includes(id)) g = this.procHair(id);
+    else if (!own) { const src = await loadHair(id); if (this.hairId !== id) return; // 불러오는 사이 다른 것을 고름
+      const f = src.userData.face, k = this.faceW / f.fw, hd = new THREE.Vector3(...f.head), base = [].concat(this.hairs[0].material)[0];
+      g = new THREE.Group(); g.name = 'hairStyle';
+      src.traverse((o) => { if (!o.isMesh) return; const geo = o.geometry.clone(), P = geo.attributes.position, v = new THREE.Vector3();
+        for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i).sub(hd).multiplyScalar(k).add(this.headBind); P.setXYZ(i, v.x, v.y, v.z); }
+        this.squash(P); geo.computeBoundingSphere();
+        const m = base.clone(); m.name = 'style_HAIR'; m.map = o.material.map; if ('shadeMultiplyTexture' in m) m.shadeMultiplyTexture = o.material.map; m.userData = {};
+        m.alphaTest = 0.2; m.transparent = false; m.depthWrite = true; m.needsUpdate = true; // 잘라내기 기준을 0.5 → 0.2 로: 그림을 512 로 줄이면서 가는 머리 가닥의 투명값이 옅어져 0.5 로는 양갈래가 통째로 사라졌음(2026-11-28)
+        const mesh = new THREE.Mesh(geo, m); mesh.frustumCulled = false; mesh.castShadow = true; g.add(mesh); });
+      g.position.copy(this.headBind).negate(); } // 머리뼈 기준 자리 (뼈의 쉬는 회전이 없음)
+    if (this.hairG) { this.hairG.parent?.remove(this.hairG); this.hairG.traverse((o) => { if (o.isMesh) o.geometry.dispose(); }); }
+    this.hairG = g; if (g) this.B[bn('Head')].add(g);
+    for (const h of this.hairs) h.visible = own && !this.fp;
+    this.ownHairOn = own;
+  }
+  /** 눈·입 모양 (2026-11-28 무무 님: 「눈, 코, 입모양을 설정할 수 있어야」) — 얼굴에 들어 있는 표정 조절 값을 「타고난 생김새」로 늘 켜 둠
+   *  eye·mouth = { 조절 값 이름: 세기(0~1) } (looks.js 의 EYESHAPES·MOUTHS). 눈 깜빡임과 겹치지 않게 tick 에서 깜빡이는 동안 눈 모양을 잠깐 풂 */
+  setFace(eye = {}, mouth = {}) {
+    const names = (MORPH_NAMES[this.modelId] || '').split(' '), idx = (o) => Object.entries(o).map(([k, w]) => [names.indexOf(k), w]).filter(([i]) => i >= 0);
+    this.faceEye = idx(eye); this.faceMouth = idx(mouth); this.closeIdx = names.indexOf('EYE_Close');
+    if (!this.faceMeshes) { this.faceMeshes = []; this.vrm.scene.traverse((o) => { if (o.isMesh && o.morphTargetInfluences && /^Face/.test(o.name)) this.faceMeshes.push(o); }); this.faceUsed = new Set(); }
+    this.applyFace(0);
+  }
+  applyFace(blink) { // 표정 계산(em.update) 뒤에 부름: 전에 켰던 값은 지우고, 고른 생김새 값을 덧씌움
+    if (!this.faceMeshes) return; const now = [...(this.faceEye || []).map(([i, w]) => [i, w * (1 - blink)]), ...(this.faceMouth || [])];
+    for (const m of this.faceMeshes) { const I = m.morphTargetInfluences;
+      for (const i of this.faceUsed) if (!now.some(([j]) => j === i)) I[i] = 0;
+      for (const [i, w] of now) if (i < I.length) I[i] = Math.max(i === this.closeIdx ? I[i] : 0, w); }
+    for (const [i] of now) this.faceUsed.add(i);
+  }
+  /** 코 크기 (모델에 코 조절 값이 없어 코 둘레 꼭짓점을 직접 옮김): size 1 = 원래, 작게 < 1 < 크게.  high > 0 이면 코끝을 앞·위로 세움(오뚝)
+   *  코끝 = 얼굴 피부에서 가장 앞으로 나온 점. 그 둘레 2.6cm(얼굴 크기에 비례) 안을, 코 뿌리 쪽 한 점을 중심으로 부드럽게 키움·줄임 */
+  setNose(size = 1, high = 0) {
+    if (!this.noseP) { this.noseP = []; const seen = new Set(); let tip = null;
+      this.vrm.scene.traverse((o) => { if (!o.isSkinnedMesh || !/Face_00_SKIN/.test([].concat(o.material)[0].name)) return; const P = o.geometry.attributes.position, I = o.geometry.index; if (!I || I.count < 2000 || seen.has(P)) return; seen.add(P);
+        this.noseP.push({ P, orig: P.array.slice() }); for (let k = 0; k < I.count; k++) { const i = I.getX(k), z = P.getZ(i); if (Math.abs(P.getX(i)) < 0.02 && (!tip || z * this.frontZ > tip.z * this.frontZ)) tip = new THREE.Vector3(P.getX(i), P.getY(i), z); } });
+      this.noseTip = tip; }
+    if (!this.noseTip) return; const k = (this.faceW || 0.09) / 0.0905, R = 0.026 * k, tip = this.noseTip, base = tip.clone().add(V(0, 0.004 * k, -this.frontZ * 0.014 * k)), v = new THREE.Vector3();
+    for (const { P, orig } of this.noseP) { P.array.set(orig);
+      for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i); const d = v.distanceTo(tip); if (d > R) continue; const w = (1 - (d / R) ** 2) ** 2;
+        v.add(v.clone().sub(base).multiplyScalar((size - 1) * w)).add(V(0, 0.35, this.frontZ).multiplyScalar(high * 0.006 * k * w)); P.setXYZ(i, v.x, v.y, v.z); }
+      P.needsUpdate = true; }
+  }
+  /** 코드로 만든 머리 모양 (2026-11-28 무무 님이 고름: 스포츠 머리 buzz · 민머리 bald · 포니테일 pony · 똥머리 bun)
+   *  머리통 = 바가지 중심에 둔 타원체(바가지보다 조금 작게). 살색 머리통 위에, 머리카락 색 덮개(이마선 위·귀 뒤·목덜미까지)를 씌우고, 포니테일·똥머리는 뒤에 꼬리·뭉치를 붙임
+   *  이마선은 꼭짓점을 잘라내지 않고 선 위로 끌어올려 매끈하게 함. 모두 머리뼈에 붙어 고개와 같이 움직임 */
+  procHair(id) {
+    const { C, Rm, sy } = this.helm, F = this.frontZ, g = new THREE.Group(); g.name = 'hairStyle';
+    // 머리통 크기: 앞은 눈알보다 뒤(바가지 중심에서 앞으로 5.8cm)까지만 — 얼굴 그물이 이마·정수리 앞쪽을 이미 덮고 있어서 머리통은 옆·뒤만 채우면 됨
+    //  ※ 2026-11-28: 바가지 중심의 둥근 공으로 잡았더니 앞이 눈알보다 튀어나와 눈이 가려졌음(검은 눈). 고치면 바가지를 벗긴 정면·옆 사진을 꼭 볼 것
+    const k0 = Rm / 0.137, zFront = C.z + F * 0.058 * k0, zBack = C.z - F * 0.86 * Rm;
+    const R = new THREE.Vector3(0.76 * Rm, 0.86 * Rm * sy, Math.abs(zBack - zFront) / 2), ctr = new THREE.Vector3(C.x, C.y - 0.012, (zFront + zBack) / 2); // 머리통 반지름·중심
+    const ss = THREE.MathUtils.smoothstep;
+    const dome = (k, line) => { const geo = new THREE.SphereGeometry(1, 44, 30), P = geo.attributes.position, v = new THREE.Vector3();
+      for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i); const l = Math.hypot(v.x, v.z) || 1, h = line((v.z / l) * F, Math.abs(v.x) / l); // 선 높이는 「어느 쪽을 보는 점인가(방위)」로 정함 — 좌표값 그대로 쓰면 아래쪽 꼭짓점이 옆으로 잘못 계산돼 앞이 턱까지 내려옴(2026-11-28)
+        if (v.y < h) { const r = Math.sqrt(Math.max(0, 1 - h * h)); v.set((v.x / l) * r, h, (v.z / l) * r); } // 선 아래 꼭짓점은 선 위로 끌어올림
+        P.setXYZ(i, ctr.x + v.x * R.x * k, ctr.y + v.y * R.y * k, ctr.z + v.z * R.z * k); }
+      geo.computeVertexNormals(); return geo; };
+    // 살색 머리통: 얼굴 피부 재질을 그대로 쓰고, 그림 좌표는 이마 한 점으로 모음(민무늬 살색) → 피부색을 바꾸면 같이 바뀜
+    let skinMesh = null; this.vrm.scene.traverse((o) => { if (o.isSkinnedMesh && /Face_00_SKIN/.test([].concat(o.material)[0].name) && o.geometry.index?.count > 2000) skinMesh = o; });
+    if (skinMesh) { const P = skinMesh.geometry.attributes.position, U = skinMesh.geometry.attributes.uv; let best = 0;
+      for (let i = 0; i < P.count; i++) if (Math.abs(P.getX(i)) < 0.012 && P.getY(i) > P.getY(best)) best = i; // 이마 가운데 맨 위
+      const geo = dome(1, () => -0.62), uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, U.getX(best), U.getY(best) - 0.02);
+      const m = [].concat(skinMesh.material)[0].clone(); m.name = 'skull_SKIN'; m.userData = {}; g.add(new THREE.Mesh(geo, m)); }
+    if (id !== 'bald') {
+      const tex = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 128; const x = cv.getContext('2d'); x.fillStyle = '#d0d0d0'; x.fillRect(0, 0, 128, 128);
+        for (let i = 0; i < (id === 'buzz' ? 2600 : 420); i++) { x.globalAlpha = 0.12 + Math.random() * 0.25; x.fillStyle = Math.random() < 0.5 ? '#8a8a8a' : '#ffffff';
+          if (id === 'buzz') x.fillRect(Math.random() * 128, Math.random() * 128, 1.3, 1.3); else x.fillRect(Math.random() * 128, 0, 1 + Math.random() * 1.5, 128); } // 스포츠 머리 = 잔 점, 묶은 머리 = 빗어 넘긴 결
+        const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(id === 'buzz' ? 5 : 3, 1); return t; })();
+      const hm = [].concat(this.hairs[0].material)[0].clone(); hm.name = 'style_HAIR'; hm.userData = {}; hm.map = tex; if ('shadeMultiplyTexture' in hm) hm.shadeMultiplyTexture = tex;
+      hm.alphaTest = 0; hm.transparent = false; hm.side = THREE.DoubleSide; hm.color.setHex(0x34343c); hm.shadeColorFactor?.setHex(0x1e1e24); hm.needsUpdate = true;
+      // 덮개 선: 이마(앞)는 높게, 옆은 귀 위, 뒤는 목덜미까지. 스포츠 머리는 머리통에 바짝, 묶은 머리는 조금 도톰
+      const line = (f, ax) => THREE.MathUtils.lerp(-0.5, 0.36, ss(f, -0.15, 0.8)) + 0.1 * ss(ax, 0.75, 1) * ss(f, 0, 0.5);
+      g.add(new THREE.Mesh(dome(id === 'buzz' ? 1.025 : 1.07, line), hm));
+      const back = (y, out) => new THREE.Vector3(ctr.x, ctr.y + y * R.y, ctr.z - F * out * R.z); // 뒤통수 쪽 한 점
+      if (id === 'bun') { const b = new THREE.Mesh(new THREE.SphereGeometry(0.047 * (Rm / 0.137), 20, 14), hm); b.position.copy(back(-0.42, 1.12)); b.scale.set(1, 0.92, 0.95); g.add(b); }
+      if (id === 'pony') { // 꼬리: 뒤통수 아래에서 뒤로 살짝 솟았다가 등 쪽으로 늘어지는 굵기가 변하는 대롱
+        const k = Rm / 0.137, pts = [back(-0.35, 0.95), back(-0.42, 1.25), back(-0.8, 1.42), back(-1.5, 1.38), back(-2.15, 1.22)], cv = new THREE.CatmullRomCurve3(pts);
+        const N = 24, M = 12, pos = [], uv = [], idx = [], side = new THREE.Vector3(1, 0, 0);
+        for (let i = 0; i <= N; i++) { const t = i / N, p = cv.getPoint(t), tan = cv.getTangent(t), up = new THREE.Vector3().crossVectors(tan, side).normalize();
+          const r = k * (0.012 + 0.03 * Math.sin(Math.min(1, t * 2.2) * Math.PI / 2) * (1 - ss(t, 0.55, 1) * 0.95));
+          for (let j = 0; j <= M; j++) { const a = (j / M) * Math.PI * 2; pos.push(p.x + (side.x * Math.cos(a) + up.x * Math.sin(a)) * r, p.y + (up.y * Math.sin(a)) * r, p.z + (up.z * Math.sin(a)) * r); uv.push(j / M, t); }
+          if (i < N) for (let j = 0; j < M; j++) { const a0 = i * (M + 1) + j, b0 = a0 + M + 1; idx.push(a0, b0, a0 + 1, a0 + 1, b0, b0 + 1); } }
+        const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
+        g.add(new THREE.Mesh(geo, hm));
+        const band = new THREE.Mesh(new THREE.TorusGeometry(0.02 * k, 0.006 * k, 8, 16), new THREE.MeshToonMaterial({ color: 0xd94f4f })); band.position.copy(pts[1]); band.rotation.x = Math.PI / 2 - 0.5 * F; g.add(band); } // 머리끈
+    }
+    g.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; o.castShadow = true; } });
+    g.position.copy(this.headBind).negate(); return g;
+  }
   /** 캐릭터 모습 입히기 (캐릭터 만들기 화면에서 고른 값) — look = { skin, hair, eye, shirt, shorts } (16진 색 숫자, 없으면 그대로) */
   applyLook(look = {}) {
     if (look.shape) this.setShape(look.shape);
+    this.setFace(look.eyeM, look.mouthM); this.setNose(look.noseS ?? 1, look.noseH ?? 0);
+    const want = !look.hairStyle || look.hairStyle === this.ownHair ? null : look.hairStyle;
+    if (want !== (this.hairId || null)) { this.lookNow = look; this.setHair(look.hairStyle).then(() => { if (this.lookNow === look) this.applyLook(look); }).catch((e) => console.warn('[hair]', e)); } // 머리를 불러온 뒤 색을 다시 입힘
     this.setColors({ shirt: look.shirt, shorts: look.shorts });
     const mats = (re) => { const out = new Set(); this.vrm.scene.traverse((o) => { if (o.isMesh) for (const m of [].concat(o.material)) if (re.test(m.name)) out.add(m); }); return [...out]; };
     if (look.skin !== undefined) for (const m of mats(/_SKIN/)) { m.color?.setHex(look.skin); m.shadeColorFactor?.setHex(look.skin).multiplyScalar(0.82); } // 피부: 원래 살색 그림에 곱함
@@ -297,7 +412,7 @@ export class Avatar {
     const q = new THREE.Quaternion().setFromRotationMatrix(m(a, b).multiply(m(V(sx, 0, 0), V(0, 1, 0)).transpose())); return q.multiply(this.rest[name].q);
   }
   /** 1인칭(바이커 시선): 카메라가 눈 자리에 있으므로 머리 전체(얼굴·머리카락·두피)를 머리뼈째 줄여서 숨김 — 그물(mesh)만 끄면 몸 쪽에 붙은 두피가 남아 화면을 가림(2026-11-27 확인) */
-  setFP(fp) { if (this.fp === fp) return; this.fp = fp; for (const o of this.headParts) o.visible = !fp; const h = this.B[bn('Head')]; if (fp) h.scale.setScalar(0.001); else h.scale.copy(this.headLocal || new THREE.Vector3(1, 1, 1)); } // 1인칭이 끝나면 체형 막대로 정한 머리 크기로 되돌림
+  setFP(fp) { if (this.fp === fp) return; this.fp = fp; for (const o of this.headParts) o.visible = !fp && !(this.hairs?.includes(o) && this.ownHairOn === false); const h = this.B[bn('Head')]; if (fp) h.scale.setScalar(0.001); else h.scale.copy(this.headLocal || new THREE.Vector3(1, 1, 1)); } // 1인칭이 끝나면 체형 막대로 정한 머리 크기로 되돌림
   /** 1인칭 카메라 자리 (상자 좌표): 얼굴 바로 앞 눈높이. 머리뼈에서 재므로 숙임·체형이 달라져도 따라감.
    *  ※ 2026-11-27: 도형 사람처럼 머리 위·뒤에 두었더니 후드 모자가 화면 아래를 가림 → 옷(후드·모자·머리카락)이 있는 머리 뒤쪽에는 두지 말 것.
    *    대신 고개를 더 숙여(fpPitch) 손·핸들이 화면 아래에 들어오게 함. 고칠 때는 1인칭 사진(VIEW=fp)을 꼭 다시 찍어 볼 것 */
@@ -354,7 +469,7 @@ export class Avatar {
     for (const [S, sx] of [['L', 1], ['R', -1]]) {
       const ua = B[bn('UpperArm', S)], la = B[bn('LowerArm', S)], hd = B[bn('Hand', S)], idle = [ua.quaternion.clone(), la.quaternion.clone(), hd.quaternion.clone()];
       let tg, pole;
-      if (g.name === 'stretch') { tg = head.clone().add(V(sx * 0.06, 0.3, 0.02).multiplyScalar(s)); pole = V(sx, 0.3, -0.3); } // 기지개: 두 손을 머리 위로
+      if (g.name === 'stretch') { tg = head.clone().add(V(sx * 0.045, 0.31, 0.01).multiplyScalar(s)); pole = V(sx, 0.2, -0.3); } // 기지개: 두 손을 머리 위에서 마주 댐
       else { tg = this.boxPos(B[bn('UpperLeg', S)]).add(V(sx * 0.075, 0.075, 0.0).multiplyScalar(s)); pole = V(sx * 0.8, 0, -0.6); } // 허리에 손: 팔꿈치는 바깥·뒤로
       const sh = this.boxPos(ua);
       if (g.name === 'cross') { // 팔짱 (2026-11-28 무무 님: 「팔짱이 부자연스러워」 — 손 목표로 풀었더니 두 손이 어깨까지 올라가 X자로 껴안은 모양이 됨)
@@ -371,7 +486,10 @@ export class Avatar {
       const elbow = ik(sh, tg, this.len.upArm * s, this.len.foreArm * s, pole);
       this.setQ(ua, this.aimQ(bn('UpperArm', S), V(sx, 0, 0), elbow.clone().sub(sh)));
       this.setQ(la, this.aimQ(bn('LowerArm', S), V(sx, 0, 0), tg.clone().sub(elbow)));
-      this.setQ(hd, this.aimQ(bn('Hand', S), V(sx, 0, 0), g.name === 'stretch' ? V(-sx * 0.3, 1, 0) : tg.clone().sub(elbow)));
+      // 손: 기지개는 손끝이 반대쪽을 향하고 손바닥이 하늘을 봄(깍지 낀 모양) — 방향만 정하면 손목이 제멋대로 돌아가 어색했음(2026-11-28 무무 님 지적) → 손등 방향까지 정함
+      if (g.name === 'stretch') this.setQ(hd, this.basisQ(bn('Hand', S), sx, V(-sx, 0.25, 0), V(0, -1, 0)));
+      else this.setQ(hd, this.aimQ(bn('Hand', S), V(sx, 0, 0), tg.clone().sub(elbow)));
+      if (g.name === 'stretch') for (const f of ['Index', 'Middle', 'Ring', 'Little']) for (const j of [1, 2, 3]) { const b = B[`J_Bip_${S}_${f}${j}`]; if (b) b.rotation.z = THREE.MathUtils.lerp(b.rotation.z, (S === 'L' ? 1 : -1) * [0, 0.5, 0.6, 0.4][j], g.w); }
       ua.quaternion.copy(idle[0].slerp(ua.quaternion, g.w)); la.quaternion.copy(idle[1].slerp(la.quaternion, g.w)); hd.quaternion.copy(idle[2].slerp(hd.quaternion, g.w));
       ua.updateWorldMatrix(false, true);
     }
@@ -412,6 +530,6 @@ export class Avatar {
     this.gT = (this.gT || 0) + dt; // 몸짓 시간
     const em = this.vrm.expressionManager; if (!em) return;
     this.blinkT -= dt; const t = this.blinkT; if (t < -0.14) this.blinkT = 2.5 + Math.random() * 3;
-    em.setValue('blink', t < 0 ? Math.sin((-t / 0.14) * Math.PI) : 0); em.update();
+    const bl = t < 0 ? Math.sin((-t / 0.14) * Math.PI) : 0; em.setValue('blink', bl); em.update(); this.applyFace(bl);
   }
 }

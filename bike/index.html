@@ -104,6 +104,14 @@ body.av #menu{display:none}.modal.side{justify-content:flex-end;background:linea
 .pal{display:flex;flex-wrap:wrap;gap:8px}.pal button{width:44px;height:44px;border-radius:50%;padding:0;border:3px solid rgba(255,255,255,.22);position:relative}.pal button span{position:absolute;left:50%;top:100%;transform:translateX(-50%);font-size:11px;color:var(--sub);white-space:nowrap;display:none}.pal button.sel{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,176,32,.4)}.pal button.sel span{display:block}.pal{padding-bottom:14px}
 #avShape .sl{display:grid;grid-template-columns:88px 40px 1fr 40px;align-items:center;gap:6px;margin:4px 0}#avShape .sl small{color:var(--sub);font-size:13px;text-align:center}#avShape input{width:100%;accent-color:var(--accent);height:28px}
 #avNick{width:100%;font-size:18px;padding:10px 12px;border-radius:12px;background:#0f1720;color:#fff;border:1px solid var(--line)}
+/* 캐릭터 만들기: PC 마비노기처럼 캐릭터는 가운데 크게, 옆의 좁은 창에서 ◀ ▶ 로 넘기며 고름 (2026-11-28 무무 님 지시. 배치·조작만 참고, 그림은 우리 것) */
+.modal.side .sheet.mab{width:min(430px,40%);padding:12px 16px}.mab .actions{margin-top:8px}.mab h2{margin:0 0 8px;font-size:22px}
+.mrow{display:grid;grid-template-columns:76px 1fr;align-items:center;gap:8px;min-height:42px;border-top:1px solid rgba(255,255,255,.07)}.mrow>b{font-size:15px;color:var(--sub)}
+.mrow .pk{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;text-align:center}.mrow .pk button{height:36px;padding:0;font-size:16px}.mrow .pk span{font-weight:700;font-size:16px}.mrow .pk small{color:var(--sub);font-weight:400;margin-left:6px}
+.mrow .sw{display:flex;flex-wrap:wrap;gap:4px;padding:5px 0}.mrow .sw button{width:26px;height:26px;border-radius:50%;padding:0;border:2px solid rgba(255,255,255,.25)}.mrow .sw button.sel{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,176,32,.45)}
+.mrow .sd{display:grid;grid-template-columns:34px 1fr 34px;align-items:center;gap:4px}.mrow .sd small{color:var(--sub);font-size:12px;text-align:center}.mrow .sd input{width:100%;accent-color:var(--accent);height:26px}
+.mab #avNick{width:100%;font-size:16px;padding:7px 10px;border-radius:10px;background:#0f1720;color:#fff;border:1px solid var(--line)}
+#avHint{position:absolute;left:3%;top:4%;color:#fff;background:rgba(0,0,0,.45);padding:6px 12px;border-radius:999px;font-size:14px;pointer-events:none}.modal.side{cursor:grab;touch-action:none}.modal.side .sheet{cursor:auto}
 .modal{position:fixed;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:30}
 .modal.show{display:flex}
 .sheet{background:#16212d;border:1px solid var(--line);border-radius:20px;width:min(860px,94%);max-height:92%;overflow:auto;padding:22px}
@@ -207,20 +215,13 @@ td em{font-style:normal;font-size:12px;background:rgba(255,176,32,.25);color:var
 <div id="levelUp"><div class="big">레벨 업!</div><div class="num" id="lvNum">2</div><div class="un" id="lvUnlock"></div></div>
 </div><!-- /ui -->
 
-<div class="modal fit side" id="mAvatar"><div class="sheet">
+<div class="modal fit side" id="mAvatar"><div class="sheet mab">
   <h2 id="avTitle">내 캐릭터 만들기</h2>
-  <p class="lead">고르면 왼쪽 캐릭터가 바로 바뀌어요. 나중에 「꾸미기」에서 다시 바꿀 수 있어요.</p>
-  <h3>별명</h3><input id="avNick" maxlength="12" placeholder="예: 무무 (비워 두면 구글 이름)">
-  <h3>성별</h3><div class="seg" id="avModel"></div>
-  <h3>체형</h3><div id="avShape"></div>
-  <h3>피부</h3><div class="pal" id="avSkin"></div>
-  <h3>머리 색</h3><div class="pal" id="avHair"></div>
-  <h3>눈 색</h3><div class="pal" id="avEye"></div>
-  <h3>반팔티</h3><div class="pal" id="avShirt"></div>
-  <h3>반바지</h3><div class="pal" id="avShorts"></div>
-  <p class="lead" style="margin-top:12px">🥣 헬멧은 처음엔 박 바가지예요. 진짜 헬멧과 다른 옷은 레벨 보상으로 받아요.</p>
-  <div class="actions"><button id="avCancel">취소</button><button class="primary" id="avSave">저장</button></div>
-</div></div>
+  <div class="mrow"><b>별명</b><input id="avNick" maxlength="12" placeholder="비워 두면 구글 이름"></div>
+  <div id="avRows"></div>
+  <p class="lead" style="margin:6px 0 0;font-size:12px">👕 옷 색은 처음에 무작위로 정해져요. 🥣 헬멧은 박 바가지로 시작하고, 다른 헬멧·옷은 레벨 보상이에요.</p>
+  <div class="actions"><button id="avCancel">취소</button><button class="primary" id="avSave">완료</button></div>
+</div><div id="avHint">캐릭터를 끌어서 돌려 볼 수 있어요</div></div>
 
 <div class="modal fit" id="mLocker"><div class="sheet">
   <h2 style="display:flex;justify-content:space-between;align-items:center;gap:10px">꾸미기 <span style="display:flex;gap:8px"><button id="btnAvatar">🧑 캐릭터 바꾸기</button><button class="primary" data-close>닫기</button></span></h2>

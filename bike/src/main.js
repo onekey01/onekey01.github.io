@@ -3,8 +3,9 @@ import * as THREE from 'three';
 import { COURSES, courseStats, drawProfile, withDir, dirLabels, REGIONS } from './courses.js';
 import { buildWorld, skyFor } from './world.js';
 import { buildVelodrome, veloLean } from './velodrome.js';
+import { buildPlaza } from './plaza.js';
 import { loadAvatar } from './avatar.js';
-import { MODELS, SKINS, HAIRS, EYES, SHIRTS, SHORTS, SHAPES, DEFAULT_LOOK } from './looks.js';
+import { MODELS, SKINS, HAIRS, EYES, SHIRTS, SHORTS, SHAPES, HAIRSTYLES, EYESHAPES, NOSES, MOUTHS, faceOf, randomClothes, DEFAULT_LOOK } from './looks.js';
 import { loadSky } from './sky.js';
 import { makePost } from './post.js';
 import { loadImpostors, TIME } from './impostor.js';
@@ -79,12 +80,13 @@ addEventListener('resize', () => { resize(); fitUI(); }); resize(); fitUI();
 addEventListener('orientationchange', () => setTimeout(() => { resize(); fitUI(); }, 300));
 
 const rider = new Rider(); scene.add(rider.root);
+const plaza = buildPlaza(scene); // 전용 출발 장소 (첫 화면·캐릭터 만들기의 배경). 메뉴에서는 코스 세계를 숨기고 이곳을 보여 줌
 // 아바타(VRoid CC0 모델) — 2026-11-28 무무 님이 올리기로 정해 기본으로 켬(DEF.avatar = 'm1'). 캐릭터 만들기 화면(2단계)이 생기면 그 선택을 따름
 // 모습은 cfg.look (캐릭터 만들기에서 고름, 없으면 DEFAULT_LOOK). 모델은 한 번 불러오면 담아 두고 다시 씀(성별을 바꿔도 다시 받지 않음)
 const avCache = {}, lookOf = () => ({ ...DEFAULT_LOOK, ...(cfg.look || {}) });
 function applyAvatar(look = lookOf()) {
   const id = look.model || cfg.avatar; if (!id) { rider.setAvatar(null); return; }
-  const put = (a) => { a.applyLook(look); if (rider.avatar !== a) rider.setAvatar(a); rider.setHeight(look.shape?.height ?? 1); rider.updateLegs(); };
+  const put = (a) => { a.applyLook({ ...look, ...faceOf(look) }); if (rider.avatar !== a) rider.setAvatar(a); rider.setHeight(look.shape?.height ?? 1); rider.updateLegs(); };
   if (avCache[id]) return put(avCache[id]);
   if (avDraft) toast('캐릭터 불러오는 중…', 2500);
   avLoad(id).then((a) => { if ((avDraft || lookOf()).model === id) put(a); }).catch((e) => console.warn('[avatar]', e));
@@ -300,16 +302,19 @@ function updateCamera(dt, menu) {
   if (sc) { if (sc.cr !== null) { rider.crank = sc.cr; rider.updateLegs(); } const a = THREE.MathUtils.degToRad(sc.ang) + rider.root.rotation.y, rp = rider.root.position;
     const at = new THREE.Vector3(...(sc.at || [0, 0.75, 0])).applyAxisAngle(new THREE.Vector3(0, 1, 0), rider.root.rotation.y).add(rp); // at: 자전거 기준 바라볼 점
     camera.position.set(at.x + Math.sin(a) * sc.dist, rp.y + sc.hgt, at.z + Math.cos(a) * sc.dist); camera.lookAt(at); return; }
-  setAvatarView(menu && avCam);
+  setAvatarView(menu ? (avCam ? 'av' : 'menu') : null);
   if (menu && avCam) { // 캐릭터 만들기: 캐릭터를 가까이, 오른쪽 선택 창을 피해 화면 왼쪽에 보이게 천천히 돎
-    const t = performance.now() / 1000 * 0.25, a = rider.root.rotation.y + 0.7 + Math.sin(t) * 0.45, rp = rider.avatar ? rider.avatar.box.getWorldPosition(new THREE.Vector3()) : rider.root.position; // 자전거 옆에 선 캐릭터를 가운데로
-    camera.position.set(rp.x + Math.sin(a) * 2.5, rp.y + 1.3, rp.z + Math.cos(a) * 2.5); camera.lookAt(rp.x, rp.y + 0.98, rp.z);
+    const a = rider.root.rotation.y + 1.3 + avYaw, rp = rider.avatar ? rider.avatar.box.getWorldPosition(new THREE.Vector3()) : rider.root.position; // 자전거 옆에 선 캐릭터를 가운데로
+    avZ += ((avZoom ? 1 : 0) - avZ) * Math.min(1, dt * 4); // 전신 ↔ 얼굴 가까이 부드럽게
+    const hy = rider.avatar ? rider.avatar.B.J_Bip_C_Head.getWorldPosition(new THREE.Vector3()).y - rp.y + 0.07 : 1.55, L = THREE.MathUtils.lerp, a2 = a - 0.25 * avZ;
+    camera.position.set(rp.x + Math.sin(a2) * L(2.5, 0.75, avZ), rp.y + L(1.3, hy + 0.03, avZ), rp.z + Math.cos(a2) * L(2.5, 0.75, avZ)); camera.lookAt(rp.x, rp.y + L(0.98, hy, avZ), rp.z);
     return; // 카메라는 키와 상관없이 고정 — 키 막대를 움직이면 크기 차이가 그대로 보이게 (2026-11-28: 키에 맞춰 움직였더니 차이가 안 보였음)
   }
   if (menu) {
-    const t = performance.now() / 1000 * 0.15, r = 9;
-    P.cam.set(rider.root.position.x + Math.sin(t) * r, rider.root.position.y + 3.2, rider.root.position.z + Math.cos(t) * r);
-    camera.position.copy(P.cam); camera.lookAt(rider.root.position.x, rider.root.position.y + 1, rider.root.position.z);
+    const t = performance.now() / 1000, a = Math.sin(t * 0.18) * 0.2 - 0.12, r = 6.0; // 광장 앞에서 천천히 좌우로 흔들리며 봄
+    const c = rider.avatar ? rider.avatar.box.getWorldPosition(P.look) : P.look.copy(rider.root.position);
+    P.cam.set(c.x + Math.sin(a) * r, c.y + 1.7, c.z + Math.cos(a) * r);
+    camera.position.copy(P.cam); camera.lookAt(c.x - 0.3, c.y + 0.95, c.z);
     return;
   }
   const rp = rider.root.position;
@@ -473,20 +478,30 @@ function openDir(c, i, el) {
 
 /* ---------------- 캐릭터 만들기 (2026-11-28, 결정 사항: tools/bike/PLAN-profile.md) ----------------
    첫 로그인 때 신체정보 다음에 한 번 뜨고, 「꾸미기」에서 다시 열 수 있음. 고르면 바로 캐릭터에 입혀 보여 주고, 저장해야 cfg.look·cfg.nick 에 남음 */
-let avDraft = null, avCam = false, avFirst = false, avViewOn = false;
-function setAvatarView(on) { // 화면을 왼쪽으로 밀어 캐릭터가 선택 창에 가리지 않게
-  if (on === avViewOn) return; avViewOn = on; const w = innerWidth, h = innerHeight;
-  if (on) camera.setViewOffset(w, h, w * 0.22, 0, w, h); else camera.clearViewOffset();
+let avZ = 0, avYaw = 0, avDraft = null, avZoom = false, avCam = false, avFirst = false, avViewOn = false;
+function setAvatarView(k) { // 화면 밀기: 'av' = 캐릭터 만들기(오른쪽 창을 피해 왼쪽으로), 'menu' = 첫 화면(왼쪽 메뉴·아래 코스 카드를 피해 오른쪽 위로), null = 달리는 중
+  if (k === avViewOn) return; avViewOn = k; const w = innerWidth, h = innerHeight;
+  if (k === 'av') camera.setViewOffset(w, h, w * 0.17, 0, w, h); else if (k === 'menu') camera.setViewOffset(w, h, -w * 0.1, h * 0.2, w, h); else camera.clearViewOffset();
 }
 const hex6 = (c) => '#' + c.toString(16).padStart(6, '0');
+/** 고르는 줄 목록. pick = ◀ ▶ 로 넘김, color = 색판, slide = 막대. face: 고르면 얼굴을 가까이 보여 줌 */
+const AV_ROWS = [
+  ['pick', '성별', 'model', MODELS, false], ['slide', '키', 'height'], ['slide', '체격', 'fat'], ['color', '피부', 'skin', SKINS, true],
+  ['pick', '헤어', 'hairStyle', HAIRSTYLES, true], ['color', '머리 색', 'hair', HAIRS, true], ['pick', '눈 모양', 'eyeShape', EYESHAPES, true], ['color', '눈 색', 'eye', EYES, true],
+  ['pick', '코', 'nose', NOSES, true], ['pick', '입 모양', 'mouth', MOUTHS, true],
+]; // 옷 색은 고르지 않음 — 처음 한 번 무작위(randomClothes)
+const avCur = (key) => avDraft[key] || { model: 'm1', hairStyle: { m1: 'hair1', f1: 'hair3' }[avDraft.model], eyeShape: 'base', nose: 'base', mouth: 'base' }[key]; // 고른 적 없으면 기본값
 function renderAvatarUI() {
-  $('avModel').innerHTML = MODELS.map((m) => `<button data-v="${m.id}" class="${avDraft.model === m.id ? 'sel' : ''}">${m.name}</button>`).join('');
-  const pal = (id, list, key) => ($(id).innerHTML = list.map((it) => `<button data-k="${key}" data-c="${it.c}" title="${it.name}" class="${avDraft[key] === it.c ? 'sel' : ''}" style="background:${hex6(it.c)}"><span>${it.name}</span></button>`).join(''));
-  $('avShape').innerHTML = SHAPES.map((x) => `<div class="sl"><b>${x.name}</b><small>${x.left}</small><input type="range" data-s="${x.k}" min="${x.lo}" max="${x.hi}" step="0.01" value="${avDraft.shape?.[x.k] ?? 1}"><small>${x.right}</small></div>`).join('');
-  pal('avSkin', SKINS, 'skin'); pal('avHair', HAIRS, 'hair'); pal('avEye', EYES, 'eye'); pal('avShirt', SHIRTS, 'shirt'); pal('avShorts', SHORTS, 'shorts');
+  $('avRows').innerHTML = AV_ROWS.map(([type, label, key, list]) => {
+    if (type === 'pick') { const i = Math.max(0, list.findIndex((x) => x.id === avCur(key)));
+      return `<div class="mrow"><b>${label}</b><div class="pk" data-key="${key}"><button data-d="-1" aria-label="이전">◀</button><span>${list[i].name}<small>${i + 1}/${list.length}</small></span><button data-d="1" aria-label="다음">▶</button></div></div>`; }
+    if (type === 'color') return `<div class="mrow"><b>${label}</b><div class="sw" data-key="${key}">${list.map((it) => `<button data-c="${it.c}" title="${it.name}" class="${avDraft[key] === it.c ? 'sel' : ''}" style="background:${hex6(it.c)}"></button>`).join('')}</div></div>`;
+    const x = SHAPES.find((q) => q.k === key);
+    return `<div class="mrow"><b>${label}</b><div class="sd"><small>${x.left}</small><input type="range" data-s="${key}" min="${x.lo}" max="${x.hi}" step="0.01" value="${avDraft.shape?.[key] ?? 1}"><small>${x.right}</small></div></div>`;
+  }).join('');
 }
 function openAvatar(first) {
-  avFirst = !!first; avDraft = { ...lookOf() }; avDraft.shape = { ...DEFAULT_LOOK.shape, ...(avDraft.shape || {}) }; for (const m of MODELS) avLoad(m.id).catch(() => {}); // 다른 성별 모델도 미리 불러 둠 → 누르면 바로 바뀜 $('avNick').value = cfg.nick || '';
+  avZoom = false; avYaw = 0; $('avHint').style.display = ''; avFirst = !!first; avDraft = { ...lookOf() }; avDraft.shape = { ...DEFAULT_LOOK.shape, ...(avDraft.shape || {}) }; for (const m of MODELS) avLoad(m.id).catch(() => {}); // 다른 성별 모델도 미리 불러 둠 → 누르면 바로 바뀜 $('avNick').value = cfg.nick || '';
   $('avCancel').textContent = first ? '기본 모습으로 시작' : '취소'; $('avTitle').textContent = first ? '내 캐릭터 만들기' : '캐릭터 바꾸기';
   renderAvatarUI(); avCam = true; $('mLocker').classList.remove('show'); $('mAvatar').classList.add('show'); document.body.classList.add('av'); // 메뉴를 숨겨 캐릭터가 가리지 않게 (data-screen 을 바꾸면 달리기 화면이 보임)
 }
@@ -496,12 +511,20 @@ function closeAvatar(save) {
   saveCfg(); avDraft = null; avCam = false; $('mAvatar').classList.remove('show'); document.body.classList.remove('av'); applyAvatar(); showName();
   toast(save ? '캐릭터를 저장했어요. 「꾸미기」에서 다시 바꿀 수 있어요' : avFirst ? '기본 모습으로 시작해요. 「꾸미기」에서 언제든 바꿀 수 있어요' : '바꾸지 않았어요', 3500);
 }
-$('mAvatar').addEventListener('click', (e) => {
-  const b = e.target.closest('button'); if (!b || !avDraft) return;
-  if (b.parentElement.id === 'avModel') avDraft.model = b.dataset.v; else if (b.dataset.k) avDraft[b.dataset.k] = +b.dataset.c; else return;
+$('avRows').addEventListener('click', (e) => {
+  const b = e.target.closest('button'), box = b?.parentElement, key = box?.dataset.key; if (!b || !key || !avDraft) return;
+  const row = AV_ROWS.find((r) => r[2] === key);
+  if (b.dataset.d) { const list = row[3], i = list.findIndex((x) => x.id === avCur(key)); avDraft[key] = list[(i + +b.dataset.d + list.length) % list.length].id; } // ◀ ▶ : 끝에서 처음으로 돌아감
+  else if (b.dataset.c) avDraft[key] = +b.dataset.c; else return;
+  avZoom = !!row[4]; // 얼굴 쪽을 고르면 얼굴을 가까이, 몸·옷을 고르면 전신
   renderAvatarUI(); applyAvatar(avDraft);
 });
-$('avShape').addEventListener('input', (e) => { const k = e.target.dataset.s; if (!k || !avDraft) return; avDraft.shape = { ...avDraft.shape, [k]: +e.target.value }; applyAvatar(avDraft); }); // 막대: 그리기만 다시 함(목록은 그대로)
+$('avRows').addEventListener('input', (e) => { const k = e.target.dataset.s; if (!k || !avDraft) return; avZoom = false; avDraft.shape = { ...avDraft.shape, [k]: +e.target.value }; applyAvatar(avDraft); }); // 막대: 그리기만 다시 함(목록은 그대로)
+// 캐릭터 돌려 보기: 창 바깥(캐릭터 쪽)을 끌면 돎
+{ let drag = null; const el = $('mAvatar');
+  el.addEventListener('pointerdown', (e) => { if (e.target.closest('.sheet')) return; drag = e.clientX; el.setPointerCapture(e.pointerId); $('avHint').style.display = 'none'; });
+  el.addEventListener('pointermove', (e) => { if (drag === null) return; avYaw -= (e.clientX - drag) * 0.008; drag = e.clientX; });
+  const end = () => { drag = null; }; el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end); }
 $('avSave').onclick = () => closeAvatar(true); $('avCancel').onclick = () => closeAvatar(false);
 $('btnAvatar').onclick = () => openAvatar(false);
 function showName() { const u = cloud?.user; $('acctName').textContent = u ? (cfg.nick || u.displayName || u.email || '로그인됨') + ' 님' : '로그인 안 됨'; }
@@ -625,6 +648,7 @@ $('bSave').onclick = () => closeBody(true); $('bSkip').onclick = () => closeBody
 function maybeOnboard() {
   if (!cloud?.user || mode === 'ride' || document.querySelector('.modal.show')) return;
   if (!cfg.bodyAsked) return openBody();
+  if (!cfg.look?.rolled) { cfg.look = { ...(cfg.look || {}), ...randomClothes() }; saveCfg(); applyAvatar(); } // 옷 색: 계정마다 처음 한 번만 무작위로 정함
   if (!cfg.avatarDone) return openAvatar(true);
 }
 
@@ -742,6 +766,9 @@ function loop() {
   if (mode === 'ride' && !ride.paused) step(dt);
   else { cadence = 0; grade = world.path.grade(ride.d); }
   placeRider();
+  { const inMenu = mode === 'menu'; // 메뉴: 자전거 쉼터 광장에 서 있음 (2026-11-28 무무 님 결정). 달리기를 누르면 고른 코스로 바뀜
+    if (plaza.on !== inMenu) plaza.show(inMenu); if (world.group.visible === inMenu) world.group.visible = !inMenu; // 코스를 새로 불러와도 매번 맞춤
+    if (inMenu) { rider.root.position.copy(plaza.spot); rider.root.rotation.set(0, -Math.PI / 2, 0); rider.body.rotation.x = 0; } } // 자전거는 옆모습(앞이 왼쪽), 캐릭터는 그 앞에서 화면 쪽을 봄
   rider.animate(dt, mode === 'ride' ? cadence : 0, mode === 'ride' ? ride.v : 0);
   if (rider.avatar && rider.standing !== (mode !== 'ride')) rider.setStand(mode !== 'ride'); // 메뉴에서는 자전거 옆에 서 있고, 달릴 때만 탐
   updateCamera(dt, mode === 'menu');
